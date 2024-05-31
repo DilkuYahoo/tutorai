@@ -1,0 +1,6 @@
+{
+    "year": ["Year 4","Year 5","Year 6","Year 7", "Year 8", "Year 9","Year 10"],
+    "subject": ["Maths","English","Science", "History","Geography"],
+    "term": ["Term I", "Term II", "Term III","Term IV"],
+    "level": ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5"]
+}
