@@ -43,9 +43,10 @@ def generateQ(init,message,student):
         state = student["state"]
         year = student["year"]
         subject = student["subject"]
+        specialist_area = student["specialist_area"]
         difficulty = student["difficulty"]
-        system_content= f"Teacher specialised in year {year} student living in {country} {state}"
-        user_content=f"generate a {subject} question with difficulty level {difficulty} out of 5, question only"
+        system_content= f"Teacher specialised in year {year} student living in {country} {state} in the year 2024"
+        user_content=f"Generate a question in subject {subject} {specialist_area} with difficulty level {difficulty} out of 5, question only"
         message = msgAppend(message=message,role="system",content=system_content)
         message = msgAppend(message=message,role="user",content=user_content)
         
