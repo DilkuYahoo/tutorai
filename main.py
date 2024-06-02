@@ -8,12 +8,14 @@ init = 'yes'
 message_json = [] 
 
 student = {
+    "name":"Kav",
     "country": "Australia",
     "state": "NSW",
-    "year": 10,
-    "subject": "Science",
+    "year": 7,
+    "subject": "maths",
     "term": "term I",
-    "subarea" : "Forces",
+    "subject" : "Maths",
+    "specialist_area" : "extension 2",
     "difficulty": "4"
 }
 
@@ -22,11 +24,22 @@ def home():
     session.clear()
     return render_template('index.html')
 
-@app.route('/login',methods=['GET','POST'])
+
+@app.route('/login')
 def login():
-    username = request.form['username']
-    password = request.form['password']
-    
+    session.clear()
+    return render_template('login.html')
+
+
+@app.route('/dashboard',methods=['GET','POST'])
+def dashboard():
+    student["name"] = request.form['name']
+    student["year"] = request.form['year']
+    student["subject"] = request.form['subject']
+    student["specialist_area"] = request.form['specialist_area']
+    student["difficulty"] = request.form['difficulty']
+    return render_template('dashboard.html',validation=student)
+
 
 @app.route('/generateQ')
 def generateQ():
