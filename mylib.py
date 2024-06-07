@@ -2,14 +2,35 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+import mylib
+import yfinance as yf
 
 load_dotenv()
 client = OpenAI(
         api_key=os.environ.get("OPENAI_API_KEY")
         )
 
+def fetch_stock_data(ticker):
+    stock = yf.Ticker(ticker)
+    hist = stock.history(period="3mo", interval="1d")
+    return hist
+
+def analyze_data(stock_data):
+    # Convert the DataFrame to a dictionary for easier processing in the prompt
+    stock_data_dict = stock_data.to_dict(orient='records')
+    my_message = [] 
+    # Create the analysis prompt
+    prompt = f"Analyze the following stock data: {stock_data_dict}. What are the key trends and potential future movements?"
+    system_content = "Share Market Analyst specialied is picking growth shares"
+    message = msgAppend(message=my_message, role='system',content=system_content    ) 
+    message = msgAppend(message= message, role='user',content=prompt)
+    analysis = mylib.request2ai(message=message)
+    analysis = mylib.chatcompletion2message(response=analysis)
+    analysis = mylib.strings2html(analysis)
+    return analysis
+
+
 def msgAppend(message,role,content):
-    print ("msgAppend Function")
     message.append( {"role": role, "content": [{ "type": "text","text": content }]} )
     return (message)
 
@@ -22,7 +43,6 @@ def chatcompletion2message(response):
     return response.choices[0].message.content
 
 def request2ai(message):
-    print (message)
     response = client.chat.completions.create(
     model="gpt-4o",
     messages=message,
@@ -32,8 +52,6 @@ def request2ai(message):
     frequency_penalty=0,
     presence_penalty=0
     )
-#    message = response.choices[0].message.content
-    print (response)
     return(response)
 
 

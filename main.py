@@ -24,6 +24,22 @@ def home():
     session.clear()
     return render_template('index.html')
 
+@app.route('/ticker_tracker')
+def ticker_tracker():
+    return render_template('ticker_tracker.html')
+
+@app.route('/ticker_analysis', methods=['GET','POST'])
+def ticker_analysis():
+    #session.clear()
+    #ticker = 'RRL.AX'
+    ticker = request.form['ticker']
+    # Fetch stock data
+    stock_data = mylib.fetch_stock_data(ticker=ticker)
+    if not stock_data.empty:
+    # Analyze stock data
+        message = mylib.analyze_data(stock_data=stock_data)
+        #message = mylib.chatcompletion2message(response=analysis)
+    return render_template('ticker_analysis.html',message=message)
 
 @app.route('/login')
 def login():
@@ -54,7 +70,6 @@ def generateQ():
     #message = 'This is the experiment message'
     session['init'] =  'no' # Set to 'no' for future requests
     session['message'] = message
-
     return render_template('PostLoginQuestion.html',question=question)
 
 @app.route('/validateQ',methods=['GET','POST'])
