@@ -54,8 +54,29 @@ def request2ai(message):
     )
     return(response)
 
-
 def generateQ(init,message,student):
+    if init == "yes":
+        system_content=f"You are an expert educational assistant tasked with creating engaging and throught-provoking prompts for high school students. The prompt should be suitable for year {student['year']}, term {student['term']} and cover subject {student['subject']} {student['specialist_area']}. The prompts should be related to {student['country']} and {student['state']} syllabus"
+
+
+        user_content =f"You are a high school teacher looking for a new and creative prompts to use in the your classroom. The prompt should stimulate critical thinking, creativity and in-depth understanding of the subject,generate a question"
+
+        message = mylib.msgAppend(message=message,role="system",content=system_content)
+        message = mylib.msgAppend(message=message,role="user",content=user_content)
+    else:
+        user_content= f"prompt another slightly difficult question"
+        message = mylib.msgAppend(message=message,role="user",content=user_content)
+
+    str = request2ai(message)
+    question = chatcompletion2message(response=str)
+    #question = "this is a test question"
+    message = msgAppend(message,'assistant',question)
+    question = strings2html(question)
+    return question, message
+
+
+
+def generateQold(init,message,student):
     if init == "yes":
         country = student["country"]
         state = student["state"]
