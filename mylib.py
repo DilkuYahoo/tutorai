@@ -56,10 +56,8 @@ def request2ai(message):
 
 def generateQ(init,message,student):
     if init == "yes":
-        system_content=f"You are an expert educational assistant tasked with creating engaging and throught-provoking prompts for high school students. The prompt should be suitable for year {student['year']}, term {student['term']} and cover subject {student['subject']} {student['specialist_area']}. The prompts should be related to {student['country']} and {student['state']} syllabus"
-
-
-        user_content =f"You are a high school teacher looking for a new and creative prompts to use in the your classroom. The prompt should stimulate critical thinking, creativity and in-depth understanding of the subject,generate a question"
+        system_content=f"You are an expert educational assistant tasked with creating engaging and thought-provoking questions for high school students in {student['state']} {student['country']}. The question should be suitable for {student['year']}, {student['term']} and cover subject {student['subject']} {student['specialist_area']}"
+        user_content=f"Generating a question without the answer with a difficulty level {student['difficulty']} out of 5 to test the in-depth understanding of the subject"
 
         message = mylib.msgAppend(message=message,role="system",content=system_content)
         message = mylib.msgAppend(message=message,role="user",content=user_content)
