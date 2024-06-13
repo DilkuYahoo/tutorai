@@ -3,7 +3,7 @@
 # Get the current date and time to the second and assign it to a variable
 current_datetime=$(date +"%Y-%m-%d %H:%M:%S")
 
-pip freeze > requirements.txt
+#pip freeze > requirements.txt
 # Deactivate the virtual environment if it is active
 if [[ "$VIRTUAL_ENV" != "" ]]; then
     deactivate
