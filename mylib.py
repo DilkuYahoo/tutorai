@@ -1,19 +1,53 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from openai import OpenAI
 from dotenv import load_dotenv
+from newsapi import NewsApiClient
 import os
 import mylib
 import yfinance as yf
+import datetime
 
 load_dotenv()
 client = OpenAI(
         api_key=os.environ.get("OPENAI_API_KEY")
         )
+newsapi = NewsApiClient(
+        api_key=os.environ.get("YOUR_NEWSAPI_API_KEY")
+        )
+
+def analyze_stock_sentiment(headlines):
+    combined_news = " ".join(headlines)
+    my_message = [] 
+    # Create the analysis prompt
+    prompt = f"Analyze the following news headlines and provide a sentiment score between -1 (very bearish) to 1 (very bullish):\n\n{combined_news}"
+    system_content = "Share Market Analyst specialied is calculating sentiment score"
+    message = msgAppend(message=my_message, role='system',content=system_content    ) 
+    message = msgAppend(message= message, role='user',content=prompt)
+    analysis = mylib.request2ai(message=message)
+    analysis = mylib.chatcompletion2message(response=analysis)
+    analysis = mylib.strings2html(analysis)
+    return analysis
+
 
 def fetch_stock_data(ticker):
     stock = yf.Ticker(ticker)
     hist = stock.history(period="3mo", interval="1d")
     return hist
+
+# Function to fetch news headlines for a stock
+def fetch_news_headlines(stock):
+    ticker = yf.Ticker(stock)
+    company_info = ticker.info
+    company_name = company_info.get('longName', 'N/A')
+
+    query = stock.split('.')[0]  # Remove the '.AX' suffix for the query
+    today = datetime.date.today()
+    last_year = today - datetime.timedelta(days=30)
+    
+    articles = newsapi.get_everything(q=company_name, from_param=last_year, to=today, language='en', sort_by='relevancy')
+    headlines = [article['title'] for article in articles['articles']]
+    return headlines
+
 
 def analyze_data(stock_data):
     # Convert the DataFrame to a dictionary for easier processing in the prompt
