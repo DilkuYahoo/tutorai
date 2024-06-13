@@ -1,5 +1,326 @@
-{% extends "layout.html" %}
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
 
-{% block content %}
-  <!-- Your content here -->
-{% endblock %}
+    <!--Page Title-->
+    <title>{{ teacher_name }}- Your AI Tutor</title>
+
+    <!--Meta Keywords and Description-->
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+
+    {% include 'header.html' %}
+
+        <!--Banner Content-->
+        <div id="banner-content" class="row clearfix">
+
+            <div class="col-38">
+
+                <div class="section-heading">
+			<h1>{{ teacher_name }}</h1>
+		    <h2/>Personalized AI Tutoring for All Ages,
+			    Unlock Your Potential with AI-Powered Learning!
+                        </h2>
+                </div>
+
+                <!--Call to Action-->
+                <a href="/tryitforfree" class="button">TRY IT FOR FREE</a>
+                <!--End Call to Action-->
+
+            </div>
+
+        </div><!--End of Row-->
+    </header>
+
+    <!--Main Content Area-->
+    <main id="content">
+
+        <!--Introduction-->
+        <section id="about" class="introduction scrollto">
+
+            <div class="row clearfix">
+
+                <div class="col-3">
+                    <div class="section-heading">
+                        <h3>SUCCESS</h3>
+			            <h2 class="section-title"> {{ teacher_name }}</h2>
+			            <p class="section-subtitle">empowers students of all ages with a comprehensive suite of AI-powered learning tools</p>
+                    </div>
+
+                </div>
+
+                <div class="col-2-3">
+
+                    <!--Icon Block-->
+                    <div class="col-2 icon-block icon-top wow fadeInUp" data-wow-delay="0.1s">
+                        <!--Icon-->
+                        <div class="icon">
+                            <i class="fa fa-html5 fa-2x"></i>
+                        </div>
+                        <!--Icon Block Description-->
+                        <div class="icon-block-description">
+                            <h4>Subject Mastery</h4>
+                            <p>Generate customized practice questions across a wide range of subjects, catering to individual learning needs. </p>
+                        </div>
+                    </div>
+                    <!--End of Icon Block-->
+
+                    <!--Icon Block-->
+                    <div class="col-2 icon-block icon-top wow fadeInUp" data-wow-delay="0.3s">
+                        <!--Icon-->
+                        <div class="icon">
+                            <i class="fa fa-bolt fa-2x"></i>
+                        </div>
+                        <!--Icon Block Description-->
+                        <div class="icon-block-description">
+                            <h4>Adaptive Difficulty</h4>
+                            <p>The platform intelligently adjusts question difficulty based on student performance, ensuring a steady learning curve and preventing frustration.</p>
+                        </div>
+                    </div>
+                    <!--End of Icon Block-->
+
+                    <!--Icon Block-->
+                    <div class="col-2 icon-block icon-top wow fadeInUp" data-wow-delay="0.5s">
+                        <!--Icon-->
+                        <div class="icon">
+                            <i class="fa fa-tablet fa-2x"></i>
+                        </div>
+                        <!--Icon Block Description-->
+                        <div class="icon-block-description">
+                            <h4>Interactive Feedback Loop</h4>
+                            <p>Learn from your mistakes! Your AI Tutor analyses student responses and provides insightful feedback based on their input.</p>
+                        </div>
+                    </div>
+                    <!--End of Icon Block-->
+
+                    <!--Icon Block-->
+                    <div class="col-2 icon-block icon-top wow fadeInUp" data-wow-delay="0.5s">
+                        <!--Icon-->
+                        <div class="icon">
+                            <i class="fa fa-rocket fa-2x"></i>
+                        </div>
+                        <!--Icon Block Description-->
+                        <div class="icon-block-description">
+                            <h4>Detailed Explanations</h4>
+                            <p>Gain a deeper understanding of concepts with clear and concise explanations for every question.</p>
+                        </div>
+                    </div>
+                    <!--End of Icon Block-->
+
+                </div>
+
+            </div>
+
+
+        </section>
+        <!--End of Introduction-->
+
+
+        <!--Gallery-->
+        <aside id="gallery" class="row text-center scrollto clearfix" data-featherlight-gallery
+                 data-featherlight-filter="a">
+
+                <a href="staic/images/gallery-images/gallery-image-1.jpg" data-featherlight="image" class="col-3 wow fadeIn"
+                   data-wow-delay="0.1s"><img src="static/images/gallery-images/gallery-image-1.jpg" alt="Landing Page"/></a>
+                <a href="static/images/gallery-images/gallery-image-2.jpg" data-featherlight="image" class="col-3 wow fadeIn"
+                   data-wow-delay="0.3s"><img src="static/images/gallery-images/gallery-image-2.jpg" alt="Landing Page"/></a>
+                <a href="static/images/gallery-images/gallery-image-3.jpg" data-featherlight="image" class="col-3 wow fadeIn"
+                   data-wow-delay="0.5s"><img src="static/images/gallery-images/gallery-image-3.jpg" alt="Landing Page"/></a>
+                <a href="static/images/gallery-images/gallery-image-4.jpg" data-featherlight="image" class="col-3 wow fadeIn"
+                   data-wow-delay="1.1s"><img src="static/images/gallery-images/gallery-image-4.jpg" alt="Landing Page"/></a>
+                <a href="static/images/gallery-images/gallery-image-5.jpg" data-featherlight="image" class="col-3 wow fadeIn"
+                   data-wow-delay="0.9s"><img src="static/images/gallery-images/gallery-image-5.jpg" alt="Landing Page"/></a>
+                <a href="static/images/gallery-images/gallery-image-6.jpg" data-featherlight="image" class="col-3 wow fadeIn"
+                   data-wow-delay="0.7s"><img src="static/images/gallery-images/gallery-image-6.jpg" alt="Landing Page"/></a>
+
+        </aside>
+        <!--End of Gallery-->
+
+
+        <!--Testimonials-->
+	
+        <aside id="Questions" class="scrollto text-center" data-enllax-ratio=".2">
+	
+
+		<div class="section-heading">
+                    <h3>QUESTION</h3>
+                    <p>How many Legs a Dog would have</p>
+                </div>
+	   
+
+        </aside>
+        <!--End of Gallery-->
+
+
+
+	<!--Testimonials-->
+        <aside id="testimonials" class="scrollto text-center" data-enllax-ratio=".2">
+
+            <div class="row clearfix">
+
+                <div class="section-heading">
+                    <h3>FEEDBACK</h3>
+                    <h2 class="section-title">What our customers are saying</h2>
+                </div>
+
+                <!--User Testimonial-->
+                <blockquote class="col-3 testimonial classic">
+                    <img src="static/images/user-images/user-1.jpg" alt="User"/>
+                    <q>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
+                        labore
+                        et dolore magna aliqua</q>
+                    <footer>John Doe - Happy Customer</footer>
+                </blockquote>
+                <!-- End of Testimonial-->
+
+                <!--User Testimonial-->
+                <blockquote class="col-3 testimonial classic">
+                    <img src="static/images/user-images/user-2.jpg" alt="User"/>
+                    <q>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
+                        labore
+                        et dolore magna aliqua</q>
+                    <footer>Roslyn Doe - Happy Customer</footer>
+                </blockquote>
+                <!-- End of Testimonial-->
+
+                <!--User Testimonial-->
+                <blockquote class="col-3 testimonial classic">
+                    <img src="static/images/user-images/user-3.jpg" alt="User"/>
+                    <q>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
+                        labore
+                        et dolore magna aliqua</q>
+                    <footer>Thomas Doe - Happy Customer</footer>
+                </blockquote>
+                <!-- End of Testimonial-->
+
+            </div>
+
+        </aside>
+        <!--End of Testimonials-->
+
+        <!--Clients-->
+        <section id="clients" class="scrollto clearfix">
+            <div class="row clearfix">
+
+                <div class="col-3">
+
+                    <div class="section-heading">
+                        <h3>TRUST</h3>
+                        <h2 class="section-title">Companies who use our services</h2>
+                        <p class="section-subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+                            eiusmod
+                            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam!</p>
+                    </div>
+
+                </div>
+
+                <div class="col-2-3">
+
+                    <a href="#" class="col-3">
+                        <img src="static/images/company-images/company-logo1.png" alt="Company"/>
+                        <div class="client-overlay"><span>Tree</span></div>
+                    </a>
+                    <a href="#" class="col-3">
+                        <img src="static/images/company-images/company-logo2.png" alt="Company"/>
+                        <div class="client-overlay"><span>Fingerprint</span></div>
+                    </a>
+                    <a href="#" class="col-3">
+                        <img src="static/images/company-images/company-logo3.png" alt="Company"/>
+                        <div class="client-overlay"><span>The Man</span></div>
+                    </a>
+                    <a href="#" class="col-3">
+                        <img src="static/images/company-images/company-logo4.png" alt="Company"/>
+                        <div class="client-overlay"><span>Mustache</span></div>
+                    </a>
+                    <a href="#" class="col-3">
+                        <img src="static/images/company-images/company-logo5.png" alt="Company"/>
+                        <div class="client-overlay"><span>Goat</span></div>
+                    </a>
+                    <a href="#" class="col-3">
+                        <img src="static/images/company-images/company-logo6.png" alt="Company"/>
+                        <div class="client-overlay"><span>Justice</span></div>
+                    </a>
+                    <a href="#" class="col-3">
+                        <img src="static/images/company-images/company-logo7.png" alt="Company"/>
+                        <div class="client-overlay"><span>Ball</span></div>
+                    </a>
+                    <a href="#" class="col-3">
+                        <img src="static/images/company-images/company-logo8.png" alt="Company"/>
+                        <div class="client-overlay"><span>Cold</span></div>
+                    </a>
+
+                    <a href="#" class="col-3">
+                        <img src="static/images/company-images/company-logo9.png" alt="Company"/>
+                        <div class="client-overlay"><span>Cold</span></div>
+                    </a>
+
+                </div>
+
+            </div>
+        </section>
+        <!--End of Clients-->
+
+    </main>
+    <!--End Main Content Area-->
+
+
+    <!--Footer-->
+    <footer id="landing-footer" class="clearfix">
+        <div class="row clearfix">
+
+            <p id="copyright" class="col-2">Your Life Tutor<a href="https://www.shapingrain.com">ShapingRain</a></p>
+
+            <!--Social Icons in Footer-->
+            <ul class="col-2 social-icons">
+                <li>
+                    <a target="_blank" title="Facebook" href="https://www.facebook.com/username">
+                        <i class="fa fa-facebook fa-1x"></i><span>Facebook</span>
+                    </a>
+                </li>
+                <li>
+                    <a target="_blank" title="Google+" href="http://google.com/+username">
+                        <i class="fa fa-google-plus fa-1x"></i><span>Google+</span>
+                    </a>
+                </li>
+                <li>
+                    <a target="_blank" title="Twitter" href="http://www.twitter.com/username">
+                        <i class="fa fa-twitter fa-1x"></i><span>Twitter</span>
+                    </a>
+                </li>
+                <li>
+                    <a target="_blank" title="Instagram" href="http://www.instagram.com/username">
+                        <i class="fa fa-instagram fa-1x"></i><span>Instagram</span>
+                    </a>
+                </li>
+                <li>
+                    <a target="_blank" title="behance" href="http://www.behance.net">
+                        <i class="fa fa-behance fa-1x"></i><span>Behance</span>
+                    </a>
+                </li>
+            </ul>
+            <!--End of Social Icons in Footer-->
+        </div>
+    </footer>
+    <!--End of Footer-->
+
+</div>
+
+<!-- Include JavaScript resources -->
+<script src="static/js/jquery.1.8.3.min.js"></script>
+<script src="static/js/wow.min.js"></script>
+<script src="static/js/featherlight.min.js"></script>
+<script src="static/js/featherlight.gallery.min.js"></script>
+<script src="static/js/jquery.enllax.min.js"></script>
+<script src="static/js/jquery.scrollUp.min.js"></script>
+<script src="static/js/jquery.easing.min.js"></script>
+<script src="static/js/jquery.stickyNavbar.min.js"></script>
+<script src="static/js/jquery.waypoints.min.js"></script>
+<script src="static/js/images-loaded.min.js"></script>
+<script src="static/js/lightbox.min.js"></script>
+<script src="static/js/site.js"></script>
+
+
+</body>
+</html>
