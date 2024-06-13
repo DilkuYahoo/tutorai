@@ -10,6 +10,7 @@ if [[ "$VIRTUAL_ENV" != "" ]]; then
 fi
 # Remove the virtual environment directory
 rm -rf env
+rm -rf __pycache__
 
 echo "Virtual environment 'env' has been removed."
 # Create or open the .gitignore file and add .env to it
