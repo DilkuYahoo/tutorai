@@ -2,19 +2,43 @@
 <html lang="en">
 	{% include 'header.html' %}       
     <!--Main Content Area-->
+    <!--Main Content Area-->
     <main id="content">
         <aside id="Questions" class="scrollto text-center" data-enllax-ratio=".2">
             <div class="section-heading">
-                <h1 class="section-title"></h1>
                 <h1 class="section-title">Welcome to Share Analyser powered by Emily</h1>
                 <h2></h2><br>
                     <form method="POST" action="/ticker_analysis">
+                        <label for="exchange">Exchange</label>
+                            <select name="exchange">
+                                <option value=".AX" selected>Australian Stock Exchange (ASX)</option>
+                                <option value=".XA">Cboe Australia</option>
+                                <option value="">Nasdaq Stock Exchange</option>
+                                <option value=".L">London Stock Exchange</option>
+                            </select>
+                        <br>
                         <label for="ticker">Ticker:</label>
                         <input class="input" type="text" id="ticker" name="ticker" value = "{{ ticker }}"> <br>
-                        <button type="submit" class="button">Analyse</button>
-                </form>
+                        <br>
+                        <label for="analyse">Analyse</label>
+                            <select name="analyse">
+                                <option value="analyse" selected>Market Analysis</option>
+                                <option value="sentiment">Sentiment</option>
+                            </select>
+                        <br>
+                        <button type="submit" class="button">Submit</button>
+                    </form>
               </div>
         </aside>
-        </main>
+        
+        <br>
+        <aside class="scrollto text-center">
+        <div class="container mt-3">
+        <p>Market Analysis - Analyze the following news headlines and provide a sentiment score between -1 (very bearish) to 1</p>
+        <p>Analyse - Analyse the stock data for last 30 days, highlight the key trends and potential future movement</p>
+        </aside>
+    </div>
+</main>      
 </body>
 </html>
+
