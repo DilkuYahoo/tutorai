@@ -35,6 +35,7 @@ def ticker_analysis():
     ticker = request.form['ticker'].rstrip()
     exchange = request.form['exchange'].rstrip()
     analyse = request.form['analyse'].rstrip()
+    ticker = f"{ticker}{exchange}"
     output = ""
     stock_data = mylib.fetch_stock_data(ticker=ticker)
     headlines = mylib.fetch_news_headlines(ticker)
