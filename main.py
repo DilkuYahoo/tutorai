@@ -32,18 +32,23 @@ def ticker_tracker():
 def ticker_analysis():
     #session.clear()
     #ticker = 'RRL.AX'
-    ticker = request.form['ticker']
-    # Fetch stock data
+    ticker = request.form['ticker'].rstrip()
+    exchange = request.form['exchange'].rstrip()
+    analyse = request.form['analyse'].rstrip()
+    output = ""
     stock_data = mylib.fetch_stock_data(ticker=ticker)
+    headlines = mylib.fetch_news_headlines(ticker)
+    # Fetch stock data
     if not stock_data.empty:
-    # Analyze stock data
-        message = mylib.analyze_data(stock_data=stock_data)
-        headlines = mylib.fetch_news_headlines(ticker)
-        sentiment_score = mylib.analyze_stock_sentiment(headlines)
-        message = f"{message} <br> <br> {sentiment_score}"
-
-        #message = mylib.chatcompletion2message(response=analysis)
-    return render_template('ticker_analysis.html',message=message)
+        if analyse == 'sentiment':
+            output = mylib.analyze_stock_sentiment(headlines)
+        else:
+            output = mylib.analyze_data(stock_data=stock_data)
+        #message = mylib.analyze_data(stock_data=stock_data)
+        #headlines = mylib.fetch_news_headlines(ticker)
+        #sentiment_score = mylib.analyze_stock_sentiment(headlines)
+        #message = f"{message} <br> <br> {sentiment_score}"
+    return render_template('ticker_analysis.html',message=output)
 
 @app.route('/login')
 def login():
