@@ -29,6 +29,35 @@ def home():
 def financialAdvForm():
     return render_template('financialAdvForm.html')
 
+
+@app.route('/financialAdvForm', methods=['GET', 'POST'])
+def investment_form():
+    if request.method == 'POST':
+        # Capture form data
+        form_data = {
+            "name": request.form.get('name'),
+            "age": request.form.get('age'),
+            "amount": request.form.get('amount'),
+            "objective": request.form.get('objective'),
+            "risk_tolerance": request.form.get('risk_tolerance'),
+            "investment_types": request.form.getlist('investment_types'),
+            "sectors": request.form.getlist('sectors'),
+            "markets_exposure": request.form.getlist('markets_exposure'),
+            "term": request.form.get('term')
+        }
+        
+        # For now, just print the captured data (you can later store it in a database)
+        print(form_data)
+        my_message = mylib.financialAdvisor(form_data)
+        
+        # You can also return the form data to the template or another page for confirmation
+        return render_template('ticker_analysis.html', message=my_message)
+    
+    # For GET requests, just render the form
+    return render_template('financialAdvForm.html')
+
+
+
 @app.route('/ticker_tracker')
 def ticker_tracker():
     return render_template('ticker_tracker.html')

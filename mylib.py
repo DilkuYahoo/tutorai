@@ -15,6 +15,25 @@ newsapi = NewsApiClient(
         api_key=os.environ.get("YOUR_NEWSAPI_API_KEY")
         )
 
+
+
+def financialAdvisor(customer_details):
+    #combined_news = " ".join(headlines)
+    my_message = [] 
+    # Create the analysis prompt
+    prompt = f" {customer_details}"
+    system_content = "You are a financial advisor AI specializing in creating custom share portfolios based on user-provided financial goals, risk tolerance, and preferences. Your primary objective is to recommend an optimized portfolio of shares, ensuring the user’s investment aligns with their risk appetite, objectives, and market exposure preferences"
+    message = msgAppend(message=my_message, role='system',content=system_content    ) 
+    message = msgAppend(message= message, role='user',content=prompt)
+    analysis = mylib.request2ai(message=message)
+    analysis = mylib.chatcompletion2message(response=analysis)
+    analysis = mylib.strings2html(analysis)
+    return analysis
+
+
+
+
+
 def analyze_stock_sentiment(headlines):
     combined_news = " ".join(headlines)
     my_message = [] 

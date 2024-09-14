@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+	{% include 'header.html' %}
+<body>
+
+    <h2>Investment Information Form</h2>
+
+    <form action="/submit" method="post">
+	<div class="col-3-3">
+	<!-- Name -->
+        <label for="name">Name:</label><br>
+        <input type="text" id="name" name="name" required><br><br>
+
+        <!-- Age -->
+        <label for="age">Age:</label><br>
+        <input type="number" id="age" name="age" required><br><br>
+
+        <!-- Amount -->
+        <label for="amount">Amount:</label><br>
+        <input type="number" id="amount" name="amount" required><br><br>
+
+        <!-- Objective -->
+        <label for="objective">Objective:</label><br>
+        <select id="objective" name="objective" required>
+            <option value="maximum_growth">Maximum Growth</option>
+            <option value="stable_income">Stable Income</option>
+            <option value="balanced_approach">Balanced Approach</option>
+        </select><br><br>
+
+        <!-- Risk Tolerance -->
+        <label for="risk_tolerance">Risk Tolerance:</label><br>
+        <select id="risk_tolerance" name="risk_tolerance" required>
+            <option value="conservative">Conservative</option>
+            <option value="moderate">Moderate</option>
+            <option value="high_risk">High Risk</option>
+            <option value="ultra_high">Ultra-High</option>
+        </select><br><br>
+
+        <!-- Investment Types -->
+        <label for="investment_types">Investment Types:</label><br>
+        <input type="checkbox" id="bonds" name="investment_types" value="bonds">
+        <label for="bonds">Bonds</label><br>
+        <input type="checkbox" id="stocks" name="investment_types" value="stocks">
+        <label for="stocks">Stocks</label><br>
+        <input type="checkbox" id="real_estate" name="investment_types" value="real_estate">
+        <label for="real_estate">Real Estate</label><br>
+        <input type="checkbox" id="commodities" name="investment_types" value="commodities">
+        <label for="commodities">Commodities</label><br>
+        <input type="checkbox" id="alternative_investments" name="investment_types" value="alternative_investments">
+        <label for="alternative_investments">Alternative Investments</label><br>
+        <input type="checkbox" id="etfs" name="investment_types" value="etfs">
+        <label for="etfs">ETFs</label><br>
+        <input type="checkbox" id="annuities" name="investment_types" value="annuities">
+        <label for="annuities">Annuities</label><br>
+        <input type="checkbox" id="cryptocurrencies" name="investment_types" value="cryptocurrencies">
+        <label for="cryptocurrencies">Cryptocurrencies</label><br><br>
+
+        <!-- Sectors based on ASX -->
+        <label for="sectors">Sectors:</label><br>
+        <input type="checkbox" id="energy" name="sectors" value="energy">
+        <label for="energy">Energy</label><br>
+        <input type="checkbox" id="materials" name="sectors" value="materials">
+        <label for="materials">Materials</label><br>
+        <input type="checkbox" id="industrials" name="sectors" value="industrials">
+        <label for="industrials">Industrials</label><br>
+        <input type="checkbox" id="consumer_discretionary" name="sectors" value="consumer_discretionary">
+        <label for="consumer_discretionary">Consumer Discretionary</label><br>
+        <input type="checkbox" id="consumer_staples" name="sectors" value="consumer_staples">
+        <label for="consumer_staples">Consumer Staples</label><br>
+        <input type="checkbox" id="healthcare" name="sectors" value="healthcare">
+        <label for="healthcare">Healthcare</label><br>
+        <input type="checkbox" id="financials" name="sectors" value="financials">
+        <label for="financials">Financials</label><br>
+        <input type="checkbox" id="information_technology" name="sectors" value="information_technology">
+        <label for="information_technology">Information Technology</label><br>
+        <input type="checkbox" id="telecommunication_services" name="sectors" value="telecommunication_services">
+        <label for="telecommunication_services">Telecommunication Services</label><br>
+        <input type="checkbox" id="utilities" name="sectors" value="utilities">
+        <label for="utilities">Utilities</label><br>
+        <input type="checkbox" id="real_estate" name="sectors" value="real_estate">
+        <label for="real_estate">Real Estate</label><br><br>
+
+        <!-- Markets Exposure -->
+        <label for="markets_exposure">Markets Exposure:</label><br>
+        <input type="checkbox" id="australia" name="markets_exposure" value="australia">
+        <label for="australia">Australia</label><br>
+        <input type="checkbox" id="international" name="markets_exposure" value="international">
+        <label for="international">International</label><br><br>
+
+        <!-- Term -->
+        <label for="term">Term:</label><br>
+        <select id="term" name="term" required>
+            <option value="1_year">1 Year</option>
+            <option value="5_years">5 Years</option>
+            <option value="7_years">7 Years</option>
+            <option value="10_years">10 Years</option>
+            <option value="15_years">15 Years</option>
+            <option value="20_years">20 Years</option>
+        </select><br><br>
+
+        <!-- Submit Button -->
+        <input type="submit" value="Submit">
+    </form>
+	</div>
+</body>
+</html>
+
