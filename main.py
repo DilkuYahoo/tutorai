@@ -24,6 +24,11 @@ def home():
     session.clear()
     return render_template('index.html')
 
+
+@app.route('/financialAdvForm')
+def financialAdvForm():
+    return render_template('financialAdvForm.html')
+
 @app.route('/ticker_tracker')
 def ticker_tracker():
     return render_template('ticker_tracker.html')
@@ -95,4 +100,4 @@ def validateQ():
 
 
 if __name__ == '__main__':
-    app.run(host="127.0.0.1", port="8080", debug=True)
+    app.run(host="0.0.0.0", port="8080", debug=True)

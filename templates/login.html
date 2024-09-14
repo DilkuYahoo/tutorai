@@ -20,6 +20,7 @@
                             <option value="Year 8" {% if form_year == 'Year 8' %} selected {% endif %}>Year 8</option>
                             <option value="Year 9" {% if form_year == 'Year 9' %} selected {% endif %}>Year 9</option>
                             <option value="Year 10" {% if form_year == 'Year 10' %} selected {% endif %}>Year 10</option>
+                            <option value="psychometric" {% if form_year == 'psychometric' %} selected {% endif %}>psychometric</option>
                         </select>
                         <label for="subject">Subject</label>
                         <select name="subject">
@@ -29,6 +30,8 @@
                             <option value="Science" {% if form_subject == 'Science' %} selected {% endif %}>Science</option>
                             <option value="History" {% if form_subject == 'History' %} selected {% endif %}>History</option>
                             <option value="Geography" {% if form_subject == 'Geography' %} selected {% endif %}>Geography</option>
+                            <option value="Numerical" {% if form_subject == 'Numerical' %} selected {% endif %}>Numerical</option>
+                            <option value="Logical" {% if form_subject == 'Logical' %} selected {% endif %}>Logical</option>
                         </select>
                         <label for="term">Content</label>
                         <select name="term">

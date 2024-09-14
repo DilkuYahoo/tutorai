@@ -90,8 +90,12 @@ def request2ai(message):
 
 def generateQ(init,message,student):
     if init == "yes":
-        system_content=f"You are an expert educational assistant tasked with creating engaging and thought-provoking questions for high school students in {student['state']} {student['country']}. The question should be suitable for {student['year']}, {student['term']} and cover subject {student['subject']} {student['specialist_area']}"
-        user_content=f"Generating a question without the answer with a difficulty level {student['difficulty']} out of 5 to test the in-depth understanding of the subject"
+        if student['year'] == "psychometric":
+            system_content = f"The OPQ measures 32 different personality traits that are relevant to occupational settings. Ultimately the test measures traits with the purpose of determining your behavioural style at work"
+            user_content = f"provide a {student['subject']} ability questions without the solution, similar to SHL testing site, also provide the exptected time to respond is seconds"
+        else :
+            system_content=f"You are an expert educational assistant tasked with creating engaging and thought-provoking questions for high school students in {student['state']} {student['country']}. The question should be suitable for {student['year']}, {student['term']} and cover subject {student['subject']} {student['specialist_area']}"
+            user_content=f"Generating a question without the answer with a difficulty level {student['difficulty']} out of 5 to test the in-depth understanding of the subject"
 
         message = mylib.msgAppend(message=message,role="system",content=system_content)
         message = mylib.msgAppend(message=message,role="user",content=user_content)
