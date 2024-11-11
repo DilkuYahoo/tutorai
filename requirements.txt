@@ -8,6 +8,7 @@ click==8.1.7
 config==0.5.1
 distro==1.9.0
 Flask==3.0.0
+Flask-Cors==5.0.0
 frozendict==2.4.4
 h11==0.14.0
 html5lib==1.1

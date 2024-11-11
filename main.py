@@ -1,8 +1,14 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import mylib
 import json
+from flask_cors import CORS
+import hashlib
+
 
 app = Flask(__name__)
+CORS(app)
+
+
 app.secret_key = 'abc123e'
 init = 'yes'
 message_json = [] 
@@ -18,6 +24,30 @@ student = {
     "specialist_area" : "extension 2",
     "difficulty": "4"
 }
+
+
+@app.route('/gen_share_portfolio', methods=['POST'])
+def ger_share_portfolio():
+    input_data = request.json
+    combined_data = mylib.financialAdvisor(input_data)
+    return jsonify({"result": combined_data})
+
+
+
+
+@app.route('/multiply', methods=['POST'])
+def multiply():
+    try:
+        # Get 'a' and 'b' from the JSON body of the request
+        data = request.get_json()
+        a = float(data.get('a'))
+        b = float(data.get('b'))
+        result = a * b
+        return jsonify({'result': result}), 200
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid input. Please provide numerical values for a and b.'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/')
 def home():
