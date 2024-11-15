@@ -1,2 +1,3 @@
 .env
 .fintelle-gsheet.json
+__pycache__

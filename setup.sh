@@ -8,7 +8,7 @@ source env/bin/activate
 
 # Install the required modules from requirements.txt
 if [ -f requirements.txt ]; then
-    pip install -r requirements.txt
+    #pip install -r requirements.txt
 else
     echo "requirements.txt file not found!"
 fi
