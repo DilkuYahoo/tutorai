@@ -4,10 +4,8 @@ import json
 from flask_cors import CORS
 import hashlib
 
-
 app = Flask(__name__)
 CORS(app)
-
 
 app.secret_key = 'abc123e'
 init = 'yes'
@@ -24,6 +22,7 @@ student = {
     "specialist_area" : "extension 2",
     "difficulty": "4"
 }
+
 
 
 @app.route('/gen_share_portfolio', methods=['POST'])

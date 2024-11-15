@@ -2,6 +2,9 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from openai import OpenAI
 from dotenv import load_dotenv
 from newsapi import NewsApiClient
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
 import os
 import mylib
 import yfinance as yf
@@ -14,6 +17,16 @@ client = OpenAI(
 newsapi = NewsApiClient(
         api_key=os.environ.get("YOUR_NEWSAPI_API_KEY")
         )
+
+# Google Sheets setup
+def get_google_sheet():
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets",
+             "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
+
+    creds = ServiceAccountCredentials.from_json_keyfile_name('.fintelle-gsheet.json', scope)
+    client = gspread.authorize(creds)
+    sheet = client.open("leads").sheet1  # Choose the first sheet, or specify the name
+    return sheet
 
 
 
@@ -28,11 +41,13 @@ def financialAdvisor(customer_details):
     analysis = mylib.request2ai(message=message)
     analysis = mylib.chatcompletion2message(response=analysis)
     analysis = mylib.strings2html(analysis)
+    
+    # Get Google Sheet instance
+    sheet = mylib.get_google_sheet()
+
+    # Append row data to Google Sheet
+    sheet.append_row([name, email, message])
     return analysis
-
-
-
-
 
 def analyze_stock_sentiment(headlines):
     combined_news = " ".join(headlines)
