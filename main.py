@@ -31,6 +31,29 @@ def ger_share_portfolio():
     combined_data = mylib.financialAdvisor(input_data)
     return jsonify({"result": combined_data})
 
+@app.route('/api/submit', methods=['POST'])
+def submit_form():
+    # Validate JSON input
+    if not request.is_json:
+        return jsonify({"error": "Invalid input: JSON data expected"}), 400
+
+    data = request.get_json()
+
+    # Extract the required fields from JSON data
+    name = data.get('name')
+    email = data.get('email')
+    message = data.get('message')
+
+    if not name or not email or not message:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    # Get Google Sheet instance
+    sheet = mylib.get_google_sheet()
+
+    # Append row data to Google Sheet
+    sheet.append_row([name, email, message])
+
+    return jsonify({"message": "Data successfully added to Google Sheet"}), 200
 
 
 
@@ -52,40 +75,6 @@ def multiply():
 def home():
     session.clear()
     return render_template('index.html')
-
-
-@app.route('/financialAdvForm')
-def financialAdvForm():
-    return render_template('financialAdvForm.html')
-
-
-@app.route('/financialAdvForm', methods=['GET', 'POST'])
-def investment_form():
-    if request.method == 'POST':
-        # Capture form data
-        form_data = {
-            "name": request.form.get('name'),
-            "age": request.form.get('age'),
-            "amount": request.form.get('amount'),
-            "objective": request.form.get('objective'),
-            "risk_tolerance": request.form.get('risk_tolerance'),
-            "investment_types": request.form.getlist('investment_types'),
-            "sectors": request.form.getlist('sectors'),
-            "markets_exposure": request.form.getlist('markets_exposure'),
-            "term": request.form.get('term')
-        }
-        
-        # For now, just print the captured data (you can later store it in a database)
-        print(form_data)
-        my_message = mylib.financialAdvisor(form_data)
-        
-        # You can also return the form data to the template or another page for confirmation
-        return render_template('ticker_analysis.html', message=my_message)
-    
-    # For GET requests, just render the form
-    return render_template('financialAdvForm.html')
-
-
 
 @app.route('/ticker_tracker')
 def ticker_tracker():

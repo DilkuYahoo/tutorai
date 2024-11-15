@@ -46,8 +46,12 @@ def financialAdvisor(customer_details):
     sheet = mylib.get_google_sheet()
 
     # Append row data to Google Sheet
-    sheet.append_row([name, email, message])
+    #sheet.append_row([customer_details{"full"}, email, message])
     return analysis
+
+
+
+
 
 def analyze_stock_sentiment(headlines):
     combined_news = " ".join(headlines)
