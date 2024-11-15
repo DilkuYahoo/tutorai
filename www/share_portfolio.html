@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Responsive Form</title>
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <!-- Custom CSS -->
+        <meta charset="UTF-8">
+        <!-- Main CSS Files -->
+        <link rel="stylesheet" href="css/dilku.css">
+        <title>Financial Advice - Statement of Advice (SOA) Form</title>    
+    </head>
+    <body>
+        <div class="form-group">
+            <h1 style="text-align: center;">Share Portfolio Questionnaire</h1>
+            <p></p>
+        </div>
+        <form id="soa">
+            <!-- Personal Information -->
+            <h3>Personal Information</h3>
+            <div class="form-group">
+                
+                <label for="fullName">Full Name:</label>
+                <input type="text" id="fullName" name="fullName" required>
+            </div>
+            <div class="form-group">
+                <label for="dob">Date of Birth:</label>
+                <input type="date" id="dob" name="dob" value="2000-07-07" required>
+                <small id="dobError" class="text-danger" style="display: none;">Age must be between 15 and 65 years.</small>
+            </div>
+            <div class="form-group">
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">Phone Number:</label>
+                <input type="tel" id="phone" name="phone" value="+61400000000" required pattern="^\+61[0-9]{9}$" title="Please enter a valid phone number, e.g., +61400000000">
+
+            </div>
+            <!-- Investment Goals -->
+            <h3>Investment Goals</h3>
+            <div class="form-group">
+                <label for="investmentObjective">Investment Objective:</label>
+                <select id="investmentObjective" name="investmentObjective" required>
+                    <option value="">Select...</option>
+                    <option value="growth">Growth</option>
+                    <option value="income">Income</option>
+                    <option value="capitalPreservation">Capital Preservation</option>
+                    <option value="balanced">Balanced (Growth + Income)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="investmentHorizon">Investment Horizon:</label>
+                <select id="investmentHorizon" name="investmentHorizon" required>
+                    <option value="">Select...</option>
+                    <option value="short">Short-term (1-3 years)</option>
+                    <option value="medium">Medium-term (3-7 years)</option>
+                    <option value="long">Long-term (7+ years)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="investmentAmount">Investment Amount (AUD):</label>
+                <input type="number" id="investmentAmount" name="investmentAmount" min="1000" max="10000000" value="10000" required>
+            </div>
+    
+            <!-- Risk Profile -->
+            <h3>Risk Profile</h3>
+            <div class="form-group">
+                <label for="riskTolerance">Risk Tolerance:</label>
+                <select id="riskTolerance" name="riskTolerance" required>
+                    <option value="">Select...</option>
+                    <option value="low">Low</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="high">High</option>
+                    <option value="veryHigh">Very High</option>
+                </select>
+            </div>
+            <!-- Submit Button -->
+            <div class="form-group">
+                <button type="button" onclick="fetchQuote()">Ask Genie</button>
+                <div id="quoteContainer" class="quote"></div>
+            </div>
+        </form>
+        <div id="quoteContainer" class="quote"></div>
+        <script src="js/dilku.js"></script>
+    </body>
+</html>
