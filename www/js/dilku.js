@@ -30,9 +30,12 @@ async function fetchData() {
     }
 }
 async function fetchQuote() {
-  const quoteContainer = document.getElementById('quoteContainer');
   const formData = document.getElementById("soa");
   
+
+    // Hide the content
+    document.getElementById("myDiv").style.display = "none";
+
   const Data_input = {
     fullName: document.getElementById("fullName").value,
     dob: document.getElementById("dob").value,
@@ -45,7 +48,7 @@ async function fetchQuote() {
 };
 
   if (formData.checkValidity() && validateDOB()) {
-    quoteContainer.innerHTML = '<div class="spinner"></div>';
+    document.getElementById("loader").style.display = "block";
     try {
         const response = await fetch("https://fintelle.wn.r.appspot.com/gen_share_portfolio", {
         //const response = await fetch("http://localhost:8080/gen_share_portfolio", {
@@ -56,8 +59,16 @@ async function fetchQuote() {
             body: JSON.stringify(Data_input)
         });
         
+        // Parse the JSON data
         const data = await response.json();
-        quoteContainer.innerHTML = `${data.result}`;
+
+        // Update the content of the HTML element with the API data
+        // Hide the loader
+        document.getElementById("loader").style.display = "none";
+        // Update the content dynamically
+        document.getElementById("myDiv").innerHTML = `${data.result}`;
+        document.getElementById("myDiv").style.display = "block";
+        //quoteContainer.innerHTML = data.fact; // Adjust based on your API response structure
 
       } catch (error) {
         quoteContainer.innerHTML = '<p>Failed to load quote. Please try again.</p>';
