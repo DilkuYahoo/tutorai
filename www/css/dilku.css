@@ -1,89 +1,56 @@
 /* dilku.css */
 
-/* Body background color and font style */
-body {
-    background-color: #f8f9fa;
-    font-family: Arial, sans-serif;
-    /* text-align: center; */
-}
-
-/* Container and form styling */
-.container {
-    max-width: 700px;
-}
-
-h2 {
-    color: #007bff;
-    font-weight: bold;
-}
-
-form {
-    background-color: #ffffff;
-    border: 1px solid #dddddd;
-}
-
-/* Input and select field styling */
-.form-control {
-    border-radius: 0.25rem;
-    border: 1px solid #007bff;
-    padding: 10px;
-}
-
-/* Button styling */
-.btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
-}
-
-.btn-primary:hover {
-    background-color: #0056b3;
-    border-color: #0056b3;
-}
-
-/* Output box styling */
-#output {
-    color: #333333;
-    font-size: 1rem;
-}
-button {
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-  }
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    h2 {
-        font-size: 1.5rem;
-    }
-
-    .btn {
-        font-size: 1rem;
-    }
-}
-
-.quote {
-    margin-top: 20px;
-    font-size: 18px;
-    margin: 20px;
+  /* Center the loader */
+  #loader {
+    position: sticky;
+    left: 50%;
+    top: 50%;
+    z-index: 1;
+    width: 120px;
+    height: 120px;
+    margin: -76px 0 0 -76px;
+    border: 16px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 16px solid #3498db;
+    -webkit-animation: spin 2s linear infinite;
+    animation: spin 2s linear infinite;
   }
   
-  .spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1);
-    border-left-color: #000;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    display: inline-block;
-    margin-top: 20px;
+  @-webkit-keyframes spin {
+    0% { -webkit-transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); }
   }
   
   @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Add animation to "page content" */
+  .animate-bottom {
+    position: relative;
+    -webkit-animation-name: animatebottom;
+    -webkit-animation-duration: 1s;
+    animation-name: animatebottom;
+    animation-duration: 1s;
+  }
+  
+  @-webkit-keyframes animatebottom {
+    from { bottom:-100px; opacity:0 } 
+    to { bottom:0px; opacity:1 }
+  }
+  
+  @keyframes animatebottom { 
+    from { bottom:-100px; opacity:0 } 
+    to { bottom:0px; opacity:1 }
+  }
+  
+  #myDiv {
+    display: none;
+    text-align: center;
+    /* Border properties */
+    border: 2px solid black; /* Width, style, and color of the border */
+    padding: 10px;           /* Space inside the border */
+    margin: 10px;            /* Space outside the border */
+    border-radius: 8px;      /* Optional: Rounded corners */
   }

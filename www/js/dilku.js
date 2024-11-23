@@ -1,8 +1,10 @@
 
 async function fetchData() {
-    const quoteContainer = document.getElementById('quoteContainer');
-    quoteContainer.innerHTML = '<div class="spinner"></div>';
+    document.getElementById("loader").style.display = "block";
 
+    // Hide the content
+    document.getElementById("myDiv").style.display = "none";
+    //await delay(2000)
     try {
         // Replace with your API endpoint
         const response = await fetch('https://catfact.ninja/fact');
@@ -16,7 +18,12 @@ async function fetchData() {
         const data = await response.json();
 
         // Update the content of the HTML element with the API data
-        document.getElementById('output').innerText = data.fact; // Adjust based on your API response structure
+        // Hide the loader
+        document.getElementById("loader").style.display = "none";
+        // Update the content dynamically
+        document.getElementById("myDiv").innerHTML = data.fact
+        document.getElementById("myDiv").style.display = "block";
+        //quoteContainer.innerHTML = data.fact; // Adjust based on your API response structure
     } catch (error) {
         console.error('There was a problem with the fetch operation:', error);
         document.getElementById('output').innerText = 'Failed to load data';
@@ -40,8 +47,8 @@ async function fetchQuote() {
   if (formData.checkValidity() && validateDOB()) {
     quoteContainer.innerHTML = '<div class="spinner"></div>';
     try {
-        //const response = await fetch("https://fintelle.wn.r.appspot.com/gen_share_portfolio", {
-        const response = await fetch("http://localhost:8080/gen_share_portfolio", {
+        const response = await fetch("https://fintelle.wn.r.appspot.com/gen_share_portfolio", {
+        //const response = await fetch("http://localhost:8080/gen_share_portfolio", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
