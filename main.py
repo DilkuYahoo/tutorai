@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 import mylib
 import json
 from flask_cors import CORS
-import hashlib
+#import hashlib
 
 app = Flask(__name__)
 CORS(app)

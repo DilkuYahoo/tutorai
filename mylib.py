@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from openai import OpenAI
 from dotenv import load_dotenv
-from newsapi import NewsApiClient
+from newsapi.newsapi_client import NewsApiClient
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
