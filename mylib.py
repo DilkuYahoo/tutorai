@@ -49,10 +49,6 @@ def financialAdvisor(customer_details):
     #sheet.append_row([customer_details{"full"}, email, message])
     return analysis
 
-
-
-
-
 def analyze_stock_sentiment(headlines):
     combined_news = " ".join(headlines)
     my_message = [] 
@@ -67,9 +63,9 @@ def analyze_stock_sentiment(headlines):
     return analysis
 
 
-def fetch_stock_data(ticker):
+def fetch_stock_data(ticker,period):
     stock = yf.Ticker(ticker)
-    hist = stock.history(period="3mo", interval="1d")
+    hist = stock.history(period=period, interval="1d")
     return hist
 
 # Function to fetch news headlines for a stock

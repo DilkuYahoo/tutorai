@@ -23,6 +23,38 @@ student = {
     "difficulty": "4"
 }
 
+@app.route('/sentiment_tracker', methods=['POST'])
+def sentiment_tracker():
+    # Validate JSON input
+    try:
+        data = request.get_json(force=True)  # Force parsing as JSON
+    except:
+        return jsonify({"error": "Invalid input: JSON data expected"}), 400
+
+    # Extract and validate required fields
+    ticker = data.get('TickerSymbol', '').rstrip()
+    exchange = data.get('exchangeName', '').rstrip()
+    period = data.get('period', '').rstrip()
+
+    if not ticker or not exchange:
+        return jsonify({"error": "Missing required fields: TickerSymbol or exchangeName"}), 400
+
+
+    # Prepare full ticker symbol
+    full_ticker = f"{ticker}{exchange}"
+
+    try:
+        # Fetch stock data
+        headlines = mylib.fetch_news_headlines(full_ticker)
+        # Convert DataFrame to JSON serializable format
+        #stock_data_json = stock_data.to_dict(orient='records')  # List of dictionaries
+        # Fetch stock data
+        output = mylib.analyze_stock_sentiment(headlines)
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch stock data: {str(e)}"}), 500
+
+    # Return stock data
+    return jsonify({"result": output})
 
 
 @app.route('/gen_share_portfolio', methods=['POST'])
@@ -80,28 +112,39 @@ def home():
 def ticker_tracker():
     return render_template('ticker_tracker.html')
 
-@app.route('/ticker_analysis', methods=['GET','POST'])
+@app.route('/ticker_analysis', methods=['POST'])
 def ticker_analysis():
-    #session.clear()
-    #ticker = 'RRL.AX'
-    ticker = request.form['ticker'].rstrip()
-    exchange = request.form['exchange'].rstrip()
-    analyse = request.form['analyse'].rstrip()
-    ticker = f"{ticker}{exchange}"
-    output = ""
-    stock_data = mylib.fetch_stock_data(ticker=ticker)
-    headlines = mylib.fetch_news_headlines(ticker)
-    # Fetch stock data
-    if not stock_data.empty:
-        if analyse == 'sentiment':
-            output = mylib.analyze_stock_sentiment(headlines)
-        else:
-            output = mylib.analyze_data(stock_data=stock_data)
-        #message = mylib.analyze_data(stock_data=stock_data)
-        #headlines = mylib.fetch_news_headlines(ticker)
-        #sentiment_score = mylib.analyze_stock_sentiment(headlines)
-        #message = f"{message} <br> <br> {sentiment_score}"
-    return render_template('ticker_analysis.html',message=output)
+    # Validate JSON input
+    try:
+        data = request.get_json(force=True)  # Force parsing as JSON
+    except:
+        return jsonify({"error": "Invalid input: JSON data expected"}), 400
+
+    # Extract and validate required fields
+    ticker = data.get('TickerSymbol', '').rstrip()
+    exchange = data.get('exchangeName', '').rstrip()
+    period = data.get('period', '').rstrip()
+
+    if not ticker or not exchange:
+        return jsonify({"error": "Missing required fields: TickerSymbol or exchangeName"}), 400
+
+    # Prepare full ticker symbol
+    full_ticker = f"{ticker}{exchange}"
+
+    try:
+        # Fetch stock data
+        stock_data = mylib.fetch_stock_data(ticker=full_ticker,period=period)
+        
+        # Convert DataFrame to JSON serializable format
+        stock_data_json = stock_data.to_dict(orient='records')  # List of dictionaries
+        # Fetch stock data
+        output = mylib.analyze_data(stock_data=stock_data)
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch stock data: {str(e)}"}), 500
+
+    # Return stock data
+    return jsonify({"result": output})
+
 
 @app.route('/login')
 def login():
