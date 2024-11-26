@@ -14,6 +14,12 @@
 
 runtime: python312
 
+instance_class: B4  # Set the instance class to B2 (1 vCPU, 1.2 GB memory)
+
+basic_scaling:
+  max_instances: 5
+  idle_timeout: 10m  # Time to keep idle instances before shutting down
+
 handlers:
   # This configures Google App Engine to serve the files in the app's static
   # directory.
