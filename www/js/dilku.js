@@ -10,8 +10,8 @@ async function fetchSentiment() {
     if (formData.checkValidity()) {
       document.getElementById("loader").style.display = "block";
       try {
-          const response = await fetch("http://localhost:8080/sentiment_tracker", {
-          //const response = await fetch("https://fintelle.wn.r.appspot.com/gen_share_portfolio", {
+          //const response = await fetch("http://localhost:8080/sentiment_tracker", {
+          const response = await fetch("https://fintelle.wn.r.appspot.com/sentiment_tracker", {
               method: "POST",
               headers: {
                   "Content-Type": "application/json"
@@ -46,8 +46,8 @@ async function fetchTicker() {
   if (formData.checkValidity()) {
     document.getElementById("loader").style.display = "block";
     try {
-        const response = await fetch("http://localhost:8080/ticker_analysis", {
-        //const response = await fetch("https://fintelle.wn.r.appspot.com/gen_share_portfolio", {
+        //const response = await fetch("http://localhost:8080/ticker_analysis", {
+        const response = await fetch("https://fintelle.wn.r.appspot.com/ticker_analysis", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
