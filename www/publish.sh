@@ -1,11 +1,13 @@
 #!/bin/bash
 
 # Variables
-BUCKET_NAME=$1
+BUCKET_NAME="www.advicegenie.com.au"
 REGION="ap-southeast-2" # Replace with your preferred AWS region
 INDEX_FILE="index.html"
 ERROR_FILE="index.html" # Set to a proper error file if needed
 FOLDER_PATH="./" # Path to your website files (use . if files are in the current directory)
+YOUR_DISTRIBUTION_ID="E1C5YSQD0KFMCM"
+
 
 # Check if AWS CLI is installed
 if ! [ -x "$(command -v aws)" ]; then
@@ -42,3 +44,5 @@ fi
 # Output the website URL
 echo "Website deployed successfully!"
 echo "You can access the website at: http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+
+aws cloudfront create-invalidation --distribution-id $YOUR_DISTRIBUTION_ID --paths "/index.html" "/*"
