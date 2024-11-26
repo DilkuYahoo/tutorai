@@ -91,8 +91,8 @@ async function fetchQuote() {
     if (formData.checkValidity() && validateDOB()) {
       document.getElementById("loader").style.display = "block";
       try {
-          //const response = await fetch("https://fintelle.wn.r.appspot.com/gen_share_portfolio", {
-          const response = await fetch("http://localhost:8080/gen_share_portfolio", {
+          const response = await fetch("https://fintelle.wn.r.appspot.com/gen_share_portfolio", {
+          //const response = await fetch("http://localhost:8080/gen_share_portfolio", {
               method: "POST",
               headers: {
                   "Content-Type": "application/json"
