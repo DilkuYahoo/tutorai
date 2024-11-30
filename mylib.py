@@ -83,19 +83,106 @@ def fetch_news_headlines(stock):
     return headlines
 
 
+import logging
+
+# Configure logging
+logging.basicConfig(
+    filename='analyze_data.log',
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
 def analyze_data(stock_data):
-    # Convert the DataFrame to a dictionary for easier processing in the prompt
-    stock_data_dict = stock_data.to_dict(orient='records')
-    my_message = [] 
-    # Create the analysis prompt
-    prompt = f"Analyze the following stock data: {stock_data_dict}. What are the key trends and potential future movements?"
-    system_content = "Share Market Analyst specialied is picking growth shares"
-    message = msgAppend(message=my_message, role='system',content=system_content    ) 
-    message = msgAppend(message= message, role='user',content=prompt)
-    analysis = mylib.request2ai(message=message)
-    analysis = mylib.chatcompletion2message(response=analysis)
-    analysis = mylib.strings2html(analysis)
-    return analysis
+    """
+    Analyzes the given stock data and provides insights into key trends and potential future movements.
+
+    Parameters:
+    stock_data (DataFrame): A pandas DataFrame containing stock data.
+
+    Returns:
+    str: The analysis of the stock data in HTML format, or an error message if the process fails.
+    """
+    logging.info("Function analyze_data called.")
+
+    try:
+        # Step 1: Validate input
+        if stock_data is None or stock_data.empty:
+            logging.error("Input stock_data is None or empty.")
+            raise ValueError("The stock_data parameter is either None or empty. Please provide valid data.")
+        logging.debug("Input stock_data validated successfully.")
+
+        # Step 2: Convert the stock data DataFrame into a dictionary format for easier processing.
+        try:
+            stock_data_dict = stock_data.to_dict(orient='records')
+            logging.debug("Converted stock_data to dictionary format.")
+        except AttributeError as e:
+            logging.error("The stock_data parameter must be a pandas DataFrame.")
+            raise TypeError("The stock_data parameter must be a pandas DataFrame.") from e
+
+        # Step 3: Initialize an empty message list to construct the conversation for the AI.
+        my_message = []
+
+        # Step 4: Define the analysis prompt that will be sent to the AI system.
+        prompt = f"Analyze the following stock data: {stock_data_dict}. What are the key trends and potential future movements?"
+        logging.debug("Analysis prompt created.")
+
+        # Step 5: Define the system's role for this interaction.
+        system_content = "Share Market Analyst specialized in picking growth shares"
+        logging.debug("System content defined.")
+
+        # Step 6: Append the system role and content to the message list.
+        try:
+            message = msgAppend(message=my_message, role='system', content=system_content)
+            message = msgAppend(message=message, role='user', content=prompt)
+            logging.debug("Message constructed successfully.")
+        except Exception as e:
+            logging.error("Failed to construct the message for the AI.")
+            raise RuntimeError("Failed to construct the message for the AI.") from e
+
+        # Step 7: Send the constructed message to the AI system and get the response.
+        try:
+            analysis = mylib.request2ai(message=message)
+            logging.debug("Received response from AI system.")
+        except Exception as e:
+            logging.error("Failed to communicate with the AI system.")
+            raise ConnectionError("Failed to communicate with the AI system.") from e
+
+        # Step 8: Extract the analysis from the AI response.
+        try:
+            analysis = mylib.chatcompletion2message(response=analysis)
+            logging.debug("Processed the AI response successfully.")
+        except Exception as e:
+            logging.error("Failed to process the AI response.")
+            raise ValueError("Failed to process the AI response.") from e
+
+        # Step 9: Convert the analysis text into HTML format for better presentation.
+        try:
+            analysis = mylib.strings2html(analysis)
+            logging.debug("Converted analysis to HTML format.")
+        except Exception as e:
+            logging.error("Failed to convert the analysis to HTML format.")
+            raise ValueError("Failed to convert the analysis to HTML format.") from e
+
+        # Step 10: Return the formatted analysis.
+        logging.info("Function analyze_data completed successfully.")
+        return analysis
+
+    except ValueError as ve:
+        logging.exception(f"ValueError: {ve}")
+        return f"ValueError: {ve}"
+    except TypeError as te:
+        logging.exception(f"TypeError: {te}")
+        return f"TypeError: {te}"
+    except ConnectionError as ce:
+        logging.exception(f"ConnectionError: {ce}")
+        return f"ConnectionError: {ce}"
+    except RuntimeError as re:
+        logging.exception(f"RuntimeError: {re}")
+        return f"RuntimeError: {re}"
+    except Exception as e:
+        logging.exception(f"An unexpected error occurred: {e}")
+        return f"An unexpected error occurred: {e}"
+
 
 
 def msgAppend(message,role,content):
