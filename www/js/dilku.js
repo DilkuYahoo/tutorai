@@ -1,159 +1,229 @@
-async function fetchSentiment() {
-    const formData = document.getElementById("soa");
-      // Hide the content
-      document.getElementById("myDiv").style.display = "none";
-      const Data_input = {
-          TickerSymbol : document.getElementById("TickerSymbol").value,
-          exchangeName : document.getElementById("exchangeName").value
-      };
-      console.log(Data_input)
-    if (formData.checkValidity()) {
-      document.getElementById("loader").style.display = "block";
-      try {
-          //const response = await fetch("http://localhost:8080/sentiment_tracker", {
-          const response = await fetch("https://fintelle.wn.r.appspot.com/sentiment_tracker", {
-              method: "POST",
-              headers: {
-                  "Content-Type": "application/json"
-              },
-              body: JSON.stringify(Data_input)
-          });
-          // Parse the JSON data
-          const data = await response.json();
-          document.getElementById("loader").style.display = "none";
-          // Update the content dynamically
-          document.getElementById("myDiv").innerHTML = `${data.result}`;
-          document.getElementById("myDiv").style.display = "block";
-          //quoteContainer.innerHTML = data.fact; // Adjust based on your API response structure
-        } catch (error) {
-          document.getElementById("myDiv").innerHTML = '<p>Failed to load quote. Please try again.</p>';
-        }
-    } else {
-      formData.reportValidity();
-    }
-  }
+// Base URL and endpoint
+const baseUrl = "http://localhost:8080";
+const leadUpdate = "/update_leads";
+const submitApiUrl = `${baseUrl}${leadUpdate}`;
+  
 
-async function fetchTicker() {
-  const formData = document.getElementById("soa");
-    // Hide the content
-    document.getElementById("myDiv").style.display = "none";
-    const Data_input = {
-        TickerSymbol : document.getElementById("TickerSymbol").value,
-        exchangeName : document.getElementById("exchangeName").value,
-        period : document.getElementById("period").value
-    };
-    console.log(Data_input)
-  if (formData.checkValidity()) {
-    document.getElementById("loader").style.display = "block";
+async function fetchSentiment() {
+  const form = document.getElementById("soa");
+  const loader = document.getElementById("loader");
+  const resultDiv = document.getElementById("myDiv");
+
+  // Endpoint configurations
+  //const baseUrl = "https://fintelle.wn.r.appspot.com";
+  
+  const sentimentEndpoint = "/sentiment_tracker";
+  
+  const sentimentApiUrl = `${baseUrl}${sentimentEndpoint}`;
+
+  // Hide the content initially
+  resultDiv.style.display = "none";
+
+  // Prepare input data
+  const dataInput = {
+    TickerSymbol: document.getElementById("TickerSymbol").value,
+    exchangeName: document.getElementById("exchangeName").value
+  };
+
+  const contact = {
+    name : document.getElementById("fullName").value,
+    email : document.getElementById("email").value,
+    message : document.getElementById("TickerSymbol").value
+  };
+
+  console.log(dataInput);
+
+  // Validate form input
+  if (form.checkValidity()) {
+    // Show the loader
+    loader.style.display = "block";
+
+    // Call the /update_lead endpoint without waiting for the response
+    fetch(submitApiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(contact)
+    }).catch(error => {
+      // Handle errors (optional)
+      console.error("Error submitting data:", error);
+    });
+
+    // Call the /sentiment_tracker endpoint and wait for the response
     try {
-        //const response = await fetch("http://localhost:8080/ticker_analysis", {
-        const response = await fetch("https://fintelle.wn.r.appspot.com/ticker_analysis", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(Data_input)
-        });
-        // Parse the JSON data
-        const data = await response.json();
-        document.getElementById("loader").style.display = "none";
-        // Update the content dynamically
-        document.getElementById("myDiv").innerHTML = `${data.result}`;
-        document.getElementById("myDiv").style.display = "block";
-        //quoteContainer.innerHTML = data.fact; // Adjust based on your API response structure
-      } catch (error) {
-        document.getElementById("myDiv").innerHTML = '<p>Failed to load quote. Please try again.</p>';
-      }
+      const response = await fetch(sentimentApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataInput)
+      });
+
+      // Parse the JSON response
+      const data = await response.json();
+
+      // Hide the loader and update the content
+      loader.style.display = "none";
+      resultDiv.innerHTML = data.result || "<p>No result available.</p>";
+      resultDiv.style.display = "block";
+    } catch (error) {
+      // Handle errors from the sentiment API
+      loader.style.display = "none";
+      resultDiv.innerHTML = "<p>Failed to load sentiment data. Please try again later.</p>";
+      resultDiv.style.display = "block";
+      console.error("Error fetching sentiment data:", error);
+    }
   } else {
-    formData.reportValidity();
+    // Highlight invalid form fields
+    form.reportValidity();
   }
 }
 
+  async function fetchTicker() {
+    const form = document.getElementById("soa");
+    const loader = document.getElementById("loader");
+    const resultDiv = document.getElementById("myDiv");
 
-async function fetchQuote() {
+    const tickerAnalysisEndpoint = "/ticker_analysis";
+
+  
+    // Complete API URL
+    const apiUrl = `${baseUrl}${tickerAnalysisEndpoint}`;
+  
+    // Hide the content initially
+    resultDiv.style.display = "none";
+  
+    // Prepare the input data
+    const dataInput = {
+      TickerSymbol: document.getElementById("TickerSymbol").value,
+      exchangeName: document.getElementById("exchangeName").value,
+      period: document.getElementById("period").value
+    };
+
+    const contact = {
+      name : document.getElementById("fullName").value,
+      email : document.getElementById("email").value,
+      message : document.getElementById("TickerSymbol").value
+    };
+
+    console.log(dataInput);
+  
+    if (form.checkValidity()) {
+      // Show the loader
+      loader.style.display = "block";
+  
+      // Call the /update_lead endpoint without waiting for the response
+      fetch(submitApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(contact)
+      }).catch(error => {
+        // Handle errors (optional)
+        console.error("Error submitting data:", error);
+      });
+
+      try {
+        // Send a POST request
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(dataInput)
+        });
+  
+        // Parse the JSON response
+        const data = await response.json();
+  
+        // Hide the loader
+        loader.style.display = "none";
+  
+        // Update the content dynamically
+        resultDiv.innerHTML = data.result || "<p>No result available.</p>";
+        resultDiv.style.display = "block";
+      } catch (error) {
+        // Handle errors
+        loader.style.display = "none";
+        resultDiv.innerHTML = "<p>Failed to load data. Please try again later.</p>";
+        resultDiv.style.display = "block";
+        console.error("Error fetching ticker data:", error);
+      }
+    } else {
+      // Highlight invalid form fields
+      form.reportValidity();
+    }
+  }
+  
+  
+  async function fetchQuote() {
     const formData = document.getElementById("soa");
-    
+    const loader = document.getElementById("loader");
+    const resultDiv = document.getElementById("myDiv");
   
-      // Hide the content
-      document.getElementById("myDiv").style.display = "none";
-  
-    const Data_input = {
-      fullName: document.getElementById("fullName").value,
+    // Prepare input data from form fields
+    const dataInput = {
+      //fullName: document.getElementById("fullName").value,
       dob: document.getElementById("dob").value,
-      email: document.getElementById("email").value,
-      phone: document.getElementById("phone").value,
+      //email: document.getElementById("email").value,
+      //phone: document.getElementById("phone").value,
       investmentObjective: document.getElementById("investmentObjective").value,
       investmentHorizon: document.getElementById("investmentHorizon").value,
       investmentAmount: document.getElementById("investmentAmount").value,
       riskTolerance: document.getElementById("riskTolerance").value
-  };
+    };
+    const contact = {
+      name : document.getElementById("fullName").value,
+      email : document.getElementById("email").value,
+      message : document.getElementById("phone").value
+    };
+
+    // Hide the result div initially
+    resultDiv.style.display = "none";
+    const shareportfolioEndpoint = "/gen_share_portfolio";
   
+    const portfolioApiUrl = `${baseUrl}${shareportfolioEndpoint}`;
+
+    // Validate form and date of birth
     if (formData.checkValidity() && validateDOB()) {
-      document.getElementById("loader").style.display = "block";
+      // Show the loader
+      loader.style.display = "block";
+      // Call the /update_lead endpoint without waiting for the response
+      fetch(submitApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(contact)
+      }).catch(error => {
+        // Handle errors (optional)
+        console.error("Error submitting data:", error);
+      });
+  
       try {
-          const response = await fetch("https://fintelle.wn.r.appspot.com/gen_share_portfolio", {
-          //const response = await fetch("http://localhost:8080/gen_share_portfolio", {
-              method: "POST",
-              headers: {
-                  "Content-Type": "application/json"
-              },
-              body: JSON.stringify(Data_input)
-          });
-          
-          // Parse the JSON data
-          const data = await response.json();
+        // Send the POST request to the API endpoint
+        const response = await fetch(portfolioApiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dataInput)
+        });
   
-          // Update the content of the HTML element with the API data
-          // Hide the loader
-          document.getElementById("loader").style.display = "none";
-          // Update the content dynamically
-          document.getElementById("myDiv").innerHTML = `${data.result}`;
-          document.getElementById("myDiv").style.display = "block";
-          //quoteContainer.innerHTML = data.fact; // Adjust based on your API response structure
+        // Parse the JSON response
+        const data = await response.json();
   
-        } catch (error) {
-          quoteContainer.innerHTML = '<p>Failed to load quote. Please try again.</p>';
-        }
+        // Hide the loader after response
+        loader.style.display = "none";
+  
+        // Update the content with the API data
+        resultDiv.innerHTML = data.result || "<p>No result available.</p>";
+        resultDiv.style.display = "block";
+      } catch (error) {
+        // Hide the loader and display error message if fetch fails
+        loader.style.display = "none";
+        resultDiv.innerHTML = "<p>Failed to load quote. Please try again.</p>";
+        resultDiv.style.display = "block";
+        console.error("Error fetching quote:", error);
+      }
     } else {
+      // If form is invalid, show form validation message
       formData.reportValidity();
     }
   }
   
-
-async function submitData() {
-
-    const quoteContainer = document.getElementById('quoteContainer');
-    quoteContainer.innerHTML = '<div class="spinner"></div>';
-    
-    const formData = {
-        fullName: document.getElementById("fullName").value,
-        dob: document.getElementById("dob").value,
-        email: document.getElementById("email").value,
-        phone: document.getElementById("phone").value,
-        investmentObjective: document.getElementById("investmentObjective").value,
-        investmentHorizon: document.getElementById("investmentHorizon").value,
-        investmentAmount: document.getElementById("investmentAmount").value,
-        riskTolerance: document.getElementById("riskTolerance").value
-    };
-
-        try {
-            const response = await fetch("https://fintelle.wn.r.appspot.com/gen_share_portfolio", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(formData)
-            });
-            
-            const data = await response.json();
-            quoteContainer.innerHTML = `${data.result}`;
-            
-        } catch (error) {
-            console.error("Error:", error);
-            quoteContainer.innerHTML = '<p>Failed to load quote. Please try again.</p>';
-        }
-    }
-
     function validateDOB() {
         const dobInput = document.getElementById("dob").value;
         const dobError = document.getElementById("dobError");
@@ -173,7 +243,7 @@ async function submitData() {
         const actualAge = monthDifference < 0 || (monthDifference === 0 && dayDifference < 0) ? age - 1 : age;
 
         // Check if age is within the specified range
-        if (actualAge < 15 || actualAge > 65) {
+        if (actualAge < 15 || actualAge > 80) {
             dobError.style.display = "block";  // Show error message
             return false;  // Prevent form submission
         }

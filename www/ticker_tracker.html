@@ -27,13 +27,12 @@
             <div class="form-group mt-3">
                 
                 <label for="TickerSymbol">Ticker Symbol:</label>
-                <input type="text" id="TickerSymbol" name="TickerSymbol" class="form-control" placeholder="CBA,ANZ" required>
+                <input type="text" id="TickerSymbol" name="TickerSymbol" class="form-control" placeholder="e.g. CBA,ANZ,NAB" required>
             </div>
             <div class="form-group">
                 <label for="exchangeName">Exchange:</label>
                 <select id="exchangeName" name="exchangeName" class="form-control" required>
-                    <option value="">Select...</option>
-                    <option value=".ax">Australian Stock Exchange (ASX)</option>
+                    <option value=".ax" selected>Australian Stock Exchange (ASX)</option>
                     <option value="">Nasdaq Stock Exchange</option>
                     <option value=".ftse">London Stock Exchange</option>
                 </select>
@@ -41,13 +40,16 @@
             <div class="form-group"></div>
                 <label for="period">Time Period:</label>
                 <select id="period" name="period" class="form-control" required>
-                    <option value="">Select...</option>
                     <option value="1d">1 Day</option>
                     <option value="5d">5 Day</option>
                     <option value="1mo">1 Month</option>
-                    <option value="3mo">3 Months</option>
+                    <option value="3mo" selected>3 Months</option>
                     <option value="6mo">6 Months</option>    
                 </select>
+            </div>
+            <div class="form-group">
+                <label for="fullName">Full Name:</label>
+                <input type="text" id="fullName" name="fullName" class="form-control" placeholder="Enter Full Name" required>
             </div>
             <div class="form-group">
                 <label for="email">Email Address:</label>
@@ -83,9 +85,6 @@
                 <div style="display:none;" id="myDiv" class="animate-bottom"></div>
             </div>
         </form>
-        
-        
-
         <footer style="text-align: center;">
             <p>&copy; 2024 AdviceGenie. All rights reserved. | <a href="../index.html">Home </a> </p>
         </footer>

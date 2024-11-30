@@ -52,8 +52,8 @@ def ger_share_portfolio():
     combined_data = mylib.financialAdvisor(input_data)
     return jsonify({"result": combined_data})
 
-@app.route('/api/submit', methods=['POST'])
-def submit_form():
+@app.route('/update_leads', methods=['POST'])
+def update_leads():
     # Validate JSON input
     if not request.is_json:
         return jsonify({"error": "Invalid input: JSON data expected"}), 400
