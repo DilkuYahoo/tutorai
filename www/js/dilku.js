@@ -1,6 +1,6 @@
 // Base URL and endpoint
-//const baseUrl = "https://fintelle.wn.r.appspot.com";
-const baseUrl = "http://localhost:8080";
+const baseUrl = "https://fintelle.wn.r.appspot.com";
+//const baseUrl = "http://localhost:8080";
 const leadUpdate = "/update_leads";
 const submitApiUrl = `${baseUrl}${leadUpdate}`;
   
