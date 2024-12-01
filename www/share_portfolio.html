@@ -15,15 +15,13 @@
         <link rel="stylesheet" href="css/dilku.css">
 
          <title>Investment Portfolio Builder</title>
-        
         </head>
         <body class="p-3 m-0 border-0 bd-example">
             <div class="card text-center">
-        <div class="card text-center" class="form-group">
-            <h1 style="text-align: center;">Share Portfolio Questionnaire</h1>
-            <p></p>
-        </div>
-        <form id="soa" class="mx-auto col-9 mt-4">
+                <h1>Share Portfolio Questionnaire</h1>
+                <p>Please fill out the form below to help us analyze your preferences.</p>
+            </div>
+            <form id="soa" class="mx-auto col-9 mt-4">
             <!-- Personal Information -->
              
             <h3>Personal Information</h3>
@@ -173,12 +171,10 @@
         By proceeding, you acknowledge and agree to the terms and conditions of the platform.
     </p>
 </div>
-          <!-- Submit Button -->
-            <div class="form-group">
-                <button type="button" class="form-control" onclick="fetchQuote()">Ask Genie</button>
-            </div>
-
-           
+         <!-- Submit Button -->
+        <div class="form-group mt-4">
+            <button type="button" class="btn btn-primary w-100" onclick="fetchQuote()">Ask Genie</button>
+        </div> 
         </form>
         <!-- Loader -->
         <div class="card-body" id="loader" style="display:none;"></div>

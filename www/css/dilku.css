@@ -76,7 +76,7 @@
   padding: 15px;           /* Inner spacing */
   margin: 10px;            /* Outer spacing */
   border-radius: 8px;      /* Rounded corners for aesthetic appeal */
-
+  background-color: #f8f9fa; /* Light gray background */
   /* Optional: Animation integration */
   position: relative;      /* Allows animation using "bottom" property */
   animation: animateBottom 0.5s ease-in-out; /* Apply animation */
