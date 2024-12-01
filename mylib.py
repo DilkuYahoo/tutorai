@@ -87,7 +87,7 @@ import logging
 
 # Configure logging
 logging.basicConfig(
-    filename='analyze_data.log',
+    filename='advicegenie.log',
     level=logging.ERROR,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )

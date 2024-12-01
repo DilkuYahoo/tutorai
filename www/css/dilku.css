@@ -1,4 +1,12 @@
 /* dilku.css */
+#soa {
+  width: 80%; /* Adjust width */
+  background-color: #f8f9fa; /* Light gray background */
+  color: #333333; /* Dark text color */
+  border: 2px solid hsl(210, 60%, 2%); /* Optional: Blue border */
+  padding: 20px; /* Add padding for spacing */
+  border-radius: 8px; /* Optional: Rounded corners */
+}
 
   /* Center the loader */
   #loader {
@@ -35,22 +43,42 @@
     animation-duration: 1s;
   }
   
-  @-webkit-keyframes animatebottom {
-    from { bottom:-100px; opacity:0 } 
-    to { bottom:0px; opacity:1 }
+  /* Animation for moving an element from bottom to top with fading in */
+@-webkit-keyframes animateBottom {
+  from { 
+      bottom: -100px; 
+      opacity: 0; 
+  } 
+  to { 
+      bottom: 0; 
+      opacity: 1; 
   }
+}
+
+@keyframes animateBottom { 
+  from { 
+      bottom: -100px; 
+      opacity: 0; 
+  } 
+  to { 
+      bottom: 0; 
+      opacity: 1; 
+  }
+}
+
+/* Styling for the div element */
+#myDiv {
+  display: none;           /* Hidden by default */
+/*  text-align: center;      /* Centered text */
   
-  @keyframes animatebottom { 
-    from { bottom:-100px; opacity:0 } 
-    to { bottom:0px; opacity:1 }
-  }
-  
-  #myDiv {
-    display: none;
-    text-align: center;
-    /* Border properties */
-    border: 2px solid black; /* Width, style, and color of the border */
-    padding: 10px;           /* Space inside the border */
-    margin: 10px;            /* Space outside the border */
-    border-radius: 8px;      /* Optional: Rounded corners */
-  }
+  /* Border styling */
+  border: 2px solid black; /* Border width, style, and color */
+  padding: 15px;           /* Inner spacing */
+  margin: 10px;            /* Outer spacing */
+  border-radius: 8px;      /* Rounded corners for aesthetic appeal */
+
+  /* Optional: Animation integration */
+  position: relative;      /* Allows animation using "bottom" property */
+  animation: animateBottom 0.5s ease-in-out; /* Apply animation */
+  -webkit-animation: animateBottom 0.5s ease-in-out; /* For WebKit browsers */
+}
