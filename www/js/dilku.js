@@ -167,7 +167,21 @@ async function fetchSentiment() {
       investmentObjective: document.getElementById("investmentObjective").value,
       investmentHorizon: document.getElementById("investmentHorizon").value,
       investmentAmount: document.getElementById("investmentAmount").value,
-      riskTolerance: document.getElementById("riskTolerance").value
+      riskTolerance: document.getElementById("riskTolerance").value,
+      //Investment Options
+      investInEquities: document.getElementById("Equities").checked,
+      investInBonds: document.getElementById("Bonds").checked,
+      investInMutualFunds: document.getElementById("MutualFunds").checked,
+      investInEFTs: document.getElementById("EFTs").checked,
+      investInCryptocurrencies: document.getElementById("Cryptocurrencies").checked,
+      investInESGFunds: document.getElementById("ESGFunds").checked,
+      //Market Options 
+      marketASX: document.getElementById("ASX").checked,
+      marketNYSE: document.getElementById("NYSE").checked,
+      marketNASDAQ: document.getElementById("NASDAQ").checked,
+      marketLSE: document.getElementById("LSE").checked
+
+
     };
     const contact = {
       name : document.getElementById("fullName").value,
@@ -201,8 +215,9 @@ async function fetchSentiment() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(dataInput)
+          
         });
-  
+        console.log(dataInput)
         // Parse the JSON response
         const data = await response.json();
   
