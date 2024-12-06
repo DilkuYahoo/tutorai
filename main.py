@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 import mylib
 import json
 from flask_cors import CORS
+
+
 #import hashlib
 
 app = Flask(__name__)
@@ -12,38 +14,41 @@ init = 'yes'
 message_json = [] 
 
 
+
+
 @app.route('/sentiment_tracker', methods=['POST'])
 def sentiment_tracker():
-    # Validate JSON input
+    """
+    Endpoint to track sentiment based on stock ticker symbol and exchange name.
+    """
+    # Validate and parse JSON input
     try:
-        data = request.get_json(force=True)  # Force parsing as JSON
-    except:
+        data = request.get_json(force=True)
+    except Exception:
         return jsonify({"error": "Invalid input: JSON data expected"}), 400
 
     # Extract and validate required fields
-    ticker = data.get('TickerSymbol', '').rstrip()
-    exchange = data.get('exchangeName', '').rstrip()
-    period = data.get('period', '').rstrip()
+    ticker = data.get('TickerSymbol', '').strip()
+    exchange = data.get('exchangeName', '').strip()
+    period = data.get('period', '').strip()  # Optional field; may remove if unused
 
     if not ticker or not exchange:
         return jsonify({"error": "Missing required fields: TickerSymbol or exchangeName"}), 400
 
-
-    # Prepare full ticker symbol
+    # Construct the full ticker symbol
     full_ticker = f"{ticker}{exchange}"
 
     try:
-        # Fetch stock data
+        # Fetch stock news headlines
         headlines = mylib.fetch_news_headlines(full_ticker)
-        # Convert DataFrame to JSON serializable format
-        #stock_data_json = stock_data.to_dict(orient='records')  # List of dictionaries
-        # Fetch stock data
+
+        # Analyze sentiment of the fetched headlines
         output = mylib.analyze_stock_sentiment(headlines)
     except Exception as e:
-        return jsonify({"error": f"Failed to fetch stock data: {str(e)}"}), 500
+        return jsonify({"error": f"Failed to process stock data: {str(e)}"}), 500
 
-    # Return stock data
-    return jsonify({"result": output})
+    # Return sentiment analysis result
+    return jsonify({"result": output}), 200
 
 
 @app.route('/gen_share_portfolio', methods=['POST'])
