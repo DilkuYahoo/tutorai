@@ -1,300 +1,128 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <link rel="icon" href="https://www.advicegenie.com.au/favicon.ico" type="image/x-icon">
-        <link rel="apple-touch-icon" href="https://www.advicegenie.com.au/apple-touch-icon.png">
+<html lang="en-AU">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Complete the investment questionnaire to tailor recommendations based on your goals, risk tolerance, and personal preferences.">
+    <meta name="keywords" content="Investment, Questionnaire, Risk Profile, Investment Goals, Financial Planning, Australia">
+    <meta name="author" content="AdviceGenie">
+    <meta name="language" content="en-AU">
+    <meta name="geo.region" content="AU">
+    <title>Investment Questionnaire</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/funnelforms.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="card shadow">
+            <div class="card-body">
+                <h1 class="mb-4 text-center">Investment Questionnaire</h1>
+                <form id="funnelForm">
+                    <!-- Step 1: Investment Goals -->
+                    <div class="form-step active" id="step-1">
+                        <h3>Investment Goals</h3>
+                        <p>Please select your investment objectives and horizon to tailor recommendations to your needs.</p>
 
-        <meta name="keywords" content="Free financial advice Australia, Free share portfolio generator, Investment advice platform Australia, Free stock portfolio builder, Australian financial planning platform">
-        <meta name="description" content="Discover expert free financial advice and investment tips to grow your wealth. Explore our strategies for portfolio management and stock market success.">    
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
-        <link href="https://getbootstrap.com/docs/5.2/assets/css/docs.css" rel="stylesheet"/>
-        <!-- Main CSS Files -->
-        <link rel="stylesheet" href="css/dilku.css">
+                        <div class="form-group mb-3">
+                            <label for="investmentObjective">Investment Objective:</label>
+                            <select id="investmentObjective" name="investmentObjective" class="form-control" required>
+                                <option value="">Select...</option>
+                                <option value="growth">Growth - Focus on increasing your investment value over time.</option>
+                                <option value="income">Income - Generate regular income, such as dividends or interest.</option>
+                                <option value="capitalPreservation">Capital Preservation - Protect the value of your initial investment.</option>
+                                <option value="balanced">Balanced - Combine growth and income strategies for a mix of returns.</option>
+                            </select>
+                        </div>
 
-         <title>Investment Portfolio Builder</title>
-        </head>
-        <body class="p-3 m-0 border-0 bd-example">
-            <div class="card text-center">
-                <h1>Let's Build Your Investment Future</h1>
-                <p>Please fill out the form below to help us analyse your preferences.</p>
+                        <div class="form-group mb-3">
+                            <label for="investmentHorizon">Investment Horizon:</label>
+                            <select id="investmentHorizon" name="investmentHorizon" class="form-control" required>
+                                <option value="">Select...</option>
+                                <option value="short">Short-term (1-3 years) - Suitable for goals requiring quick liquidity.</option>
+                                <option value="medium">Medium-term (3-7 years) - Ideal for intermediate financial objectives.</option>
+                                <option value="long">Long-term (7+ years) - Best for sustained growth and future goals.</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="investmentAmount">Investment Amount (AUD):</label>
+                            <input type="number" id="investmentAmount" name="investmentAmount" class="form-control" min="1000" max="100000000" value="10000" required>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="button" class="btn btn-primary" id="next-1">Next</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Risk Profile -->
+                    <div class="form-step d-none" id="step-2">
+                        <h3>Risk Profile</h3>
+                        <p>Select your risk tolerance to guide our investment recommendations.</p>
+
+                        <div class="form-group mb-3">
+                            <label for="riskTolerance">Risk Tolerance:</label>
+                            <select id="riskTolerance" name="riskTolerance" class="form-control" required>
+                                <option value="">Select...</option>
+                                <option value="low">Low - Prefer safer investments with minimal risk, even if returns are lower.</option>
+                                <option value="moderate">Moderate - Willing to accept some risk for slightly higher returns.</option>
+                                <option value="high">High - Open to considerable risk for higher potential returns.</option>
+                                <option value="veryHigh">Very High - Comfortable with high volatility to maximise growth opportunities.</option>
+                            </select>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-secondary" id="prev-2">Previous</button>
+                            <button type="button" class="btn btn-primary" id="next-2">Next</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Personal Information and Disclaimer -->
+                        <div class="form-step d-none" id="step-3">
+                            <h3>Personal Information and Disclaimer</h3>
+                            <p>Provide your personal information and agree to the terms before proceeding.</p>
+
+                            <div class="form-group mb-3">
+                                <label for="fullName">Full Name:</label>
+                                <input type="text" id="fullName" name="fullName" class="form-control" required>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label for="email">Email Address:</label>
+                                <input type="email" id="email" name="email" class="form-control" required>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label for="phone">Phone Number:</label>
+                                <input type="tel" id="phone" name="phone" class="form-control" placeholder="+61400000000" 
+                                    pattern="^\+61[0-9]{9}$" title="Enter a valid phone number, e.g., +61400000000" required>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input type="checkbox" id="acceptDisclaimer" name="acceptDisclaimer" class="form-check-input" required>
+                                <label for="acceptDisclaimer" class="form-check-label">
+                                    <p>
+                                        I acknowledge that AdviceGenie provides general information only and does not offer financial advice. 
+                                        I agree to seek guidance from a qualified adviser before making investment decisions.
+                                    </p>
+                                    <p>
+                                        By clicking this checkbox, I give my consent to share my contact details with a qualified AFSL holder 
+                                        to contact me and discuss my personal financial circumstances.
+                                    </p>
+                                </label>
+                            </div>
+
+                            
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-secondary" id="prev-4">Previous</button>
+                            <button type="submit" class="btn btn-success">Submit</button>
+                        </div>
+                    </div>
+                </form>
             </div>
-            <form id="soa" class="mx-auto col-9 mt-4">
-            <!-- Personal Information -->
-             
-            <h3>Personal Information</h3>
-
-        <div class="form-group mt-3">
-            <label for="fullName">Full Name:</label>
-            <input 
-                type="text" 
-                id="fullName" 
-                name="fullName" 
-                class="form-control" 
-                placeholder="Enter Full Name" 
-                required 
-                aria-label="Full Name">
         </div>
-
-        <div class="form-group">
-            <label for="dob">Date of Birth:</label>
-            <input 
-                type="date" 
-                id="dob" 
-                name="dob" 
-                class="form-control" 
-                placeholder="YYYY-MM-DD" 
-                required 
-                aria-label="Date of Birth">
-            <small 
-                id="dobError" 
-                class="text-danger" 
-                style="display: none;">
-                Age must be between 15 and 65 years.
-            </small>
-        </div>
-
-        <div class="form-group">
-            <label for="email">Email Address:</label>
-            <input 
-                type="email" 
-                id="email" 
-                name="email" 
-                class="form-control" 
-                placeholder="e.g., david.smit@citizen.com.au" 
-                required 
-                aria-label="Email Address">
-        </div>
-
-        <div class="form-group">
-            <label for="phone">Phone Number:</label>
-            <input 
-                type="tel" 
-                id="phone" 
-                name="phone" 
-                class="form-control" 
-                placeholder="+61400000000" 
-                required 
-                pattern="^\+61[0-9]{9}$" 
-                title="Please enter a valid phone number, e.g., +61400000000" 
-                aria-label="Phone Number">
-        </div>
-
-            <!-- Investment Goals -->
-<h3>Investment Goals</h3>
-
-<div class="form-group">
-    <label for="investmentObjective">Investment Objective:</label>
-    <select 
-        id="investmentObjective" 
-        name="investmentObjective" 
-        class="form-control" 
-        required 
-        aria-label="Investment Objective">
-        <option value="">Select...</option>
-        <option value="growth" selected>Growth</option>
-        <option value="income">Income</option>
-        <option value="capitalPreservation">Capital Preservation</option>
-        <option value="balanced">Balanced (Growth + Income)</option>
-    </select>
-</div>
-
-<div class="form-group">
-    <label for="investmentHorizon">Investment Horizon:</label>
-    <select 
-        id="investmentHorizon" 
-        name="investmentHorizon" 
-        class="form-control" 
-        required 
-        aria-label="Investment Horizon">
-        <option value="">Select...</option>
-        <option value="short">Short-term (1-3 years)</option>
-        <option value="medium" selected>Medium-term (3-7 years)</option>
-        <option value="long">Long-term (7+ years)</option>
-    </select>
-</div>
-
-<div class="form-group">
-    <label for="investmentAmount">Investment Amount (AUD):</label>
-    <input 
-        type="number" 
-        id="investmentAmount" 
-        name="investmentAmount" 
-        min="1000" 
-        max="100000000" 
-        value="10000" 
-        class="form-control" 
-        required 
-        aria-label="Investment Amount in AUD">
-</div>
-
-    
-  <!-- Risk Profile -->
-<h3>Risk Profile</h3>
-<div class="form-group">
-    <label for="riskTolerance">Risk Tolerance:</label>
-    <select 
-        id="riskTolerance" 
-        name="riskTolerance" 
-        class="form-control" 
-        required 
-        aria-label="Risk Tolerance">
-        <option value="">Select...</option>
-        <option value="low">Low</option>
-        <option value="moderate">Moderate</option>
-        <option value="high" selected>High</option>
-        <option value="veryHigh">Very High</option>
-    </select>
-</div>
-
-
-            <!-- Investment Options  -->
-            <h3>Investment Options</h3>
-            <div>
-                <input 
-                    type="checkbox" 
-                    name="Equities" 
-                    id="Equities" 
-                    checked>
-                <label for="Equities">
-                    Equities (Stocks)
-                </label>
-            </div>
-
-            <div>
-                <input 
-                    type="checkbox" 
-                    name="Bonds" 
-                    id="Bonds"
-                    checked>
-                <label for="Bonds">
-                    Fixed-Income Securities (Bonds)
-                </label>
-            </div>
-
-            <div>
-                <input 
-                    type="checkbox" 
-                    name="MutualFunds" 
-                    id="MutualFunds"
-                    checked>
-                <label for="MutualFunds">
-                    Mutual Funds
-                </label>
-            </div>
-
-            <div>
-                <input 
-                    type="checkbox" 
-                    name="ETFs" 
-                    id="EFTs"
-                    checked>
-                <label for="Exchange-Traded Funds (ETFs)">
-                    Exchange-Traded Funds (ETFs)
-                </label>
-            </div>
-            <div>
-                <input 
-                    type="checkbox" 
-                    name="Cryptocurrencies" 
-                    id="Cryptocurrencies"
-                    checked>
-                <label for="Cryptocurrencies">
-                    Cryptocurrencies
-                </label>
-            </div>
-            <div>
-                <input 
-                    type="checkbox" 
-                    name="ESGFunds" 
-                    id="ESGFunds"
-                    checked>
-                <label for="ESGFunds">
-                    Socially Responsible Investments (SRI) / ESG Funds
-                </label>
-            </div>
-
-<!-- Investment Markets  -->
-<h3>Investment Markets</h3>
-<div>
-    <input 
-        type="checkbox" 
-        name="ASX" 
-        id="ASX" 
-        checked>
-    <label for="ASX">
-        Australian Stock Exchange (ASX)
-    </label>
-</div>
-<div>
-    <input 
-        type="checkbox" 
-        name="NYSE" 
-        id="NYSE">
-    <label for="NYSE">
-        New York Stock Exchange (NYSE)
-    </label>
-</div>
-<div>
-    <input 
-        type="checkbox" 
-        name="NASDAQ" 
-        id="NASDAQ">
-    <label for="NASDAQ">
-        NASDAQ
-    </label>
-</div>
-
-<div>
-    <input 
-        type="checkbox" 
-        name="LSE" 
-        id="LSE">
-    <label for="LSE">
-        London Stock Exchange (LSE)
-    </label>
-</div>
-
-
-<!-- Disclaimer -->
-<div class="form-group mt-4">
-    <h3 class="mb-3">Disclaimer</h3>
-    <div class="form-check">
-        <input 
-            type="checkbox" 
-            id="acceptDisclaimer" 
-            name="acceptDisclaimer" 
-            class="form-check-input" 
-            required>
-        <label for="acceptDisclaimer" class="form-check-label">
-            The content generated by the AdviceGenie platform may contain errors or inaccuracies. 
-            We strongly recommend seeking advice from a qualified financial adviser before making any 
-            investment decisions. AdviceGenie does not guarantee the accuracy, completeness, or reliability 
-            of the content it generates and is not responsible for any financial outcomes based on its recommendations.
-        </label>
     </div>
-    <p class="mt-2">
-        By proceeding, you acknowledge and agree to the terms and conditions of the platform.
-    </p>
-</div>
-         <!-- Submit Button -->
-        <div class="form-group mt-4">
-            <button type="button" class="btn btn-primary w-100" onclick="fetchQuote()">Ask Genie</button>
-        </div> 
-        </form>
-        <!-- Loader -->
-        <div class="card-body" id="loader" style="display:none;"></div>
 
-        <!-- Content -->
-        <div class="mx-auto">
-            <div style="display:none;" id="myDiv" class="animate-bottom"></div>
-        </div>
-
-    <footer style="text-align: center;">
-        <p>&copy; 2024 AdviceGenie. All rights reserved. | <a href="../index.html">Home </a> </p>
-    </footer>
-    <script src="js/dilku.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/funnelforms.js"></script>
 </body>
 </html>
