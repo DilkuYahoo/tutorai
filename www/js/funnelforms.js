@@ -1,8 +1,10 @@
+const baseUrl = "https://fintelle.wn.r.appspot.com";
+// const baseUrl = "http://localhost:8080";
+
 document.addEventListener("DOMContentLoaded", () => {
     const steps = document.querySelectorAll(".form-step");
     let currentStep = 0;
 
-    // Function to show the current step
     const showStep = (index) => {
         steps.forEach((step, i) => {
             step.classList.toggle("d-none", i !== index);
@@ -10,7 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
-    // Validation for Step 1: Investment Goals
     const validateStep1 = () => {
         const investmentObjective = document.getElementById("investmentObjective").value;
         const investmentHorizon = document.getElementById("investmentHorizon").value;
@@ -23,7 +24,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return true;
     };
 
-    // Validation for Step 2: Risk Profile
     const validateStep2 = () => {
         const riskTolerance = document.getElementById("riskTolerance").value;
 
@@ -34,7 +34,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return true;
     };
 
-    // Validation for Step 3 (merged): Personal Information & Disclaimer
     const validateStep3 = () => {
         const fullName = document.getElementById("fullName").value.trim();
         const email = document.getElementById("email").value.trim();
@@ -59,7 +58,40 @@ document.addEventListener("DOMContentLoaded", () => {
         return true;
     };
 
-    // Navigation: Next buttons
+    const submitForm = () => {
+        alert("Please check your email for the SoA.");
+
+        const formInvData = {
+            investmentObjective: document.getElementById("investmentObjective").value,
+            investmentHorizon: document.getElementById("investmentHorizon").value,
+            investmentAmount: document.getElementById("investmentAmount").value,
+            riskTolerance: document.getElementById("riskTolerance").value,
+        };
+
+        const formContData = {
+            fullName: document.getElementById("fullName").value.trim(),
+            email: document.getElementById("email").value.trim(),
+            phone: document.getElementById("phone").value.trim(),
+        };
+
+        // Call the first API endpoint
+        fetch(`${baseUrl}/gen_share_portfolio`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formInvData),
+        }).catch((error) => console.error("Error calling /gen_share_portfolio:", error));
+
+        // Call the second API endpoint
+        fetch(`${baseUrl}/update_leads`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formContData),
+        }).catch((error) => console.error("Error calling /update_leads:", error));
+
+        // Redirect to the home page
+        window.location.href = "https://advicegenie.com.au";
+    };
+
     document.getElementById("next-1").addEventListener("click", () => {
         if (validateStep1()) {
             currentStep++;
@@ -74,27 +106,28 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Navigation: Previous buttons
-    document.getElementById("prev-2").addEventListener("click", () => {
-        currentStep--;
-        showStep(currentStep);
-    });
+    const prev2Button = document.getElementById("prev-2");
+    if (prev2Button) {
+        prev2Button.addEventListener("click", () => {
+            currentStep--;
+            showStep(currentStep);
+        });
+    }
 
-    document.getElementById("prev-3").addEventListener("click", () => {
-        currentStep--;
-        showStep(currentStep);
-    });
+    const prev3Button = document.getElementById("prev-3");
+    if (prev3Button) {
+        prev3Button.addEventListener("click", () => {
+            currentStep--;
+            showStep(currentStep);
+        });
+    }
 
-    // Form submission
     document.getElementById("funnelForm").addEventListener("submit", (e) => {
-        e.preventDefault(); // Prevent default form submission
+        e.preventDefault();
         if (validateStep3()) {
-            alert("Form submitted successfully!");
-            // You can replace this alert with an actual form submission logic
-            // e.g., sending data via AJAX or navigating to a success page
+            submitForm();
         }
     });
 
-    // Initialize form to display the first step
     showStep(currentStep);
 });
