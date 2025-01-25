@@ -1,7 +1,7 @@
 // script.js
 // Define the backend host as a variable
-const backendHost = 'http://localhost:8080'; // You can change this to your production URL when needed
-
+//const backendHost = 'http://localhost:8080'; // You can change this to your production URL when needed
+const backendHost = 'https://fintelle.wn.r.appspot.com'; 
 
 // Function to handle form submission
 function submitForm() {
