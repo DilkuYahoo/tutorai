@@ -1,464 +1,354 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
+    <title>AdviceGenie - Your AI Financial Advisor</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="AI Financial Advisor, Personal Finance, Budgeting, Investments" name="keywords">
+    <meta content="AdviceGenie is your go-to AI-powered platform for personalized financial advice tailored to Gen Z." name="description">
 
-    <!--Page Title-->
-    <title>Free Financial Advice for Smart Investing | Grow Your Wealth</title>
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.advicegenie.com.au">
+    <meta property="og:title" content="AdviceGenie - Your AI Financial Advisor">
+    <meta property="og:description" content="AdviceGenie is your go-to AI-powered platform for personalized financial advice tailored to Gen Z.">
+    <meta property="og:image" content="https://www.advicegenie.com.au/img/og-image.jpg">
 
-    <!--Meta Keywords and Description-->
-    <meta name="keywords" content="Free financial advice Australia, Free share portfolio generator, Investment advice platform Australia, Free stock portfolio builder, Australian financial planning platform, Free Robo Advice">
-    <meta name="description" content="Discover AI based free financial advice and investment tips to grow your wealth. Explore our strategies for portfolio management and stock market success.">
-    <meta name="robots" content="index, follow">
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://www.advicegenie.com.au">
+    <meta property="twitter:title" content="AdviceGenie - Your AI Financial Advisor">
+    <meta property="twitter:description" content="AdviceGenie is your go-to AI-powered platform for personalized financial advice tailored to Gen Z.">
+    <meta property="twitter:image" content="https://www.advicegenie.com.au/img/og-image.jpg">
+
+    <!-- Canonical URL -->
     <link rel="canonical" href="https://www.advicegenie.com.au">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+    <!-- Favicon -->
+    <link href="img/favicon.ico" rel="icon">
 
-    <!--Favicon-->
-    <link rel="shortcut icon" href="images/favicon.ico" title="Favicon"/>
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500&family=Roboto:wght@500;700&display=swap" rel="stylesheet">  
 
-    <!-- Main CSS Files -->
-    <link rel="stylesheet" href="css/style.css">
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
 
-    <!-- Namari Color CSS -->
-    <link rel="stylesheet" href="css/namari-color.css">
+    <!-- Libraries Stylesheet -->
+    <link href="lib/animate/animate.min.css" rel="stylesheet">
+    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+    <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
 
-    <!--Icon Fonts - Font Awesome Icons-->
-    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Animate CSS-->
-    <link href="css/animate.css" rel="stylesheet" type="text/css">
-
-    <!--Google Webfonts-->
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700,800' rel='stylesheet' type='text/css'>
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
+    <!-- Template Stylesheet -->
+    <link href="css/style.css" rel="stylesheet">
 </head>
+
 <body>
-
-<!-- Preloader -->
-<div id="preloader">
-    <div id="status" class="la-ball-triangle-path">
-        <div></div>
-        <div></div>
-        <div></div>
+    <!-- Spinner Start -->
+    <div id="spinner" class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
     </div>
-</div>
-<!--End of Preloader-->
+    <!-- Spinner End -->
 
-<div class="page-border" data-wow-duration="0.7s" data-wow-delay="0.2s">
-    <div class="top-border wow fadeInDown animated" style="visibility: visible; animation-name: fadeInDown;"></div>
-    <div class="right-border wow fadeInRight animated" style="visibility: visible; animation-name: fadeInRight;"></div>
-    <div class="bottom-border wow fadeInUp animated" style="visibility: visible; animation-name: fadeInUp;"></div>
-    <div class="left-border wow fadeInLeft animated" style="visibility: visible; animation-name: fadeInLeft;"></div>
-</div>
-
-<div id="wrapper">
-
-    <header id="banner" class="scrollto clearfix" data-enllax-ratio=".5">
-        <div id="header" class="nav-collapse">
-            <div class="row clearfix">
-                <div class="col-1">
-
-                    <!--Logo-->
-                    <div id="logo">
-
-                        <!--Logo that is shown on the banner-->
-                        <img src="images/logo.jpeg" id="banner-logo" alt="AdviceGenie Logo"/>
-                        <!--End of Banner Logo-->
-
-                        <!--The Logo that is shown on the sticky Navigation Bar-->
-                        <img src="images/logo.jpeg" id="navigation-logo" alt="AdviceGenie Logo"/>
-                        <!--End of Navigation Logo-->
-
-                    </div>
-                    <!--End of Logo-->
-
-                    <aside>
-
-                        <!--Social Icons in Header-->
-                        <ul class="social-icons">
-                            <li>
-                                <a target="_blank" title="Facebook" href="https://www.facebook.com/username">
-                                    <i class="fab fa-facebook fa-1x"></i><span>Facebook</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a target="_blank" title="Google+" href="http://google.com/+username">
-                                    <i class="fab fa-google-plus fa-1x"></i><span>Google+</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a target="_blank" title="Twitter" href="http://www.twitter.com/username">
-                                    <i class="fab fa-twitter fa-1x"></i><span>Twitter</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a target="_blank" title="Instagram" href="http://www.instagram.com/username">
-                                    <i class="fab fa-instagram fa-1x"></i><span>Instagram</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a target="_blank" title="behance" href="http://www.behance.net">
-                                    <i class="fab fa-behance fa-1x"></i><span>Behance</span>
-                                </a>
-                            </li>
-                        </ul>
-                        <!--End of Social Icons in Header-->
-
-                    </aside>
-
-                    <!--Main Navigation-->
-                    <nav id="nav-main">
-                        <ul>
-                            <li>
-                                <a href="#banner">Home</a>
-                            </li>
-                            <li>
-                                <a href="#services">Services</a>
-                            </li>
-                            <li>
-                                <a href="#About">About Us</a>
-                            </li>
-                            <li>
-                                <a href="#Howitworks">How it works</a>
-                            </li>
-                            <li>
-                                <a href="#testimonials">Testimonials</a>
-                            </li>
-                        </ul>
-                    </nav>
-                    <!--End of Main Navigation-->
-                    <div id="nav-trigger"><span></span></div>
-                    <nav id="nav-mobile"></nav>
+    <!-- Topbar Start -->
+    <div class="container-fluid bg-primary text-white d-none d-lg-flex">
+        <div class="container py-3">
+            <div class="d-flex align-items-center">
+                <a href="#home">
+                    <h2 class="text-white fw-bold m-0">AdviceGenie</h2>
+                </a>
+                <div class="ms-auto d-flex align-items-center">
+                    <small class="ms-4"><i class="fa fa-envelope me-3"></i>support@advicegenie.com.au</small>
+                    <small class="ms-4"><i class="fa fa-map-marker-alt me-3"></i>Sydney, Australia</small>
                 </div>
             </div>
-        </div><!--End of Header-->
-
-        <!--Banner Content-->
-        <div id="banner-content" class="row clearfix">
-
-            <div class="col-38">
-
-                <div class="section-heading">
-                    <h1>Smarter Financial Advice for Your Big Dreams</h1>
-                    <h2>Let us take the complexity out of financial advice so you can focus
-                         on what matters most.</h2>
-                         <a href="share_portfolio.html" class="button">TRY FOR FREE</a>
-                </div>
-                <!--Call to Action-->
-                
-                <!--End Call to Action-->
-            </div>
-        </div><!--End of Row-->
-    </header>
-    <!--Main Content Area-->
-    <main id="content">
-        <!--Introduction-->
-        <section id="services" class="introduction scrollto">
-            <div class="row clearfix">
-                <div class="col-3">
-                    <div class="section-heading">
-                        <h2 class="section-title">Services</h2>
-                    </div>
-                </div>
-                <div class="col-2-3">
-                    <!--Icon Block-->
-                    <div class="col-2 icon-block icon-top wow fadeInUp" data-wow-delay="0.1s">
-                        <!--Icon-->
-                        <div class="icon">
-                            <i class="fas fa-chart-line fa-2x"></i>
-                        </div>
-                        <!--Icon Block Description-->
-                        <div class="icon-block-description">
-                            <a href="share_portfolio.html"><h4>Investment Portfolio</h4></a>
-                            <p>Build a customized investment portfolio that aligns with your financial goals and risk tolerance. Our AI-driven platform analyzes market trends, 
-                                assesses your preferences, and suggests a diversified mix of assets to optimize returns. 
-                                Whether you're seeking short-term gains or long-term growth, we provide dynamic, data-backed recommendations to help you make informed investment decisions. 
-                            </p>
-                            <a href="share_portfolio.html" class="button">TRY FOR FREE</a>
-                        </div>
-                    
-                    </div>
-                    <!--End of Icon Block-->
-
-                    <!--Icon Block-->
-                    <div class="col-2 icon-block icon-top wow fadeInUp" data-wow-delay="0.3s">
-                        <!--Icon-->
-                        <div class="icon">
-                            <i class="fa fa-bolt fa-2x"></i>
-                        </div>
-                        <!--Icon Block Description-->
-                        <div class="icon-block-description">
-                            <h4>Free Stock Analysis</h4>
-                            <p>Our Stock Price Evaluator tool provides deep insights into market trends and stock performance, powered by advanced GenAI algorithms. Analyze historical price movements, and identify key factors influencing share prices. 
-                                Whether you're evaluating potential investments or managing your existing portfolio, this feature helps you make informed, data-driven decisions with confidence</p>
-                                <a href="free-stock-analysis.html" class="button">TRY FOR FREE</a>
-                            </div>
-                        
-                    </div>
-                    <!--End of Icon Block-->
-
-                    <!--Icon Block-->
-                    <div class="col-2 icon-block icon-top wow fadeInUp" data-wow-delay="0.5s">
-                        <!--Icon-->
-                        <div class="icon">
-                            <i class="fas fa-smile positive fa-2x"></i>
-                        </div>
-                        <!--Icon Block Description-->
-                        <div class="icon-block-description">
-                            <h4>Market Sentiment Insight</h4>
-                            <p>Our Stock Sentiment Insight tool leverages advanced AI algorithms to analyze market sentiment surrounding specific stocks. By evaluating social media trends, news articles, 
-                                and investor opinions, it provides a clear picture of public perception and potential market movements. 
-                                Stay ahead of the curve by understanding the emotional undercurrents driving stock prices, allowing you to make informed investment decisions based on collective investor sentiment.</p>
-                                <a href="sentiment_tracker.html" class="button">TRY FOR FREE</a>
-                            </div>
-                    </div>
-                    <!--End of Icon Block-->
-
-                    <!--Icon Block-->
-                    <div class="col-2 icon-block icon-top wow fadeInUp" data-wow-delay="0.5s">
-                        <!--Icon-->
-                        <div class="icon">
-                            <i class="fa fa-rocket fa-2x"></i>
-                        </div>
-                        <!--Icon Block Description-->
-                        <div class="icon-block-description">
-                            <h4>Share Portfolio Review</h4>
-                            <p>Comming Soon ...</p>
-                            <a href="share_portfolio.html" class="button">COMMING SOON</a>
-                        </div>
-                    </div>
-                    <!--End of Icon Block-->
-                </div>
-            </div>
-        </section>
-        <!--End of Introduction-->
-        <!--End of Gallery-->
-        <!--Content Section-->
-        <section id="About" class="introduction scrollto">
-            <div class="row no-padding-bottom clearfix">
-                <!--Content Left Side-->
-                <div class="col-3">
-                    <div class="section-heading">
-                        <h2 class="section-title">About Us</h2>
-                    </div>    
-                </div>
-                <!--End Content Left Side-->
-                <div class="col-2-3">
-                    <!--Icon Block-->
-                    <div class="col-2 icon-block icon-top wow fadeInUp" data-wow-delay="0.1s">
-                        <!--Icon-->
-                        <div class="icon">
-                            <i class="fas fa-users fa-2x"></i>
-                        </div>
-                        <!--Icon Block Description-->
-                        <div class="icon-block-description">
-                            <h4>Who We Are</h4>
-                            <p>We are an innovative IT company specialising in data and AI solutions. Headquartered in Sydney, Australia, we focus on addressing today's challenges with tomorrow's technology. 
-                                Our expertise lies in harnessing advanced technologies to create impactful solutions that drive progress and efficiency for businesses and individuals alike</p>
-                        </div>
-                    </div>
-                    <!--End of Icon Block-->
-    
-                    <!--Icon Block-->
-                    <div class="col-2 icon-block icon-top wow fadeInUp" data-wow-delay="0.3s">
-                        <!--Icon-->
-                        <div class="icon">
-                            <i class="fas fa-bullseye fa-2x"></i>
-                        </div>
-                        <!--Icon Block Description-->
-                        <div class="icon-block-description">
-                            <h4>Our Mission</h4>
-                            <p>At AdviceGenie, our mission is to democratize financial advice by leveraging advanced AI models to make expert insights accessible to everyone. We believe that quality financial guidance 
-                                should not be reserved for a select few; rather, it should empower individuals from all backgrounds to make informed decisions about their financial futures.</p>
-
-                                <p>Through our innovative platform, we aim to simplify complex financial concepts, providing personalized and actionable advice tailored to each user’s unique circumstances. 
-                                By combining cutting-edge technology with a user-friendly experience, we strive to enhance financial literacy and promote smarter investment strategies for all.
-                                Our commitment is to create a more equitable financial landscape where everyone can thrive and achieve their financial goals</p>
-                            </div>
-                    </div>
-                    <!--End of Icon Block-->
-                    <!--Icon Block-->
-                    <div class="col-2 icon-block icon-top wow fadeInUp" data-wow-delay="0.5s">
-                        <!--Icon-->
-                        <div class="icon">
-                            <i class="fa fa-envelope fa-2x"></i>
-                        </div>
-                        <!--Icon Block Description-->
-                        <div class="icon-block-description">
-                            <h4>Contact Us</h4>
-                            <p>Email: support@advicegenie.com</p>
-                                <p>Address: 11 York Street, Sydney, NSW 2000, Australia</p>
-                        </div>
-                    </div>
-                    <!--End of Icon Block-->
-                </div>
-                <!--End Content Right Side-->
-            </div>
-    </section>
- 
-        <!--Content Section-->
-        <div id="services" class="scrollto clearfix">
-
-            <div class="row no-padding-bottom clearfix">
-
-
-                <!--Content Left Side-->
-                <div class="col-3">
-                    <!--User Testimonial-->
-                    <blockquote class="testimonial text-right bigtest">
-                        <q>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
-                            labore
-                            et dolore magna aliqua</q>
-                        <footer>— John Doe, Happy Customer</footer>
-                    </blockquote>
-                    <!-- End of Testimonial-->
-
-                </div>
-                <!--End Content Left Side-->
-
-                <!--Content of the Right Side-->
-                <div class="col-3">
-                    <div class="section-heading">
-                        <h3>We Belive</h3>
-                        <h2 class="section-title">AI is here to stay</h2>
-                        <p class="section-subtitle">it is free</p>
-                    </div>
-                    <p> Write up for hear to stay
-                    </p>
-                    
-                </div>
-                <!--End Content Right Side-->
-
-                <div class="col-3">
-                    <img src="images/Believe.jpg" alt="Dancer"/>
-                </div>
-
-            </div>
-
-
         </div>
-        <!--End of Content Section-->
-        <!--Testimonials-->
-        <aside id="testimonials" class="scrollto text-center" data-enllax-ratio=".2">
+    </div>
+    <!-- Topbar End -->
 
-            <div class="row clearfix">
-
-                <div class="section-heading">
-                    <h3>FEEDBACK</h3>
-                    <h2 class="section-title">What our customers are saying</h2>
+    <!-- Navbar Start -->
+    <div class="container-fluid bg-white sticky-top">
+        <div class="container">
+            <nav class="navbar navbar-expand-lg bg-white navbar-light p-lg-0">
+                <a href="#home" class="navbar-brand d-lg-none">
+                    <h1 class="fw-bold m-0">AdviceGenie</h1>
+                </a>
+                <button type="button" class="navbar-toggler me-0" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarCollapse">
+                    <div class="navbar-nav">
+                        <a href="#home" class="nav-item nav-link active">Home</a>
+                        <a href="#about" class="nav-item nav-link">About</a>
+                        <a href="#features" class="nav-item nav-link">Services</a>
+                        <a href="#how-it-works" class="nav-item nav-link">How It Works</a> <!-- New Link -->
+                        <a href="#contact" class="nav-item nav-link">Contact</a>
+                    </div>
+                    <div class="ms-auto d-none d-lg-block">
+                        <a href="soa-form.html" class="btn btn-primary rounded-pill py-2 px-3">Get Advice</a>
+                    </div>
                 </div>
-
-                <!--User Testimonial-->
-                <blockquote class="col-3 testimonial classic">
-                    <img src="images/user-images/user-1.jpg" alt="User"/>
-                    <q>"As a parent looking to invest for my two kids' future, 
-                        I wanted a reliable, tax-efficient share portfolio that 
-                        I could set up easily and hold for the next five years. 
-                        This platform made it incredibly simple! Within seconds, 
-                        I generated a well-diversified portfolio tailored to my goals 
-                        and risk tolerance. I was able to use my own broker to 
-                        invest, which was perfect. The best part? My portfolio has 
-                        been performing well, and I feel confident that I'm setting 
-                        my kids up for a bright financial future without any extra 
-                        tax headaches. Highly recommend this platform for any parent 
-                        looking to invest smartly and hassle-free!"</q>
-                    <footer>Peter Murphy - Happy Customer</footer>
-                </blockquote>
-                <!-- End of Testimonial-->
-
-                <!--User Testimonial-->
-                <blockquote class="col-3 testimonial classic">
-                    <img src="images/user-images/user-2.jpg" alt="User"/>
-                    <q>I'm saving up to buy my first home in the next two years, so I needed a 
-                        way to maximize my savings without taking on too much risk. This platform was 
-                        exactly what I needed! In just a few clicks, I generated a custom portfolio focused on 
-                        my short-term goals. The process was fast, intuitive, and took the guesswork out of 
-                        choosing the right investments. I could easily set up my portfolio through my existing 
-                        broker, and I’ve already started to see strong returns. This platform is a game-changer 
-                        for anyone looking to grow their savings for a big goal!</q>
-                    <footer>Roslyn Walker - Happy Customer</footer>
-                </blockquote>
-                <!-- End of Testimonial-->
-
-                <!--User Testimonial-->
-                <blockquote class="col-3 testimonial classic">
-                    <img src="images/user-images/user-3.jpg" alt="User"/>
-                    <q>With retirement just 10 years away, I wanted a portfolio that could grow 
-                        my savings steadily while minimizing risk. This platform was a fantastic 
-                        solution! In no time, I generated a tailored portfolio that aligned perfectly 
-                        with my retirement goals and risk comfort. It was so easy—I could use my own 
-                        broker platform to manage the investments, and now, I feel so much more confident 
-                        about my financial future. Watching my portfolio grow has been incredibly reassuring, 
-                        and I love knowing I’m on track for a comfortable retirement. I’d highly recommend 
-                        this tool to anyone planning ahead for retirement!</q>
-                    <footer>Thomas Cromer - Happy Customer</footer>
-                </blockquote>
-                <!-- End of Testimonial-->
-            </div>
-        </aside>
-        <!--End of Testimonials-->
-    </main>
-    <!--End Main Content Area-->
-
-
-    <!--Footer-->
-    <footer id="landing-footer" class="clearfix">
-        <div class="row clearfix">
-
-            <p id="copyright" class="col-2">2024<a href="https://www.advicegenie.com.au"> AdviceGenie. All rights reserved.</a></p>
-
-            <!--Social Icons in Footer-->
-            <ul class="col-2 social-icons">
-                <li>
-                    <a target="_blank" title="Facebook" href="https://www.facebook.com/username">
-                        <i class="fab fa-facebook fa-1x"></i><span>Facebook</span>
-                    </a>
-                </li>
-                <li>
-                    <a target="_blank" title="Google+" href="http://google.com/+username">
-                        <i class="fab fa-google-plus fa-1x"></i><span>Google+</span>
-                    </a>
-                </li>
-                <li>
-                    <a target="_blank" title="Twitter" href="http://www.twitter.com/username">
-                        <i class="fab fa-twitter fa-1x"></i><span>Twitter</span>
-                    </a>
-                </li>
-                <li>
-                    <a target="_blank" title="Instagram" href="http://www.instagram.com/username">
-                        <i class="fab fa-instagram fa-1x"></i><span>Instagram</span>
-                    </a>
-                </li>
-                <li>
-                    <a target="_blank" title="behance" href="http://www.behance.net">
-                        <i class="fab fa-behance fa-1x"></i><span>Behance</span>
-                    </a>
-                </li>
-            </ul>
-            <!--End of Social Icons in Footer-->
+            </nav>
         </div>
-    </footer>
-    <!--End of Footer-->
+    </div>
+    <!-- Navbar End -->
 
-</div>
+    <!-- Carousel Start -->
+    <div class="container-fluid px-0 mb-5" id="home">
+        <div id="header-carousel" class="carousel slide carousel-fade" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <img class="w-100" src="img/carousel-1.jpg" alt="Image">
+                    <div class="carousel-caption">
+                        <div class="container">
+                            <div class="row justify-content-start">
+                                <div class="col-lg-7 text-start">
+                                    <p class="fs-4 text-white animated slideInRight">Welcome to <strong>AdviceGenie</strong></p>
+                                    <h1 class="display-1 text-white mb-4 animated slideInRight">Your Financial Freedom, Powered by AI.</h1>
+                                    <a href="#features" class="btn btn-primary rounded-pill py-3 px-5 animated slideInRight">Start Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <img class="w-100" src="img/carousel-2.jpg" alt="Image">
+                    <div class="carousel-caption">
+                        <div class="container">
+                            <div class="row justify-content-end">
+                                <div class="col-lg-7 text-end">
+                                    <p class="fs-4 text-white animated slideInLeft">Welcome to <strong>AdviceGenie</strong></p>
+                                    <h1 class="display-1 text-white mb-5 animated slideInLeft">Empowering Your Financial Journey with AI.</h1>
+                                    <a href="#features" class="btn btn-primary rounded-pill py-3 px-5 animated slideInLeft">Learn More</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#header-carousel"
+                data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#header-carousel"
+                data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
+    </div>
+    <!-- Carousel End -->
 
-<!-- Include JavaScript resources -->
-<script src="js/jquery.1.8.3.min.js"></script>
-<script src="js/wow.min.js"></script>
-<script src="js/featherlight.min.js"></script>
-<script src="js/featherlight.gallery.min.js"></script>
-<script src="js/jquery.enllax.min.js"></script>
-<script src="js/jquery.scrollUp.min.js"></script>
-<script src="js/jquery.easing.min.js"></script>
-<script src="js/jquery.stickyNavbar.min.js"></script>
-<script src="js/jquery.waypoints.min.js"></script>
-<script src="js/images-loaded.min.js"></script>
-<script src="js/lightbox.min.js"></script>
-<script src="js/site.js"></script>
+    <!-- About Start -->
+    <div class="container-xxl py-5" id="about">
+        <div class="container">
+            <div class="text-center mx-auto mb-5" style="max-width: 500px;">
+                <p class="fs-5 fw-medium text-primary">About Us</p>
+                <h1 class="display-5">Who We Are</h1>
+                <p>At AdviceGenie, we bring together over 20 years of experience in building cutting-edge financial platforms, combined with the transformative power of advanced AI technology.</p>
+                <p>Our platform is designed by seasoned financial advisers who understand your needs and priorities, making it easier than ever to make informed financial decisions. Whether you're saving for your first home, planning for retirement, or managing day-to-day expenses, we provide tailored solutions to help you achieve your goals.</p>
+                <p>Built with precision and backed by industry expertise, AdviceGenie is here to simplify financial advice and empower you with the tools to secure your future—quickly, efficiently, and affordably.</p>
+            </div>
+        </div>
+    </div>
+    <!-- About End -->
 
+    <!-- Features Start -->
+    <div class="container-xxl py-5" id="features">
+        <div class="container">
+            <div class="row g-0 feature-row">
+                <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.1s">
+                    <div class="feature-item border h-100 p-5">
+                        <div class="btn-square bg-light rounded-circle mb-4" style="width: 64px; height: 64px;">
+                            <img class="img-fluid" src="img/icon/icon-1.png" alt="Icon">
+                        </div>
+                        <h5 class="mb-3">Investment Advice</h5>
+                        <p class="mb-0">Tailored investment portfolio to grow your wealth and achieve your financial goals</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.3s">
+                    <div class="feature-item border h-100 p-5">
+                        <div class="btn-square bg-light rounded-circle mb-4" style="width: 64px; height: 64px;">
+                            <img class="img-fluid" src="img/icon/icon-2.png" alt="Icon">
+                        </div>
+                        <h5 class="mb-3">Personalized Investments</h5>
+                        <p class="mb-0">Tailored investment strategies to grow your wealth effortlessly.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.5s">
+                    <div class="feature-item border h-100 p-5">
+                        <div class="btn-square bg-light rounded-circle mb-4" style="width: 64px; height: 64px;">
+                            <img class="img-fluid" src="img/icon/icon-3.png" alt="Icon">
+                        </div>
+                        <h5 class="mb-3">Debt Management</h5>
+                        <p class="mb-0">Pay off your loans faster with AI-driven repayment plans.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.7s">
+                    <div class="feature-item border h-100 p-5">
+                        <div class="btn-square bg-light rounded-circle mb-4" style="width: 64px; height: 64px;">
+                            <img class="img-fluid" src="img/icon/icon-4.png" alt="Icon">
+                        </div>
+                        <h5 class="mb-3">Review our portfolio</h5>
+                        <p class="mb-0">Stay on top of your financial goals with AI powered portfolio review.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Features End -->
 
+    <!-- How It Works Start -->
+    <div class="container-xxl py-5" id="how-it-works">
+        <div class="container">
+            <div class="text-center mx-auto mb-5" style="max-width: 800px;">
+                <p class="fs-5 fw-medium text-primary">How It Works</p>
+                <h1 class="display-5 mb-4">Simple Steps to Financial Freedom</h1>
+                <p class="mb-5">AdviceGenie makes it easy to get personalized financial advice in just a few steps.</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.1s">
+                    <div class="feature-item border h-100 p-5 text-center">
+                        <div class="btn-square bg-light rounded-circle mb-4 mx-auto" style="width: 64px; height: 64px;">
+                            <i class="fas fa-question-circle fa-2x text-primary"></i>
+                        </div>
+                        <h5 class="mb-3">Step 1: Answer a Few Simple Questions</h5>
+                        <p class="mb-0">Provide basic details about your financial goals, current situation, and future plans through our user-friendly questionnaire.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.3s">
+                    <div class="feature-item border h-100 p-5 text-center">
+                        <div class="btn-square bg-light rounded-circle mb-4 mx-auto" style="width: 64px; height: 64px;">
+                            <i class="fas fa-cogs fa-2x text-primary"></i>
+                        </div>
+                        <h5 class="mb-3">Step 2: Let AI Do the Heavy Lifting</h5>
+                        <p class="mb-0">Your responses are securely processed and fed into our advanced AI model, designed to analyze your unique needs.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.5s">
+                    <div class="feature-item border h-100 p-5 text-center">
+                        <div class="btn-square bg-light rounded-circle mb-4 mx-auto" style="width: 64px; height: 64px;">
+                            <i class="fas fa-lightbulb fa-2x text-primary"></i>
+                        </div>
+                        <h5 class="mb-3">Step 3: Receive Tailored Recommendations</h5>
+                        <p class="mb-0">AdviceGenie's AI generates personalized financial advice, tailored to your goals and preferences.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.7s">
+                    <div class="feature-item border h-100 p-5 text-center">
+                        <div class="btn-square bg-light rounded-circle mb-4 mx-auto" style="width: 64px; height: 64px;">
+                            <i class="fas fa-check-circle fa-2x text-primary"></i>
+                        </div>
+                        <h5 class="mb-3">Step 4: Expert Review & Delivery</h5>
+                        <p class="mb-0">Our Qualified Financial Advisers review the AI-generated recommendations to ensure they align with your best interests. The final, polished Statement of Advice (SoA) is then sent directly to your email.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- How It Works End -->
+
+    <!-- Contact Start -->
+    <div class="container-xxl py-5" id="contact">
+        <div class="container">
+            <div class="text-center mx-auto mb-5" style="max-width: 500px;">
+                <p class="fs-5 fw-medium text-primary">Contact Us</p>
+                <h1 class="display-5">Get In Touch</h1>
+                <p>Have questions? Reach out to us, and we'll assist you with your financial needs.</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <h5>Our Office</h5>
+                    <p><i class="fa fa-map-marker-alt me-3"></i>Sydney, Australia</p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Email Us</h5>
+                    <p><i class="fa fa-envelope me-3"></i>support@advicegenie.com.au</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Contact End -->
+
+    <!-- Footer Start -->
+    <div class="container-fluid bg-dark footer mt-5 py-5 wow fadeIn" data-wow-delay="0.1s">
+        <div class="container py-5">
+            <div class="row g-5">
+                <div class="col-lg-3 col-md-6">
+                    <h4 class="text-white mb-4">Contact Us</h4>
+                    <p class="mb-2"><i class="fa fa-envelope me-3"></i>support@advicegenie.com.au</p>
+                    <p class="mb-2"><i class="fa fa-map-marker-alt me-3"></i>Sydney, Australia</p>
+                    <div class="d-flex pt-3">
+                        <a class="btn btn-square btn-light rounded-circle me-2" href=""><i class="fab fa-twitter"></i></a>
+                        <a class="btn btn-square btn-light rounded-circle me-2" href=""><i class="fab fa-facebook-f"></i></a>
+                        <a class="btn btn-square btn-light rounded-circle me-2" href=""><i class="fab fa-youtube"></i></a>
+                        <a class="btn btn-square btn-light rounded-circle me-2" href=""><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <h4 class="text-white mb-4">Quick Links</h4>
+                    <a class="btn btn-link" href="#about">About Us</a>
+                    <a class="btn btn-link" href="#contact">Contact Us</a>
+                    <a class="btn btn-link" href="#features">Our Services</a>
+                    <a class="btn btn-link" href="#how-it-works">How It Works</a> <!-- New Link -->
+                    <a class="btn btn-link" href="">Terms & Conditions</a>
+                    <a class="btn btn-link" href="">Privacy Policy</a>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <h4 class="text-white mb-4">Resources</h4>
+                    <a class="btn btn-link" href="">Blog</a>
+                    <a class="btn btn-link" href="">FAQs</a>
+                    <a class="btn btn-link" href="">Support</a>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <h4 class="text-white mb-4">Subscribe</h4>
+                    <p>Sign up for the latest financial tips and insights.</p>
+                    <div class="position-relative w-100">
+                        <input class="form-control bg-transparent w-100 py-3 ps-4 pe-5" type="text" placeholder="Your email">
+                        <button type="button" class="btn btn-light py-2 position-absolute top-0 end-0 mt-2 me-2">SignUp</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Footer End -->
+
+    <!-- Copyright Start -->
+    <div class="container-fluid copyright py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                    &copy; <a class="fw-medium text-light" href="#">AdviceGenie</a>, All Rights Reserved.
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    Designed By <a class="fw-medium text-light" href="https://cognifylabs.ai">Cognify Labs</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Copyright End -->
+
+    <!-- Back to Top -->
+    <a href="#" class="btn btn-lg btn-primary btn-lg-square rounded-circle back-to-top"><i class="bi bi-arrow-up"></i></a>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="lib/wow/wow.min.js"></script>
+    <script src="lib/easing/easing.min.js"></script>
+    <script src="lib/waypoints/waypoints.min.js"></script>
+    <script src="lib/owlcarousel/owl.carousel.min.js"></script>
+    <script src="lib/lightbox/js/lightbox.min.js"></script>
+
+    <!-- Template Javascript -->
+    <script src="js/main.js"></script>
 </body>
+
 </html>

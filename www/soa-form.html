@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statement of Advice (SoA) - AdviceGenie</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-step {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .form-step.active {
+            display: block;
+        }
+
+        .progress {
+            height: 15px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            background: #e9ecef;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #6a11cb, #2575fc);
+            transition: width 0.5s ease;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            padding: 10px 15px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #6a11cb;
+            box-shadow: 0 0 5px rgba(106, 17, 203, 0.3);
+        }
+
+        .btn {
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #6a11cb, #2575fc);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(106, 17, 203, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .form-check-input {
+            margin-top: 0.3rem;
+        }
+
+        .form-check-label {
+            margin-left: 0.5rem;
+        }
+
+        #reviewDetails {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Get Your Personalised Statement of Advice</h1>
+        <div class="progress">
+            <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+
+        <!-- Step 1: Personal Information -->
+        <div id="step1" class="form-step active">
+            <h2>Step 1: Personal Information</h2>
+            <form id="soaForm">
+                <div class="mb-3">
+                    <label for="fullName" class="form-label">Full Name</label>
+                    <input type="text" class="form-control" id="fullName">
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input type="email" class="form-control" id="email">
+                </div>
+                <div class="mb-3">
+                    <label for="phone" class="form-label">Phone Number</label>
+                    <input type="tel" class="form-control" id="phone">
+                </div>
+                <div class="mb-3">
+                    <label for="dob" class="form-label">Date of Birth</label>
+                    <input type="date" class="form-control" id="dob">
+                </div>
+                <button type="button" class="btn btn-primary next-step" data-next="step2">Next</button>
+            </form>
+        </div>
+
+        <!-- Step 2: Financial Goals -->
+        <div id="step2" class="form-step">
+            <h2>Step 2: Financial Goals</h2>
+            <div class="mb-3">
+                <label class="form-label">What is your primary financial goal? (Select one)</label>
+                
+                <!-- Short-term Goals (0-3 years) -->
+                <div class="mb-3">
+                    <h5>Short-term Goals (0-3 years)</h5>
+                    <p class="text-muted">Goals you want to achieve in the next 3 years. Examples include saving for a vacation, building an emergency fund, or paying off credit card debt.</p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="financialGoal" id="goal1" value="Save for a vacation">
+                        <label class="form-check-label" for="goal1">Save for a vacation</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="financialGoal" id="goal2" value="Build an emergency fund">
+                        <label class="form-check-label" for="goal2">Build an emergency fund</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="financialGoal" id="goal3" value="Pay off credit card debt">
+                        <label class="form-check-label" for="goal3">Pay off credit card debt</label>
+                    </div>
+                </div>
+
+                <!-- Medium-term Goals (3-5 years) -->
+                <div class="mb-3">
+                    <h5>Medium-term Goals (3-5 years)</h5>
+                    <p class="text-muted">Goals you want to achieve in 3 to 5 years. Examples include saving for a down payment on a house, buying a car, or starting a business.</p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="financialGoal" id="goal4" value="Save for a down payment on a house">
+                        <label class="form-check-label" for="goal4">Save for a down payment on a house</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="financialGoal" id="goal5" value="Buy a car">
+                        <label class="form-check-label" for="goal5">Buy a car</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="financialGoal" id="goal6" value="Start a business">
+                        <label class="form-check-label" for="goal6">Start a business</label>
+                    </div>
+                </div>
+
+                <!-- Long-term Goals (5-10 years) -->
+                <div class="mb-3">
+                    <h5>Long-term Goals (5-10 years)</h5>
+                    <p class="text-muted">Goals you want to achieve in 5 to 10 years. Examples include saving for a child's education, paying off a mortgage, or investing in real estate.</p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="financialGoal" id="goal7" value="Save for a child's education">
+                        <label class="form-check-label" for="goal7">Save for a child's education</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="financialGoal" id="goal8" value="Pay off a mortgage">
+                        <label class="form-check-label" for="goal8">Pay off a mortgage</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="financialGoal" id="goal9" value="Invest in real estate">
+                        <label class="form-check-label" for="goal9">Invest in real estate</label>
+                    </div>
+                </div>
+
+                <!-- Very Long-term Goals (10+ years) -->
+                <div class="mb-3">
+                    <h5>Very Long-term Goals (10+ years)</h5>
+                    <p class="text-muted">Goals you want to achieve in 10 or more years. Examples include saving for retirement, building generational wealth, or achieving financial independence.</p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="financialGoal" id="goal10" value="Save for retirement">
+                        <label class="form-check-label" for="goal10">Save for retirement</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="financialGoal" id="goal11" value="Build generational wealth">
+                        <label class="form-check-label" for="goal11">Build generational wealth</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="financialGoal" id="goal12" value="Achieve financial independence">
+                        <label class="form-check-label" for="goal12">Achieve financial independence</label>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary prev-step" data-prev="step1">Previous</button>
+            <button type="button" class="btn btn-primary next-step" data-next="step3">Next</button>
+        </div>
+
+        <!-- Step 3: Current Financial Situation -->
+        <div id="step3" class="form-step">
+            <h2>Step 3: Current Financial Situation</h2>
+            <div class="mb-3">
+                <label for="income" class="form-label">Annual Income (before tax)</label>
+                <input type="number" class="form-control" id="income">
+            </div>
+            <div class="mb-3">
+                <label for="expenses" class="form-label">Monthly Expenses</label>
+                <input type="number" class="form-control" id="expenses">
+            </div>
+            <div class="mb-3">
+                <label for="savings" class="form-label">Current Savings</label>
+                <input type="number" class="form-control" id="savings">
+            </div>
+            <div class="mb-3">
+                <label for="debts" class="form-label">Total Debts (if any)</label>
+                <input type="number" class="form-control" id="debts">
+            </div>
+            <button type="button" class="btn btn-secondary prev-step" data-prev="step2">Previous</button>
+            <button type="button" class="btn btn-primary next-step" data-next="step4">Next</button>
+        </div>
+
+        <!-- Step 4: Risk Tolerance -->
+        <div id="step4" class="form-step">
+            <h2>Step 4: Risk Tolerance</h2>
+            <div class="mb-3">
+                <label class="form-label">How would you describe your risk tolerance?</label>
+                
+                <!-- Low Risk Tolerance -->
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="riskTolerance" id="riskLow" value="Low">
+                    <label class="form-check-label" for="riskLow">
+                        <strong>Low Risk Tolerance</strong><br>
+                        <span class="text-muted">
+                            You prefer safe investments with lower returns. Your portfolio will focus on preserving capital and generating steady, predictable income. 
+                            Investments may include government bonds, fixed deposits, and low-risk mutual funds. 
+                            While the returns may be modest, you are less likely to experience significant losses, even during market downturns. 
+                            This option is ideal if you are risk-averse and want to avoid the stress of market volatility.
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Medium Risk Tolerance -->
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="riskTolerance" id="riskMedium" value="Medium">
+                    <label class="form-check-label" for="riskMedium">
+                        <strong>Medium Risk Tolerance</strong><br>
+                        <span class="text-muted">
+                            You are willing to take moderate risks for balanced returns. Your portfolio will include a mix of safer investments and growth-oriented assets, 
+                            such as blue-chip stocks, balanced mutual funds, and corporate bonds. 
+                            While you may experience some fluctuations in value, the overall strategy aims for steady growth over time. 
+                            This option is suitable if you can tolerate short-term market ups and downs and are looking for a balance between risk and reward.
+                        </span>
+                    </label>
+                </div>
+
+                <!-- High Risk Tolerance -->
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="riskTolerance" id="riskHigh" value="High">
+                    <label class="form-check-label" for="riskHigh">
+                        <strong>High Risk Tolerance</strong><br>
+                        <span class="text-muted">
+                            You are comfortable with high-risk investments for potentially higher returns. Your portfolio will focus on growth-oriented assets, 
+                            such as stocks, emerging markets, and alternative investments like cryptocurrencies or real estate. 
+                            While these investments can offer significant returns, they are also more volatile and may experience sharp price fluctuations. 
+                            This option is ideal if you have a long investment horizon, can withstand market turbulence, and are focused on maximizing long-term gains.
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary prev-step" data-prev="step3">Previous</button>
+            <button type="button" class="btn btn-primary next-step" data-next="step5">Next</button>
+        </div>
+
+        <!-- Step 5: Review and Submit -->
+        <div id="step5" class="form-step">
+            <h2>Step 5: Review and Submit</h2>
+            <p>Please review your information before submitting.</p>
+            <div id="reviewDetails" class="mb-4"></div>
+            <button type="button" class="btn btn-secondary prev-step" data-prev="step4">Previous</button>
+            <button type="submit" class="btn btn-success" id="submitForm">Submit</button>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Form Navigation Logic
+        const steps = document.querySelectorAll('.form-step');
+        const progressBar = document.getElementById('progressBar');
+        let currentStep = 0;
+
+        function showStep(stepIndex) {
+            steps.forEach((step, index) => {
+                step.classList.toggle('active', index === stepIndex);
+            });
+            const progress = ((stepIndex + 1) / steps.length) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressBar.setAttribute('aria-valuenow', progress);
+        }
+
+        document.querySelectorAll('.next-step').forEach(button => {
+            button.addEventListener('click', () => {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    showStep(currentStep);
+                }
+                if (currentStep === steps.length - 1) {
+                    // Populate review details
+                    const reviewDetails = document.getElementById('reviewDetails');
+                    reviewDetails.innerHTML = `
+                        <p><strong>Name:</strong> ${document.getElementById('fullName').value}</p>
+                        <p><strong>Email:</strong> ${document.getElementById('email').value}</p>
+                        <p><strong>Phone:</strong> ${document.getElementById('phone').value}</p>
+                        <p><strong>Date of Birth:</strong> ${document.getElementById('dob').value}</p>
+                        <p><strong>Financial Goals:</strong> ${Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value).join(', ')}</p>
+                        <p><strong>Annual Income:</strong> $${document.getElementById('income').value}</p>
+                        <p><strong>Monthly Expenses:</strong> $${document.getElementById('expenses').value}</p>
+                        <p><strong>Current Savings:</strong> $${document.getElementById('savings').value}</p>
+                        <p><strong>Total Debts:</strong> $${document.getElementById('debts').value}</p>
+                        <p><strong>Risk Tolerance:</strong> ${document.querySelector('input[name="riskTolerance"]:checked').value}</p>
+                    `;
+                }
+            });
+        });
+
+        document.querySelectorAll('.prev-step').forEach(button => {
+            button.addEventListener('click', () => {
+                if (currentStep > 0) {
+                    currentStep--;
+                    showStep(currentStep);
+                }
+            });
+        });
+
+        // Form Submission
+        document.getElementById('submitForm').addEventListener('click', () => {
+            // Redirect to the thank-you page
+            window.location.href = "thank-you.html";
+        });
+    </script>
+</body>
+</html>
