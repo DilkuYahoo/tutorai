@@ -65,22 +65,40 @@ def update_leads():
 
     data = request.get_json()
 
-    # Extract the required fields from JSON data
-    name = data.get('name')
+    # Extract all the required fields from JSON data
+    full_name = data.get('fullName')
     email = data.get('email')
-    message = data.get('message')
+    phone = data.get('phone')
+    dob = data.get('dob')
+    financial_goal = data.get('financialGoal')
+    annual_income = data.get('income')
+    monthly_expenses = data.get('expenses')
+    current_savings = data.get('savings')
+    total_debts = data.get('debts')
+    risk_tolerance = data.get('riskTolerance')
 
-    if not name or not email or not message:
+    # Check if all required fields are present
+    if not all([full_name, email, phone, dob, financial_goal, annual_income, monthly_expenses, current_savings, total_debts, risk_tolerance]):
         return jsonify({"error": "Missing required fields"}), 400
 
     # Get Google Sheet instance
     sheet = mylib.get_google_sheet()
 
     # Append row data to Google Sheet
-    sheet.append_row([name, email, message])
+    sheet.append_row([
+        full_name, 
+        email, 
+        phone, 
+        dob, 
+        financial_goal, 
+        annual_income, 
+        monthly_expenses, 
+        current_savings, 
+        total_debts, 
+        risk_tolerance
+    ])
 
     return jsonify({"message": "Data successfully added to Google Sheet"}), 200
-
 
 
 @app.route('/multiply', methods=['POST'])
