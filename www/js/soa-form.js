@@ -75,6 +75,14 @@ function validateRiskTolerance() {
 
 // Function to handle form submission
 function submitForm() {
+    // Show the spinner
+    const submitButton = document.getElementById('submitForm');
+    submitButton.innerHTML = `
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        Submitting...
+    `;
+    submitButton.disabled = true; // Disable the button to prevent multiple submissions
+
     // Collect all form data
     const formData = {
         fullName: document.getElementById('fullName').value,
@@ -104,11 +112,17 @@ function submitForm() {
             window.location.href = "thank-you.html";
         } else {
             showAlert('Failed to submit form. Please try again.');
+            // Reset the submit button
+            submitButton.innerHTML = 'Submit';
+            submitButton.disabled = false;
         }
     })
     .catch((error) => {
         console.error('Error:', error);
         showAlert('Failed to submit form. Check all the fields are filled. Please try again.');
+        // Reset the submit button
+        submitButton.innerHTML = 'Submit';
+        submitButton.disabled = false;
     });
 }
 
