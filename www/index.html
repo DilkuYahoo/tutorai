@@ -329,22 +329,22 @@
 
                     <!-- Contact Form -->
                     <h5 class="mb-4">Send Us a Message</h5>
-                    <form>
+                    <form id="contactForm">
                         <div class="mb-3">
-                            <input type="email" class="form-control" placeholder="Your Email Address" required>
+                            <input type="email" id="email" class="form-control" placeholder="Your Email Address" required>
                         </div>
                         <div class="mb-3">
-                            <textarea class="form-control" rows="4" placeholder="Your Message" required></textarea>
+                            <textarea id="message" class="form-control" rows="4" placeholder="Your Message" required></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary rounded-pill py-2 px-4">Submit</button>
                     </form>
+                    <div id="responseMessage" class="mt-3"></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 <!-- Contact End -->
-
     <!-- Footer Start -->
     <div class="container-fluid bg-dark footer mt-5 py-5 wow fadeIn" data-wow-delay="0.1s">
         <div class="container py-5">
