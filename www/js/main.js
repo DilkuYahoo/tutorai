@@ -1,6 +1,29 @@
 (function ($) {
     "use strict";
 
+
+    // Counter-Up Animation
+    document.addEventListener("DOMContentLoaded", function () {
+        const counters = document.querySelectorAll(".counter-value");
+        const speed = 200; // Animation speed in milliseconds
+
+        counters.forEach((counter) => {
+            const target = +counter.getAttribute("data-count");
+            const increment = target / speed;
+
+            const updateCount = () => {
+                const current = +counter.innerText.replace(/,/g, "");
+                if (current < target) {
+                    counter.innerText = Math.ceil(current + increment).toLocaleString();
+                    setTimeout(updateCount, 1);
+                } else {
+                    counter.innerText = target.toLocaleString();
+                }
+            };
+
+            updateCount();
+        });
+    });
     // Spinner
     var spinner = function () {
         setTimeout(function () {
