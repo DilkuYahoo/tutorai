@@ -102,46 +102,55 @@
     });
 
     // Contact Form Submission
-    document.getElementById('contactForm')?.addEventListener('submit', function (event) {
-        event.preventDefault(); // Prevent default form submission
-
-        const email = document.getElementById('email').value.trim();
-        const message = document.getElementById('message').value.trim();
-        const responseMessage = document.getElementById('responseMessage');
-
-        // Validate email and message
-        if (!email || !message) {
-            responseMessage.innerHTML = '<div class="alert alert-danger">Please fill out all fields.</div>';
-            return;
-        }
-
-        // Prepare data for API call
-        const data = {
-            email: email,
-            message: message
-        };
-
-        // Make API call to Flask backend
-        fetch('https://your-flask-backend-url.com/send-email', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    responseMessage.innerHTML = '<div class="alert alert-success">Message sent successfully!</div>';
-                    document.getElementById('contactForm').reset(); // Clear the form
-                } else {
-                    responseMessage.innerHTML = `<div class="alert alert-danger">Error: ${result.message}</div>`;
+    document.addEventListener("DOMContentLoaded", function () {
+        const contactForm = document.getElementById("contactForm");
+        const responseMessage = document.getElementById("responseMessage");
+    
+        if (contactForm) {
+            contactForm.addEventListener("submit", function (event) {
+                event.preventDefault();
+    
+                // Get form values
+                const email = document.getElementById("email").value;
+                const message = document.getElementById("message").value;
+    
+                // Validate input
+                if (!email || !message) {
+                    responseMessage.innerHTML = '<p class="text-danger">Please fill in all fields.</p>';
+                    return;
                 }
-            })
-            .catch(error => {
-                responseMessage.innerHTML = '<div class="alert alert-danger">An error occurred. Please try again later.</div>';
-                console.error('Error:', error);
+    
+                // Prepare request payload
+            const requestData = {
+                sender: "info@advicegenie.com.au",
+                recipient: "info@advicegenie.com.au",
+                subject: `Contact Form Message from ${email}`, // Include sender's email in the subject
+                body: message
+            };
+    
+                // Send request to AWS API Gateway
+                fetch("https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev/send-email", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        responseMessage.innerHTML = '<p class="text-success">Message sent successfully!</p>';
+                        contactForm.reset();
+                    } else {
+                        responseMessage.innerHTML = '<p class="text-danger">Failed to send message. Please try again later.</p>';
+                    }
+                })
+                .catch(error => {
+                    responseMessage.innerHTML = '<p class="text-danger">Error: ' + error.message + '</p>';
+                });
             });
+        }
     });
+    
 
 })(jQuery);
