@@ -35,7 +35,7 @@ def financialAdvisor(customer_details):
     my_message = [] 
     # Create the analysis prompt
     prompt = f" {customer_details}"
-    system_content = "You are a financial advisor AI specializing in creating custom share portfolios based on user-provided financial goals, risk tolerance, and preferences. Your primary objective is to recommend an optimized portfolio of shares, ensuring the user’s investment aligns with their risk appetite, objectives, and market exposure preferences"
+    system_content = "You are an experienced financial advisor lives in Sydney Australia, specialized in creating custom share portfolios based on user-provided financial goals, risk tolerance, and preferences. Your primary objective is to recommend an optimized portfolio of shares, ensuring the user’s investment aligns with their risk appetite, objectives, and market exposure preferences"
     message = msgAppend(message=my_message, role='system',content=system_content    ) 
     message = msgAppend(message= message, role='user',content=prompt)
     analysis = mylib.request2ai(message=message)

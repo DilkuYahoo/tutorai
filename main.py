@@ -71,14 +71,11 @@ def update_leads():
     phone = data.get('phone')
     dob = data.get('dob')
     financial_goal = data.get('financialGoal')
-    annual_income = data.get('income')
-    monthly_expenses = data.get('expenses')
-    current_savings = data.get('savings')
-    total_debts = data.get('debts')
+    investment_amount = data.get('investmentAmount')  # New field
     risk_tolerance = data.get('riskTolerance')
 
     # Check if all required fields are present
-    if not all([full_name, email, phone, dob, financial_goal, annual_income, monthly_expenses, current_savings, total_debts, risk_tolerance]):
+    if not all([full_name, email, phone, dob, financial_goal, investment_amount, risk_tolerance]):
         return jsonify({"error": "Missing required fields"}), 400
 
     # Get Google Sheet instance
@@ -91,10 +88,7 @@ def update_leads():
         phone, 
         dob, 
         financial_goal, 
-        annual_income, 
-        monthly_expenses, 
-        current_savings, 
-        total_debts, 
+        investment_amount,  # New field
         risk_tolerance
     ])
 

@@ -1,7 +1,8 @@
 // script.js
 // Define the backend host as a variable
 //const backendHost = 'http://localhost:8080'; // You can change this to your production URL when needed
-const backendHost = 'https://fintelle.wn.r.appspot.com';
+//const backendHost = 'https://fintelle.wn.r.appspot.com';
+const backendHost = 'https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev'
 
 // Function to show a modern alert (Bootstrap modal)
 function showAlert(message) {
@@ -39,32 +40,10 @@ function validateFinancialGoal() {
     return selectedGoal !== null; // Ensure a goal is selected
 }
 
-// Function to validate Step 3 fields (income, expenses, savings, debts)
-function validateStep3() {
-    const income = document.getElementById('income').value;
-    const expenses = document.getElementById('expenses').value;
-    const savings = document.getElementById('savings').value;
-    const debts = document.getElementById('debts').value;
-
-    // Ensure all fields are filled and are valid numbers
-    if (income === '' || isNaN(income) || parseFloat(income) < 0) {
-        showAlert('Please enter a valid annual income (must be a positive number).');
-        return false;
-    }
-    if (expenses === '' || isNaN(expenses) || parseFloat(expenses) < 0) {
-        showAlert('Please enter valid monthly expenses (must be a positive number).');
-        return false;
-    }
-    if (savings === '' || isNaN(savings) || parseFloat(savings) < 0) {
-        showAlert('Please enter valid current savings (must be a positive number).');
-        return false;
-    }
-    if (debts === '' || isNaN(debts) || parseFloat(debts) < 0) {
-        showAlert('Please enter valid total debts (must be a positive number).');
-        return false;
-    }
-
-    return true; // All fields are valid
+// Function to validate investment amount in Step 3
+function validateInvestmentAmount() {
+    const investmentAmount = parseFloat(document.getElementById('investmentAmount').value);
+    return !isNaN(investmentAmount) && investmentAmount >= 1000 && investmentAmount <= 10000000;
 }
 
 // Function to validate risk tolerance selection
@@ -90,10 +69,7 @@ function submitForm() {
         phone: document.getElementById('phone').value,
         dob: document.getElementById('dob').value,
         financialGoal: document.querySelector('input[name="financialGoal"]:checked').value,
-        income: document.getElementById('income').value,
-        expenses: document.getElementById('expenses').value,
-        savings: document.getElementById('savings').value,
-        debts: document.getElementById('debts').value,
+        investmentAmount: document.getElementById('investmentAmount').value, // Updated to include investmentAmount
         riskTolerance: document.querySelector('input[name="riskTolerance"]:checked').value
     };
 
@@ -182,9 +158,10 @@ document.querySelectorAll('.next-step').forEach(button => {
         }
 
         if (currentStep === 2) {
-            // Validate Step 3 fields (income, expenses, savings, debts)
-            if (!validateStep3()) {
-                return; // Stop if validation fails
+            // Validate investment amount in Step 3
+            if (!validateInvestmentAmount()) {
+                showAlert('Please enter a valid investment amount between $1,000 and $10,000,000.');
+                return;
             }
         }
 
@@ -209,10 +186,7 @@ document.querySelectorAll('.next-step').forEach(button => {
                 <p><strong>Phone:</strong> ${document.getElementById('phone').value}</p>
                 <p><strong>Date of Birth:</strong> ${document.getElementById('dob').value}</p>
                 <p><strong>Financial Goals:</strong> ${document.querySelector('input[name="financialGoal"]:checked').value}</p>
-                <p><strong>Annual Income:</strong> $${document.getElementById('income').value}</p>
-                <p><strong>Monthly Expenses:</strong> $${document.getElementById('expenses').value}</p>
-                <p><strong>Current Savings:</strong> $${document.getElementById('savings').value}</p>
-                <p><strong>Total Debts:</strong> $${document.getElementById('debts').value}</p>
+                <p><strong>Investment Amount:</strong> $${document.getElementById('investmentAmount').value}</p>
                 <p><strong>Risk Tolerance:</strong> ${document.querySelector('input[name="riskTolerance"]:checked').value}</p>
             `;
         }
