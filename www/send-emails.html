@@ -3,92 +3,8 @@
 <head>
     <title>Send Email</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
-        }
-        h2 {
-            text-align: center;
-        }
-        label {
-            font-weight: bold;
-            display: block;
-            margin-top: 10px;
-        }
-        input, select, textarea {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
-            margin-top: 15px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-    </style>
-    <script>
-        async function sendEmail(event) {
-            event.preventDefault();
-            const backendHost = 'https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev'
-            //const backendHost = 'https://localhost:8080'
-            const formData = new FormData(document.getElementById("emailForm"));
-
-            const file = formData.get("attachment");
-            let attachmentBase64 = "";
-            
-            if (file && file.size > 0) {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                attachmentBase64 = await new Promise(resolve => {
-                    reader.onload = () => resolve(reader.result.split(",")[1]);
-                });
-            }
-            
-            const payload = {
-                recipient: formData.get("recipient"),
-                subject: formData.get("subject"),
-                body: formData.get("body"),
-                body_type: formData.get("body_type"),
-                attachment: attachmentBase64,
-                attachment_name: file ? file.name : "",
-                attachment_type: file ? file.type : ""
-            };
-            
-            const response = await fetch(`${backendHost}/send-email`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            
-            const result = await response.json();
-            alert(result.message || result.error);
-        }
-    </script>
+    <link rel="stylesheet" href="css/send-emails.css">
+    <script src="js/send-emails.js" defer></script>
 </head>
 <body>
     <div class="container">
@@ -101,7 +17,7 @@
             <input type="text" name="subject" required>
             
             <label>Body:</label>
-            <textarea name="body" rows="4" required></textarea>
+            <textarea name="body" rows="20" required></textarea>
             
             <label>Body Type:</label>
             <select name="body_type">
