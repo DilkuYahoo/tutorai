@@ -1,8 +1,8 @@
 // script.js
 // Define the backend host as a variable
-//const backendHost = 'http://localhost:8080'; // You can change this to your production URL when needed
+const backendHost = 'http://localhost:8080'; // You can change this to your production URL when needed
 //const backendHost = 'https://fintelle.wn.r.appspot.com';
-const backendHost = 'https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev'
+//const backendHost = 'https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev'
 
 // Function to show a modern alert (Bootstrap modal)
 function showAlert(message) {
