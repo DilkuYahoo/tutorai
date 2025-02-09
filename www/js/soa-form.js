@@ -24,9 +24,9 @@ function validatePhone(phone) {
     return phonePattern.test(phone);
 }
 
-// Function to validate date of birth (basic validation for demonstration)
-function validateDOB(dob) {
-    return dob !== ''; // Ensure the date is not empty
+// Function to validate age (basic validation for demonstration)
+function validateage(age) {
+    return age !== ''; // Ensure the date is not empty
 }
 
 // Function to validate full name (basic validation for demonstration)
@@ -67,7 +67,7 @@ function submitForm() {
         fullName: document.getElementById('fullName').value,
         email: document.getElementById('email').value,
         phone: document.getElementById('phone').value,
-        dob: document.getElementById('dob').value,
+        age: document.getElementById('age').value,
         financialGoal: document.querySelector('input[name="financialGoal"]:checked').value,
         investmentAmount: document.getElementById('investmentAmount').value, // Updated to include investmentAmount
         riskTolerance: document.querySelector('input[name="riskTolerance"]:checked').value
@@ -126,7 +126,7 @@ document.querySelectorAll('.next-step').forEach(button => {
             const fullName = document.getElementById('fullName').value;
             const email = document.getElementById('email').value;
             const phone = document.getElementById('phone').value;
-            const dob = document.getElementById('dob').value;
+            const age = document.getElementById('age').value;
 
             if (!validateFullName(fullName)) {
                 showAlert('Please enter your full name.');
@@ -143,8 +143,8 @@ document.querySelectorAll('.next-step').forEach(button => {
                 return;
             }
 
-            if (!validateDOB(dob)) {
-                showAlert('Please enter your date of birth.');
+            if (!validateage(age)) {
+                showAlert('Please enter your age.');
                 return;
             }
         }
@@ -184,7 +184,7 @@ document.querySelectorAll('.next-step').forEach(button => {
                 <p><strong>Name:</strong> ${document.getElementById('fullName').value}</p>
                 <p><strong>Email:</strong> ${document.getElementById('email').value}</p>
                 <p><strong>Phone:</strong> ${document.getElementById('phone').value}</p>
-                <p><strong>Date of Birth:</strong> ${document.getElementById('dob').value}</p>
+                <p><strong>Age:</strong> ${document.getElementById('age').value}</p>
                 <p><strong>Financial Goals:</strong> ${document.querySelector('input[name="financialGoal"]:checked').value}</p>
                 <p><strong>Investment Amount:</strong> $${document.getElementById('investmentAmount').value}</p>
                 <p><strong>Risk Tolerance:</strong> ${document.querySelector('input[name="riskTolerance"]:checked').value}</p>
