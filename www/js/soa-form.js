@@ -2,7 +2,7 @@
 // Define the backend host as a variable
 //const backendHost = 'http://localhost:8080'; // You can change this to your production URL when needed
 //const backendHost = 'https://fintelle.wn.r.appspot.com';
-const backendHost = 'https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev'
+const backendHost = 'https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev';
 
 // Function to show a modern alert (Bootstrap modal)
 function showAlert(message) {
@@ -25,8 +25,8 @@ function validatePhone(phone) {
 }
 
 // Function to validate age (basic validation for demonstration)
-function validateage(age) {
-    return age !== ''; // Ensure the date is not empty
+function validateAge(age) {
+    return age !== ''; // Ensure the age is not empty
 }
 
 // Function to validate full name (basic validation for demonstration)
@@ -52,8 +52,20 @@ function validateRiskTolerance() {
     return selectedRisk !== null; // Ensure a risk tolerance option is selected
 }
 
+// Function to validate disclaimer checkbox
+function validateDisclaimer() {
+    const disclaimerCheckbox = document.getElementById('acknowledgeDisclaimer');
+    return disclaimerCheckbox.checked; // Ensure the disclaimer is acknowledged
+}
+
 // Function to handle form submission
 function submitForm() {
+    // Validate the disclaimer checkbox
+    if (!validateDisclaimer()) {
+        showAlert('You must acknowledge the disclaimer to submit the form.');
+        return; // Stop the submission if the disclaimer is not ticked
+    }
+
     // Show the spinner
     const submitButton = document.getElementById('submitForm');
     submitButton.innerHTML = `
@@ -69,7 +81,7 @@ function submitForm() {
         phone: document.getElementById('phone').value,
         age: document.getElementById('age').value,
         financialGoal: document.querySelector('input[name="financialGoal"]:checked').value,
-        investmentAmount: document.getElementById('investmentAmount').value, // Updated to include investmentAmount
+        investmentAmount: document.getElementById('investmentAmount').value,
         riskTolerance: document.querySelector('input[name="riskTolerance"]:checked').value
     };
 
@@ -143,7 +155,7 @@ document.querySelectorAll('.next-step').forEach(button => {
                 return;
             }
 
-            if (!validateage(age)) {
+            if (!validateAge(age)) {
                 showAlert('Please enter your age.');
                 return;
             }
