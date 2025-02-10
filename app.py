@@ -36,16 +36,17 @@ def send_email():
             return jsonify({"error": "All fields (recipient, subject, body) are required"}), 400
 
         # Prepare the email body type
-        body_content = {
-            "Text": {"Data": body, "Charset": CHARSET}
-        } if body_type.lower() == "text" else {
-            "Html": {"Data": body, "Charset": CHARSET}
-        }
+        if body_type.lower() == "html":
+            body_content_type = "text/html"
+        else:
+            body_content_type = "text/plain"
 
         # Prepare the email structure
         message = {
             "Subject": {"Data": subject, "Charset": CHARSET},
-            "Body": body_content,
+            "Body": {
+                "Html" if body_type.lower() == "html" else "Text": {"Data": body, "Charset": CHARSET}
+            },
         }
 
         # Handle attachment if provided
@@ -55,7 +56,7 @@ def send_email():
                 "Source": SENDER_EMAIL,
                 "Destinations": [recipient],
                 "RawMessage": {
-                    "Data": f"From: {SENDER_EMAIL}\nTo: {recipient}\nSubject: {subject}\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=boundary\n\n--boundary\nContent-Type: text/plain; charset=UTF-8\n\n{body}\n\n--boundary\nContent-Type: {attachment_type}; name={attachment_name}\nContent-Disposition: attachment; filename={attachment_name}\nContent-Transfer-Encoding: base64\n\n{attachment}\n\n--boundary--"
+                    "Data": f"From: {SENDER_EMAIL}\nTo: {recipient}\nSubject: {subject}\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=boundary\n\n--boundary\nContent-Type: {body_content_type}; charset=UTF-8\n\n{body}\n\n--boundary\nContent-Type: {attachment_type}; name={attachment_name}\nContent-Disposition: attachment; filename={attachment_name}\nContent-Transfer-Encoding: base64\n\n{attachment}\n\n--boundary--"
                 }
             }
             response = ses_client.send_raw_email(**raw_message)
@@ -69,8 +70,10 @@ def send_email():
         return jsonify({"message": "Email sent successfully", "response": response}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500    
+        return jsonify({"error": str(e)}), 500
+    
 
+    
 @app.route('/update_leads', methods=['POST'])
 def update_leads():
     # Validate JSON input
