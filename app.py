@@ -35,11 +35,8 @@ def send_email():
         if not all([recipient, subject, body]):
             return jsonify({"error": "All fields (recipient, subject, body) are required"}), 400
 
-        # Prepare the email body type
-        if body_type.lower() == "html":
-            body_content_type = "text/html"
-        else:
-            body_content_type = "text/plain"
+        # Determine the body content type
+        body_content_type = "text/html" if body_type.lower() == "html" else "text/plain"
 
         # Prepare the email structure
         message = {
@@ -70,10 +67,9 @@ def send_email():
         return jsonify({"message": "Email sent successfully", "response": response}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
+        return jsonify({"error": str(e)}), 500    
 
-    
+
 @app.route('/update_leads', methods=['POST'])
 def update_leads():
     # Validate JSON input
