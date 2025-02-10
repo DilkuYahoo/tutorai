@@ -5,6 +5,7 @@ import os
 import mylib
 import base64
 
+
 app = Flask(__name__)
 CORS(app)
 
@@ -17,6 +18,7 @@ ses_client = boto3.client("ses", region_name=AWS_REGION)
 
 # Hardcoded sender email
 SENDER_EMAIL = "info@advicegenie.com.au"
+
 
 @app.route("/send-email", methods=["POST"])
 def send_email():
