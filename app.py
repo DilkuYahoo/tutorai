@@ -19,18 +19,17 @@ ses_client = boto3.client("ses", region_name=AWS_REGION)
 SENDER_EMAIL = "info@advicegenie.com.au"
 
 @app.route("/send-email", methods=["POST"])
-def send_email(recipient=None, subject=None, body=None, body_type="text", attachment=None, attachment_name=None, attachment_type=None):
+def send_email():
     try:
-        # If request data is present, override with values from JSON payload
-        if request.is_json:
-            data = request.get_json()
-            recipient = data.get("recipient", recipient)
-            subject = data.get("subject", subject)
-            body = data.get("body", body)
-            body_type = data.get("body_type", body_type)  # Can be "text" or "html"
-            attachment = data.get("attachment", attachment)
-            attachment_name = data.get("attachment_name", attachment_name)
-            attachment_type = data.get("attachment_type", attachment_type)
+        # Get data from the JSON payload
+        data = request.get_json()
+        recipient = data.get("recipient")
+        subject = data.get("subject")
+        body = data.get("body")
+        body_type = data.get("body_type", "text")  # Default to "text" if not provided
+        attachment = data.get("attachment")
+        attachment_name = data.get("attachment_name")
+        attachment_type = data.get("attachment_type")
 
         # Validate input
         if not all([recipient, subject, body]):
@@ -56,7 +55,7 @@ def send_email(recipient=None, subject=None, body=None, body_type="text", attach
                 "Source": SENDER_EMAIL,
                 "Destinations": [recipient],
                 "RawMessage": {
-                    "Data": f"From: {SENDER_EMAIL}\nTo: {recipient}\nSubject: {subject}\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=boundary\n\n--boundary\nContent-Type: {attachment_type}; name={attachment_name}\nContent-Disposition: attachment; filename={attachment_name}\nContent-Transfer-Encoding: base64\n\n{attachment}\n\n--boundary--"
+                    "Data": f"From: {SENDER_EMAIL}\nTo: {recipient}\nSubject: {subject}\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=boundary\n\n--boundary\nContent-Type: text/plain; charset=UTF-8\n\n{body}\n\n--boundary\nContent-Type: {attachment_type}; name={attachment_name}\nContent-Disposition: attachment; filename={attachment_name}\nContent-Transfer-Encoding: base64\n\n{attachment}\n\n--boundary--"
                 }
             }
             response = ses_client.send_raw_email(**raw_message)
@@ -70,8 +69,7 @@ def send_email(recipient=None, subject=None, body=None, body_type="text", attach
         return jsonify({"message": "Email sent successfully", "response": response}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
+        return jsonify({"error": str(e)}), 500    
 
 @app.route('/update_leads', methods=['POST'])
 def update_leads():

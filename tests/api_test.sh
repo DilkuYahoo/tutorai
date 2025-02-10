@@ -24,6 +24,6 @@ FULL_URL="${URL}/${API}"
 #curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"name": "ANZ", "email": ".ax","message":"Testing"}'
 
 # Uncomment the following line to use a specific URL without concatenation
-# curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"a": "12", "b": "15"}'
+#curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"a": "12", "b": "15"}'
 curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"recipient": "dilku@yahoo.com", "subject": "Subject Testing","body":"Testing Body"}'
 

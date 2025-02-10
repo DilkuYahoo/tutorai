@@ -5,7 +5,9 @@ async function sendEmail(event) {
     const formData = new FormData(document.getElementById("emailForm"));
 
     const file = formData.get("attachment");
-    let attachmentBase64 = "";
+    let attachmentBase64 = null;
+    let attachmentName = null;
+    let attachmentType = null;
     
     if (file && file.size > 0) {
         const reader = new FileReader();
@@ -13,6 +15,8 @@ async function sendEmail(event) {
         attachmentBase64 = await new Promise(resolve => {
             reader.onload = () => resolve(reader.result.split(",")[1]);
         });
+        attachmentName = file.name;
+        attachmentType = file.type;
     }
     
     const payload = {
@@ -21,8 +25,8 @@ async function sendEmail(event) {
         body: formData.get("body"),
         body_type: formData.get("body_type"),
         attachment: attachmentBase64,
-        attachment_name: file ? file.name : "",
-        attachment_type: file ? file.type : ""
+        attachment_name: attachmentName,
+        attachment_type: attachmentType
     };
     
     const response = await fetch(`${backendHost}/send-email`, {
