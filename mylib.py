@@ -27,13 +27,18 @@ def openai_response_to_html(response_text: str) -> str:
     return html_output
 
 # Google Sheets setup
-def get_google_sheet():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets",
-             "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
-
+def get_google_sheet(spreadsheet_name: str, sheet_name: str):
+    scope = [
+        "https://spreadsheets.google.com/feeds", 
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive.file", 
+        "https://www.googleapis.com/auth/drive"
+    ]
+    
     creds = ServiceAccountCredentials.from_json_keyfile_name('.fintelle-gsheet.json', scope)
     client = gspread.authorize(creds)
-    sheet = client.open("leads").sheet1  # Choose the first sheet, or specify the name
+    sheet = client.open(spreadsheet_name).worksheet(sheet_name)  # Select sheet by name
+    
     return sheet
 
 

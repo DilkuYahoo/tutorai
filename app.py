@@ -94,7 +94,7 @@ def update_leads():
         return jsonify({"error": "Missing required fields"}), 400
 
     # Get Google Sheet instance
-    sheet = mylib.get_google_sheet()
+    sheet = mylib.get_google_sheet("leads","Sheet1")
 
     # Append row data to Google Sheet
     sheet.append_row([
