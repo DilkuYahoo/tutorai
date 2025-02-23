@@ -1,57 +1,83 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const form = document.getElementById("advisorOnboardingForm");
-    const steps = document.querySelectorAll(".form-step");
-    const progressBar = document.getElementById("progressBar");
-    let currentStep = 0;
+    // Define the backend host URL as a variable
+    const backendHost = 'https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev'; // Current backend URL
+    // const backendHost = 'http://localhost:8080'; // Local development URL
+    // const backendHost = 'https://fintelle.wn.r.appspot.com'; // Production URL
 
-    function updateProgress() {
-        const progress = ((currentStep + 1) / steps.length) * 100;
-        progressBar.style.width = progress + "%";
+    let currentStep = 1;
+
+    function showStep(step) {
+        document.querySelectorAll(".step").forEach(s => s.classList.add("d-none"));
+        document.getElementById(`step${step}`).classList.remove("d-none");
     }
 
-    function showStep(stepIndex) {
-        steps.forEach((step, index) => {
-            step.classList.toggle("active", index === stepIndex);
-        });
-        updateProgress();
-    }
-
-    document.querySelectorAll(".next-step").forEach(button => {
-        button.addEventListener("click", function () {
-            const nextStepId = this.getAttribute("data-next");
-            const nextStepIndex = Array.from(steps).findIndex(step => step.id === nextStepId);
-            if (validateStep(currentStep)) {
-                currentStep = nextStepIndex;
-                showStep(currentStep);
-            }
-        });
-    });
-
-    document.querySelectorAll(".prev-step").forEach(button => {
-        button.addEventListener("click", function () {
-            const prevStepId = this.getAttribute("data-prev");
-            const prevStepIndex = Array.from(steps).findIndex(step => step.id === prevStepId);
-            currentStep = prevStepIndex;
+    window.nextStep = function (step) {
+        if (validateStep(step)) {
+            currentStep++;
             showStep(currentStep);
-        });
-    });
-
-    function validateStep(stepIndex) {
-        const fields = steps[stepIndex].querySelectorAll("input, textarea, select");
-        for (let field of fields) {
-            if (!field.checkValidity()) {
-                field.reportValidity();
-                return false;
-            }
         }
-        return true;
+    };
+
+    window.prevStep = function (step) {
+        currentStep--;
+        showStep(currentStep);
+    };
+
+    function validateStep(step) {
+        let valid = true;
+        let fields = document.querySelectorAll(`#step${step} input`);
+        fields.forEach(field => {
+            if (!field.checkValidity()) {
+                valid = false;
+                showModal("Validation Error", `Invalid input in field: ${field.previousElementSibling.innerText}`);
+            }
+        });
+        return valid;
     }
 
-    form.addEventListener("submit", function (event) {
-        if (!validateStep(currentStep)) {
-            event.preventDefault();
-        } else {
-            alert("Form submitted successfully!");
+    function showModal(title, message, isSuccess = false) {
+        document.getElementById("modalMessage").innerText = message;
+        let modal = new bootstrap.Modal(document.getElementById("errorModal"));
+        
+        // Update modal title and button based on success or error
+        document.querySelector(".modal-title").innerText = title;
+        let modalFooter = document.querySelector(".modal-footer");
+        modalFooter.innerHTML = `<button type="button" class="btn ${isSuccess ? 'btn-success' : 'btn-secondary'}" data-bs-dismiss="modal">${isSuccess ? 'Ok' : 'Close'}</button>`;
+
+        // Redirect to home page if it's a success modal
+        if (isSuccess) {
+            modalFooter.querySelector("button").addEventListener("click", function() {
+                window.location.href = "/"; // Redirect to home page
+            });
+        }
+
+        modal.show();
+    }
+
+    document.getElementById("onboardingForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+        if (validateStep(currentStep)) {
+            let formData = {
+                name: document.getElementById("name").value,
+                phone: document.getElementById("phone").value,
+                email: document.getElementById("email").value,
+                afsl: document.getElementById("afsl").value,
+                businessName: document.getElementById("businessName").value,
+                businessAddress: document.getElementById("businessAddress").value,
+                businessURL: document.getElementById("businessURL").value,
+                agreement1: document.getElementById("agreement1").checked,
+                agreement2: document.getElementById("agreement2").checked,
+            };
+
+            // Use the backendHost variable in the fetch URL
+            fetch(`${backendHost}/onboard_advisors`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => showModal("Success", "Thanks for submitting the form, we will be in touch", true))
+            .catch(error => showModal("Error", "Error submitting form!"));
         }
     });
 

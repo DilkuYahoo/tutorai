@@ -5,7 +5,6 @@ import os
 import mylib
 import base64
 
-
 app = Flask(__name__)
 CORS(app)
 
@@ -18,7 +17,6 @@ ses_client = boto3.client("ses", region_name=AWS_REGION)
 
 # Hardcoded sender email
 SENDER_EMAIL = "info@advicegenie.com.au"
-
 
 @app.route("/send-email", methods=["POST"])
 def send_email():
@@ -71,7 +69,6 @@ def send_email():
     except Exception as e:
         return jsonify({"error": str(e)}), 500    
 
-
 @app.route('/update_leads', methods=['POST'])
 def update_leads():
     # Validate JSON input
@@ -117,7 +114,6 @@ def update_leads():
     }
 
     # Get financial advice
-    # analysis = mylib.financialAdvisor(customer_details)
     analysis = mylib.financialAdvisor(customer_details)
 
     # Construct the email body with HTML formatting
@@ -156,7 +152,7 @@ def update_leads():
             Source=SENDER_EMAIL,  # Use hardcoded sender email
             Destination={"ToAddresses": ["info@advicegenie.com.au"]},
             Message={
-                "Subject": {"Data": f"Financial Analysis for {full_name}", "Charset": CHARSET},
+                "Subject": {"Data": f"Statement of Advice for {full_name}", "Charset": CHARSET},
                 "Body": {"Html": {"Data": email_body, "Charset": CHARSET}},  # Use HTML body
             },
         )
@@ -164,6 +160,82 @@ def update_leads():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/onboard_advisors", methods=["POST"])
+def onboard_advisors():
+    try:
+        # Validate JSON input
+        if not request.is_json:
+            return jsonify({"error": "Invalid input: JSON data expected"}), 400
+
+        data = request.get_json()
+
+        # Extract all the required fields from JSON data
+        name = data.get('name')
+        phone = data.get('phone')
+        email = data.get('email')
+        afsl = data.get('afsl')
+        business_name = data.get('businessName')
+        business_address = data.get('businessAddress')
+        business_url = data.get('businessURL')
+        agreement1 = data.get('agreement1')
+        agreement2 = data.get('agreement2')
+
+        # Check if all required fields are present
+        if not all([name, phone, email, afsl, business_name, business_address, business_url, agreement1, agreement2]):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Validate that the user agreed to the terms and conditions
+        if not (agreement1 and agreement2):
+            return jsonify({"error": "You must agree to both the engagement and privacy terms"}), 400
+
+        # Here you can add logic to store the data in a database or send it via email
+        # For example, you can append the data to a Google Sheet or send an email to the admin
+
+        # Example: Append data to Google Sheet
+        sheet = mylib.get_google_sheet("leads", "Sheet2")
+        sheet.append_row([name, phone, email, afsl, business_name, business_address, business_url, agreement1, agreement2])
+
+        # Example: Send an email to the admin
+        email_body = f"""
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; }}
+                h1 {{ color: #333366; }}
+                .details {{ background-color: #f4f4f4; padding: 10px; border-radius: 5px; }}
+            </style>
+        </head>
+        <body>
+            <h1>New Advisor Onboarding</h1>
+            <div class="details">
+                <p><strong>Name:</strong> {name}</p>
+                <p><strong>Phone:</strong> {phone}</p>
+                <p><strong>Email:</strong> {email}</p>
+                <p><strong>AFSL Number:</strong> {afsl}</p>
+                <p><strong>Business Name:</strong> {business_name}</p>
+                <p><strong>Business Address:</strong> {business_address}</p>
+                <p><strong>Business URL:</strong> {business_url}</p>
+                <p><strong>Agreed on Engagement:</strong> {"Yes" if agreement1 else "No"}</p>
+                <p><strong>Agreed on Privacy:</strong> {"Yes" if agreement2 else "No"}</p>
+            </div>
+        </body>
+        </html>
+        """
+
+        response = ses_client.send_email(
+            Source=SENDER_EMAIL,
+            Destination={"ToAddresses": ["info@advicegenie.com.au"]},
+            Message={
+                "Subject": {"Data": f"New Advisor Onboarding: {name}", "Charset": CHARSET},
+                "Body": {"Html": {"Data": email_body, "Charset": CHARSET}},
+            },
+        )
+
+        return jsonify({"message": "Advisor onboarding data received and processed", "email_response": response}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 
 
 @app.route("/", methods=["GET"])
