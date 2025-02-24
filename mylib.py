@@ -63,7 +63,7 @@ Provide 5 to 10 diversified fund selections with investment allocation as both a
 3. Justification Criteria:
    - Consider historical performance, fees, sector exposure, and growth potential.
 4. Market Exposure:
-   - Include local and international funds with emphasis on **materials, energy, infrastructure, and financials.**
+   - Include local and international funds with emphasis on materials, energy, infrastructure, and financials.
 5. Exclusion Criteria:
    - Exclude delisted companies in the past 6 months. The excluded list is:
      MKG, LRS, SXG, CAI, CDD, ADA, DRA, GDA, EP1, NTL, CAJ, ANL, POX, CE1, TNJ, CSE, AME, POW, RB1, TT3, VT2, E33, 
@@ -95,7 +95,7 @@ def request2ai(message):
     model="gpt-4o-mini",
     messages=message,
     temperature=0.8,
-    max_tokens=1024,
+    max_tokens=2048,
     top_p=1,
     frequency_penalty=0,
     presence_penalty=0

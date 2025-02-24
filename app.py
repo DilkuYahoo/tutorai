@@ -4,6 +4,7 @@ import boto3
 import os
 import mylib
 import base64
+from datetime import datetime  # Import datetime module
 
 app = Flask(__name__)
 CORS(app)
@@ -69,6 +70,7 @@ def send_email():
     except Exception as e:
         return jsonify({"error": str(e)}), 500    
 
+
 @app.route('/update_leads', methods=['POST'])
 def update_leads():
     # Validate JSON input
@@ -90,10 +92,13 @@ def update_leads():
     if not all([full_name, email, phone, age, financial_goal, investment_amount, risk_tolerance]):
         return jsonify({"error": "Missing required fields"}), 400
 
+    # Get the current date and local time
+    current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     # Get Google Sheet instance
     sheet = mylib.get_google_sheet("leads","Sheet1")
 
-    # Append row data to Google Sheet
+    # Append row data to Google Sheet, including the current date and time
     sheet.append_row([
         full_name, 
         email, 
@@ -101,7 +106,8 @@ def update_leads():
         age, 
         financial_goal, 
         investment_amount,  # New field
-        risk_tolerance
+        risk_tolerance,
+        current_datetime  # Add the current date and time
     ])
 
     # Prepare customer details for financial advisor
@@ -137,6 +143,7 @@ def update_leads():
             <p><strong>Financial Goal:</strong> {financial_goal}</p>
             <p><strong>Investment Amount:</strong> {investment_amount}</p>
             <p><strong>Risk Tolerance:</strong> {risk_tolerance}</p>
+            <p><strong>Date and Time:</strong> {current_datetime}</p>
         </div>
         <div class="analysis">
             <h1>Financial Analysis</h1>
@@ -159,6 +166,9 @@ def update_leads():
         return jsonify({"message": "Data successfully added to Google Sheet and email sent", "email_response": response}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
+from datetime import datetime  # Import datetime module (if not already imported)
 
 @app.route("/onboard_advisors", methods=["POST"])
 def onboard_advisors():
@@ -188,14 +198,25 @@ def onboard_advisors():
         if not (agreement1 and agreement2):
             return jsonify({"error": "You must agree to both the engagement and privacy terms"}), 400
 
-        # Here you can add logic to store the data in a database or send it via email
-        # For example, you can append the data to a Google Sheet or send an email to the admin
+        # Get the current date and local time
+        current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Example: Append data to Google Sheet
+        # Append data to Google Sheet, including the current date and time
         sheet = mylib.get_google_sheet("leads", "Sheet2")
-        sheet.append_row([name, phone, email, afsl, business_name, business_address, business_url, agreement1, agreement2])
+        sheet.append_row([
+            name, 
+            phone, 
+            email, 
+            afsl, 
+            business_name, 
+            business_address, 
+            business_url, 
+            agreement1, 
+            agreement2,
+            current_datetime  # Add the current date and time
+        ])
 
-        # Example: Send an email to the admin
+        # Construct the email body with HTML formatting, including the date and time
         email_body = f"""
         <html>
         <head>
@@ -217,11 +238,13 @@ def onboard_advisors():
                 <p><strong>Business URL:</strong> {business_url}</p>
                 <p><strong>Agreed on Engagement:</strong> {"Yes" if agreement1 else "No"}</p>
                 <p><strong>Agreed on Privacy:</strong> {"Yes" if agreement2 else "No"}</p>
+                <p><strong>Date and Time:</strong> {current_datetime}</p>
             </div>
         </body>
         </html>
         """
 
+        # Send an email to the admin
         response = ses_client.send_email(
             Source=SENDER_EMAIL,
             Destination={"ToAddresses": ["info@advicegenie.com.au"]},
@@ -236,7 +259,6 @@ def onboard_advisors():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-
 
 @app.route("/", methods=["GET"])
 def health_check():
