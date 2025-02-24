@@ -57,6 +57,16 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("onboardingForm").addEventListener("submit", function (event) {
         event.preventDefault();
         if (validateStep(currentStep)) {
+            // Get the submit button
+            const submitButton = document.querySelector("#onboardingForm button[type='submit']");
+            
+            // Disable the button and show the spinner
+            submitButton.disabled = true;
+            submitButton.innerHTML = `
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                Submitting...
+            `;
+
             let formData = {
                 name: document.getElementById("name").value,
                 phone: document.getElementById("phone").value,
@@ -76,8 +86,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 body: JSON.stringify(formData)
             })
             .then(response => response.json())
-            .then(data => showModal("Success", "Thanks for submitting the form, we will be in touch", true))
-            .catch(error => showModal("Error", "Error submitting form!"));
+            .then(data => {
+                // Re-enable the button and reset its text
+                submitButton.disabled = false;
+                submitButton.innerHTML = "Submit";
+                showModal("Success", "Thanks for submitting the form, we will be in touch", true);
+            })
+            .catch(error => {
+                // Re-enable the button and reset its text
+                submitButton.disabled = false;
+                submitButton.innerHTML = "Submit";
+                showModal("Error", "Error submitting form!");
+            });
         }
     });
 
