@@ -148,14 +148,21 @@
 
 /*** Header ***/
 .carousel-caption {
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: auto; /* Let it adjust naturally */
+    bottom: 10%; /* Position it lower to avoid covering the whole slide */
+    left: 10%;
+    right: 10%;
     display: flex;
     align-items: center;
-    background: rgba(0, 0, 0, .4); /* Darker overlay for better contrast */
-    z-index: 1;
+    background: rgba(0, 0, 0, 0.3); /* Lighten the overlay */
+    padding: 20px;
+    border-radius: 10px; /* Optional: adds rounded edges */
+    z-index: 10; /* Ensure it's above other elements */
+    pointer-events: auto; /* Ensures elements inside are clickable */
+}
+
+.carousel-caption a {
+    pointer-events: auto; /* Ensures the link inside is clickable */
 }
 
 .carousel-control-prev,
