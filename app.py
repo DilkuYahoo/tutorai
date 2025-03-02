@@ -71,6 +71,149 @@ def send_email():
         return jsonify({"error": str(e)}), 500    
 
 
+
+
+@app.route('/get_soi', methods=['POST'])
+def get_soi():
+    # Validate JSON input
+    if not request.is_json:
+        return jsonify({"error": "Invalid input: JSON data expected"}), 400
+
+    data = request.get_json()
+
+    # Extract all the required fields from JSON data (based on insurance.html form)
+    full_name = data.get('fullName')
+    email = data.get('email')
+    phone = data.get('phone')
+    age = data.get('age')
+    annual_income = data.get('annualIncome')
+    dependents = data.get('dependents')
+    debts = data.get('debts')
+    survival_months = data.get('survivalMonths')
+    occupation = data.get('occupation')
+    medical_conditions = data.get('medicalConditions')
+    smoke_drink = data.get('smokeDrink')
+    insurance_type = data.get('insuranceType')
+    health_coverage = data.get('healthCoverage')
+    monthly_premium = data.get('monthlyPremium')
+    existing_policies = data.get('existingPolicies')
+    payout_preference = data.get('payoutPreference')
+
+    # Check if all required fields are present
+    required_fields = [
+        full_name, email, phone, age, annual_income, dependents, debts, 
+        survival_months, occupation, medical_conditions, smoke_drink, 
+        insurance_type, health_coverage, monthly_premium
+    ]
+    if not all(required_fields):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    # Get the current date and local time
+    current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Get Google Sheet instance
+    sheet = mylib.get_google_sheet("leads", "Sheet1")  # Use a different sheet for insurance leads
+
+    # Append row data to Google Sheet, including the current date and time
+    sheet.append_row([
+        full_name, 
+        email, 
+        phone, 
+        age, 
+        annual_income, 
+        dependents, 
+        debts, 
+        survival_months, 
+        occupation, 
+        medical_conditions, 
+        smoke_drink, 
+        insurance_type, 
+        health_coverage, 
+        monthly_premium, 
+        existing_policies, 
+        payout_preference,
+        current_datetime  # Add the current date and time
+    ])
+
+    # Prepare customer details for insurance advice
+    customer_details = {
+        #"full_name": full_name,
+        #"email": email,
+        #"phone": phone,
+        "age": age,
+        "annual_income": annual_income,
+        "dependents": dependents,
+        "debts": debts,
+        "survival_months": survival_months,
+        "occupation": occupation,
+        "medical_conditions": medical_conditions,
+        "smoke_drink": smoke_drink,
+        "insurance_type": insurance_type,
+        "health_coverage": health_coverage,
+        "monthly_premium": monthly_premium,
+        "existing_policies": existing_policies,
+        "payout_preference": payout_preference
+    }
+
+    # Get insurance advice
+    analysis = mylib.insuranceAdvice(customer_details)
+
+    # Construct the email body with HTML formatting
+    email_body = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; }}
+            h1 {{ color: #333366; }}
+            .customer-details {{ background-color: #f4f4f4; padding: 10px; border-radius: 5px; }}
+            .analysis {{ margin-top: 20px; }}
+        </style>
+    </head>
+    <body>
+        <h1>Customer Details</h1>
+        <div class="customer-details">
+            <p><strong>Full Name:</strong> {full_name}</p>
+            <p><strong>Email:</strong> {email}</p>
+            <p><strong>Phone:</strong> {phone}</p>
+            <p><strong>Age:</strong> {age}</p>
+            <p><strong>Annual Income:</strong> {annual_income}</p>
+            <p><strong>Dependents:</strong> {dependents}</p>
+            <p><strong>Debts:</strong> {debts}</p>
+            <p><strong>Survival Months:</strong> {survival_months}</p>
+            <p><strong>Occupation:</strong> {occupation}</p>
+            <p><strong>Medical Conditions:</strong> {medical_conditions}</p>
+            <p><strong>Smoke/Drink:</strong> {smoke_drink}</p>
+            <p><strong>Insurance Type:</strong> {insurance_type}</p>
+            <p><strong>Health Coverage:</strong> {health_coverage}</p>
+            <p><strong>Monthly Premium:</strong> {monthly_premium}</p>
+            <p><strong>Existing Policies:</strong> {existing_policies}</p>
+            <p><strong>Payout Preference:</strong> {payout_preference}</p>
+            <p><strong>Date and Time:</strong> {current_datetime}</p>
+        </div>
+        <div class="analysis">
+            <h1>Insurance Analysis</h1>
+            {analysis}
+        </div>
+    </body>
+    </html>
+    """
+
+    # Send the analysis via email
+    try:
+        response = ses_client.send_email(
+            Source=SENDER_EMAIL,  # Use hardcoded sender email
+            Destination={"ToAddresses": ["info@advicegenie.com.au"]},
+            Message={
+                "Subject": {"Data": f"Statement of Insurance for {full_name}", "Charset": CHARSET},
+                "Body": {"Html": {"Data": email_body, "Charset": CHARSET}},
+            },
+        )
+        return jsonify({"message": "Data successfully added to Google Sheet and email sent", "email_response": response}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
+
 @app.route('/update_leads', methods=['POST'])
 def update_leads():
     # Validate JSON input

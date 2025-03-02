@@ -53,7 +53,7 @@ def financialAdvisor(customer_details):
     system_content = """
 You are a financial advisor specialising in personalised share portfolios for the Australian investment landscape. 
 Recommend an optimised ASX-listed Index Fund (ETF) and Managed Fund portfolio, ensuring strong historical performance. 
-Provide 5 to 10 diversified fund selections with investment allocation as both a percentage and AUD value.
+Provide 3 to 5 diversified fund selections with investment allocation as both a percentage and AUD value.
 
 ### Requirements:
 1. Portfolio Table:
@@ -63,7 +63,7 @@ Provide 5 to 10 diversified fund selections with investment allocation as both a
 3. Justification Criteria:
    - Consider historical performance, fees, sector exposure, and growth potential.
 4. Market Exposure:
-   - Include local and international funds with emphasis on materials, energy, infrastructure, and financials.
+   - Include local and international funds with emphasis on materials, energy, infrastructure, crypto and financials.
 5. Exclusion Criteria:
    - Exclude delisted companies in the past 6 months. The excluded list is:
      MKG, LRS, SXG, CAI, CDD, ADA, DRA, GDA, EP1, NTL, CAJ, ANL, POX, CE1, TNJ, CSE, AME, POW, RB1, TT3, VT2, E33, 
@@ -82,6 +82,41 @@ The goal is to deliver a data-driven investment strategy that maximizes returns 
     
     return analysis
 
+def insuranceAdvice(customer_details):
+    #combined_news = " ".join(headlines)
+    my_message = [] 
+    # Create the analysis prompt
+    prompt = f" {customer_details}"
+    # system_content = ""
+    # system_content = "You are a financial advisor specializing in constructing personalized share portfolios tailored to user-provided financial goals, risk tolerance, and market preferences within the Australian investment landscape. Recommend an optimized portfolio of ASX-listed Index Funds (ETFs) and Managed Funds with a strong track record of performance improvement. Provide 5 to 10 diversified fund selections, specifying investment allocation as both a percentage and AUD value. Offer a comparative analysis with an alternative ASX-listed fund for each recommendation and justify choices based on historical performance, fees, sector exposure, and growth potential. Ensure the portfolio includes local and international exposure, considering key Australian sectors like materials, energy, infrastructure, and financials. The goal is to provide a data-driven investment strategy that maximizes returns within the user's risk tolerance. Exclude any delisted companies for last 6 month and the list is MKG,LRS,SXG,CAI,CDD,ADA,DRA,GDA,EP1,NTL,CAJ,ANL,POX,CE1,TNJ,CSE,AME,POW,RB1,TT3,VT2,E33,LT6,AMT,RXM,ME1,NAM,WEK,ZER,IMQ,RFC,PSI,APM,BSE,SRX,K2F,SCL,VUK,PU2,PNX,KED,AND,ECG,AC8,AJQ,AJY,BKG,CFO,ELE,HLF,LVT,MCL,NGL,PAN,ROO,RVS,TBA,LT5,QIP,MMM,DCG,MLM,SIH"  
+
+    system_content = """
+You are a financial advisor specializing in personalized insurance solutions for individuals and families in Australia. Your expertise lies in recommending tailored insurance plans that align with clients' unique needs, risk profiles, and financial goals. Provide a comprehensive insurance portfolio that ensures optimal coverage and value for money.
+
+### Requirements:
+1. **Portfolio Table**:
+   - List the insurance product name, provider, coverage type, premium (as both a percentage of income and AUD value), and rationale for inclusion.
+2. **Comparative Analysis**:
+   - Suggest an alternative insurance product for each recommendation, with a clear justification for why it might be suitable.
+3. **Justification Criteria**:
+   - Consider factors such as coverage benefits, premiums, claim settlement history, customer reviews, and flexibility of the policy.
+4. **Coverage Focus**:
+   - Include a mix of life, health, income protection, and property insurance, with emphasis on critical areas like medical expenses, disability, and asset protection.
+5. **Exclusion Criteria**:
+   - Exclude insurance providers with a history of poor customer service or unresolved complaints in the past 12 months. The excluded list is:
+     [Insert excluded providers here, if applicable].
+
+### Goal:
+Deliver a data-driven insurance strategy that maximizes coverage and financial security while staying within the client's budget and risk tolerance.
+"""
+
+    message = msgAppend(message=my_message, role='system',content=system_content) 
+    message = msgAppend(message= message, role='user',content=prompt)
+    analysis = mylib.request2ai(message=message)
+    analysis = mylib.chatcompletion2message(response=analysis)
+    analysis = mylib.openai_response_to_html(response_text=analysis)
+    
+    return analysis
 
 def msgAppend(message,role,content):
     message.append( {"role": role, "content": [{ "type": "text","text": content }]} )

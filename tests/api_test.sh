@@ -7,7 +7,8 @@
 #API='ticker_analysis'
 #API='sentiment_tracker'
 #API='update_leads'
-API='onboard_advisors'
+#API='onboard_advisors'
+API='get_soi'  # New endpoint for insurance advice
 URL='http://localhost:8080'
 #URL="https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev/"
 #URL='https://fintelle.wn.r.appspot.com'
@@ -44,17 +45,40 @@ FULL_URL="${URL}/${API}"
 #  }'
 
 # Test the onboard_advisors endpoint
+#curl -X POST \
+#  "$FULL_URL" \
+#  -H "Content-Type: application/json" \
+#  -d '{
+#    "name": "Jane Doe",
+#    "phone": "0987654321",
+#    "email": "janedoe@example.com",
+#    "afsl": "123456",
+#    "businessName": "Doe Financial Services",
+#    "businessAddress": "123 Financial St, Sydney, NSW",
+#    "businessURL": "https://doefinancial.com",
+#    "agreement1": true,
+#    "agreement2": true
+#  }'
+
+# Test the get_soi endpoint
 curl -X POST \
   "$FULL_URL" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Jane Doe",
-    "phone": "0987654321",
-    "email": "janedoe@example.com",
-    "afsl": "123456",
-    "businessName": "Doe Financial Services",
-    "businessAddress": "123 Financial St, Sydney, NSW",
-    "businessURL": "https://doefinancial.com",
-    "agreement1": true,
-    "agreement2": true
+    "fullName": "John Doe",
+    "email": "johndoe@example.com",
+    "phone": "1234567890",
+    "age": 35,
+    "annualIncome": 80000,
+    "dependents": "Yes",
+    "debts": 200000,
+    "survivalMonths": 6,
+    "occupation": "Software Engineer",
+    "medicalConditions": "No",
+    "smokeDrink": "No",
+    "insuranceType": "Hybrid",
+    "healthCoverage": "Both",
+    "monthlyPremium": 200,
+    "existingPolicies": "Life Insurance",
+    "payoutPreference": "Lump Sum"
   }'
