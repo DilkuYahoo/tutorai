@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Insurance Questionnaire Funnel Form</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+  <!-- Custom CSS -->
+  <link href="css/soa-form.css" rel="stylesheet" />
+</head>
+<body>
+  <!-- Topbar / Header -->
+  <div class="container-fluid bg-primary text-dark d-none d-lg-flex">
+    <div class="container py-3">
+      <div class="d-flex align-items-center">
+        <a href="index.html">
+          <h2 class="text-dark fw-bold m-0">AdviceGenie</h2>
+        </a>
+        <div class="ms-auto d-flex align-items-center">
+          <small class="ms-4"><i class="fa fa-envelope me-3"></i>support@advicegenie.com.au</small>
+          <small class="ms-4"><i class="fa fa-map-marker-alt me-3"></i>Sydney, Australia</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container my-5">
+    <h1 class="mb-4">Insurance Questionnaire</h1>
+    <div class="progress">
+      <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+
+    <!-- Multi-Step Form -->
+    <form id="funnelForm">
+      <!-- Step 1: Personal & Financial Information -->
+      <div id="step1" class="form-step active">
+        <h2>Step 1: Personal & Financial Information</h2>
+        <!-- Personal Details -->
+        <div class="mb-3">
+          <label for="fullName" class="form-label">Full Name</label>
+          <input type="text" class="form-control" id="fullName" name="fullName" placeholder="Enter your name" required>
+          <div class="error-message" id="fullNameError"></div>
+        </div>
+        <div class="mb-3">
+          <label for="phoneNumber" class="form-label">Phone Number</label>
+          <input type="tel" class="form-control" id="phoneNumber" name="phoneNumber" placeholder="Enter your phone number" required>
+          <div class="error-message" id="phoneNumberError"></div>
+        </div>
+        <div class="mb-3">
+          <label for="emailAddress" class="form-label">Email Address</label>
+          <input type="email" class="form-control" id="emailAddress" name="emailAddress" placeholder="Enter your email address" required>
+          <div class="error-message" id="emailAddressError"></div>
+        </div>
+        <div class="mb-3">
+          <label for="age" class="form-label">Age</label>
+          <input type="number" class="form-control" id="age" name="age" placeholder="Enter your age" required>
+          <div class="error-message" id="ageError"></div>
+        </div>
+        <!-- Q1 -->
+        <div class="mb-3">
+          <label for="annualIncome" class="form-label">What is your current annual income?</label>
+          <input type="number" class="form-control" id="annualIncome" name="annualIncome" placeholder="Enter your annual income" required>
+          <div class="error-message" id="annualIncomeError"></div>
+        </div>
+        <!-- Q2 -->
+        <div class="mb-3">
+          <label class="form-label">Do you have any dependents (spouse, children, parents)?</label>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="dependents" id="dependentsYes" value="Yes" required>
+            <label class="form-check-label" for="dependentsYes">Yes</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="dependents" id="dependentsNo" value="No" required>
+            <label class="form-check-label" for="dependentsNo">No</label>
+          </div>
+          <div class="error-message" id="dependentsError"></div>
+        </div>
+        <!-- Q3 -->
+        <div class="mb-3">
+          <label for="debts" class="form-label">Do you have a mortgage or any other major debts? If yes, how much?</label>
+          <input type="number" class="form-control" id="debts" name="debts" placeholder="Enter the amount" required>
+          <div class="error-message" id="debtsError"></div>
+        </div>
+        <!-- Q4 -->
+        <div class="mb-3">
+          <label for="survivalMonths" class="form-label">How long could you survive financially if you were unable to work? (in months)</label>
+          <input type="number" class="form-control" id="survivalMonths" name="survivalMonths" placeholder="Enter number of months" required>
+          <div class="error-message" id="survivalMonthsError"></div>
+        </div>
+        <button type="button" class="btn btn-primary next-step" data-next="step2">Next</button>
+      </div>
+
+      <!-- Step 2: Health & Occupation Risks -->
+      <div id="step2" class="form-step">
+        <h2>Step 2: Health & Occupation Risks</h2>
+        <!-- Q5 -->
+        <div class="mb-3">
+          <label for="occupation" class="form-label">What is your occupation? Do you work in a high-risk industry?</label>
+          <input type="text" class="form-control" id="occupation" name="occupation" placeholder="Enter your occupation" required>
+          <div class="error-message" id="occupationError"></div>
+        </div>
+        <!-- Q6 -->
+        <div class="mb-3">
+          <label class="form-label">Do you have any pre-existing medical conditions?</label>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="medicalConditions" id="medicalYes" value="Yes" required>
+            <label class="form-check-label" for="medicalYes">Yes</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="medicalConditions" id="medicalNo" value="No" required>
+            <label class="form-check-label" for="medicalNo">No</label>
+          </div>
+          <div class="error-message" id="medicalConditionsError"></div>
+        </div>
+        <!-- Q7 -->
+        <div class="mb-3">
+          <label class="form-label">Do you smoke or drink alcohol regularly?</label>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="smokeDrink" id="smokeDrinkYes" value="Yes" required>
+            <label class="form-check-label" for="smokeDrinkYes">Yes</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="smokeDrink" id="smokeDrinkNo" value="No" required>
+            <label class="form-check-label" for="smokeDrinkNo">No</label>
+          </div>
+          <div class="error-message" id="smokeDrinkError"></div>
+        </div>
+        <button type="button" class="btn btn-secondary prev-step" data-prev="step1">Previous</button>
+        <button type="button" class="btn btn-primary next-step" data-next="step3">Next</button>
+      </div>
+
+      <!-- Step 3: Insurance Preferences & Budget -->
+      <div id="step3" class="form-step">
+        <h2>Step 3: Insurance Preferences & Budget</h2>
+        <!-- Q8 -->
+        <div class="mb-3">
+          <label for="insuranceType" class="form-label">Do you want insurance inside your superannuation, outside, or a mix of both?</label>
+          <select class="form-select" id="insuranceType" name="insuranceType" required>
+            <option value="" disabled selected>Select an option</option>
+            <option value="Inside Super">Inside Super</option>
+            <option value="Outside Super">Outside Super</option>
+            <option value="Hybrid">Hybrid</option>
+          </select>
+          <div class="error-message" id="insuranceTypeError"></div>
+        </div>
+        <!-- Q9 -->
+        <div class="mb-3">
+          <label for="healthCoverage" class="form-label">What level of private health coverage do you need (hospital, extras, or both)?</label>
+          <select class="form-select" id="healthCoverage" name="healthCoverage" required>
+            <option value="" disabled selected>Select an option</option>
+            <option value="Hospital">Hospital</option>
+            <option value="Extras">Extras</option>
+            <option value="Both">Both</option>
+          </select>
+          <div class="error-message" id="healthCoverageError"></div>
+        </div>
+        <!-- Q10 -->
+        <div class="mb-3">
+          <label for="monthlyPremium" class="form-label">How much are you willing to spend monthly on insurance premiums?</label>
+          <input type="number" class="form-control" id="monthlyPremium" name="monthlyPremium" placeholder="Enter amount" required>
+          <div class="error-message" id="monthlyPremiumError"></div>
+        </div>
+        <button type="button" class="btn btn-secondary prev-step" data-prev="step2">Previous</button>
+        <button type="button" class="btn btn-primary next-step" data-next="step4">Next</button>
+      </div>
+
+      <!-- Step 4: Bonus Questions for Refinement -->
+      <div id="step4" class="form-step">
+        <h2>Step 4: Bonus Questions for Refinement</h2>
+        <!-- Q11 -->
+        <div class="mb-3">
+          <label for="existingPolicies" class="form-label">Do you have existing insurance policies? If so, what type and coverage amounts?</label>
+          <input type="text" class="form-control" id="existingPolicies" name="existingPolicies" placeholder="Optional">
+        </div>
+        <!-- Q12 -->
+        <div class="mb-3">
+          <label for="payoutPreference" class="form-label">Would you prefer a lump sum payout or ongoing income if something happens to you?</label>
+          <select class="form-select" id="payoutPreference" name="payoutPreference">
+            <option value="" disabled selected>Select an option (optional)</option>
+            <option value="Lump Sum">Lump Sum</option>
+            <option value="Ongoing Income">Ongoing Income</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-secondary prev-step" data-prev="step4">Previous</button>
+        <button type="button" class="btn btn-primary next-step" data-next="step5">Next</button>
+      </div>
+
+      <!-- Step 5: Review and Submit -->
+      <div id="step5" class="form-step">
+        <h2>Step 5: Review and Submit</h2>
+        <p>Please review your information before submitting.</p>
+        <div id="reviewDetails" class="mb-4 p-4 bg-light border rounded">
+          <!-- Review details will be dynamically inserted here -->
+        </div>
+
+        <!-- Disclaimer Acknowledgment with Link -->
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="acknowledgeDisclaimer" required>
+            <label class="form-check-label" for="acknowledgeDisclaimer">
+              I acknowledge that I have read and understood the 
+              <a href="disclaimer.html" target="_blank" class="text-primary">disclaimer</a>.
+            </label>
+          </div>
+          <div id="disclaimerError" class="text-danger mt-2" style="display: none;">
+            You must acknowledge the disclaimer to submit the form.
+          </div>
+        </div>
+
+        <!-- Previous and Submit Buttons -->
+        <div class="d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary prev-step" data-prev="step4">Previous</button>
+          <button type="button" class="btn btn-success" id="submitForm">Submit</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Bootstrap Alert Modal -->
+  <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="alertModalLabel">Alert</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="alertMessage"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="container-fluid copyright py-4">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+          &copy; <a class="fw-medium text-dark" href="index.html">AdviceGenie</a>, All Rights Reserved.
+        </div>
+        <div class="col-md-6 text-center text-md-end">
+          Designed By <a class="fw-medium text-dark" href="https://cognifylabs.ai">Cognify Labs</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Custom JS -->
+  <script src="js/insurance.js"></script>
+</body>
+</html>
