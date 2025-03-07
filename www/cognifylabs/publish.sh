@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Variables
-BUCKET_NAME="www.advicegenie.com.au"
+BUCKET_NAME="cognifylabs.ai"
 REGION="ap-southeast-2" # Replace with your preferred AWS region
 INDEX_FILE="index.html"
 ERROR_FILE="index.html" # Set to a proper error file if needed
 FOLDER_PATH="./" # Path to your website files (use . if files are in the current directory)
-YOUR_DISTRIBUTION_ID="E1C5YSQD0KFMCM"
+YOUR_DISTRIBUTION_ID="E1NBX4FPI2AYJ5"
 
 
 # Check if AWS CLI is installed
