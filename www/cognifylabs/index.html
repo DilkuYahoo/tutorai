@@ -1,541 +1,400 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8">
-    <title>AdviceGenie - Your AI Financial Advisor</title>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <meta content="AI-powered financial advice, investment recommendations, financial planning platform, personal finance, budgeting, investments" name="keywords">
-    <meta content="AdviceGenie is your go-to AI-powered financial planning platform offering personalised investment recommendations and financial advice." name="description">
-
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://cognifylabs.ai">
-    <meta property="og:title" content="AdviceGenie - Your AI Financial Advisor">
-    <meta property="og:description" content="AdviceGenie is your go-to AI-powered platform for personalised financial advice tailored to Gen Z.">
-    <meta property="og:image" content="https://cognifylabs.ai/img/og-image.jpg">
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://cognifylabs.ai">
-    <meta property="twitter:title" content="AdviceGenie - Your AI Financial Advisor">
-    <meta property="twitter:description" content="AdviceGenie is your go-to AI-powered platform for personalised financial advice tailored to Gen Z.">
-    <meta property="twitter:image" content="https://cognifylabs.ai/img/og-image.jpg">
-
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://cognifylabs.ai">
-
-    <!-- Favicon -->
-    <link href="img/favicon.ico" rel="icon">
-
-    <!-- Google Web Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500&family=Roboto:wght@500;700&display=swap" rel="stylesheet">  
-
-    <!-- Icon Font Stylesheet -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
-
-    <!-- Libraries Stylesheet -->
-    <link href="lib/animate/animate.min.css" rel="stylesheet">
-    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
-    <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
-
-    <!-- customised Bootstrap Stylesheet -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Template Stylesheet -->
-    <link href="css/style.css" rel="stylesheet">
-</head>
-
-<body>
-    <!-- Spinner Start -->
-    <div id="spinner" class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
-        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-    </div>
-    <!-- Spinner End -->
-
-    <!-- Topbar Start -->
-    <div class="container-fluid bg-primary text-white d-none d-lg-flex">
-        <div class="container py-3">
-            <div class="d-flex align-items-center">
-                <a href="#home">
-                    <h2 class="text-white fw-bold m-0">Cognify Labs</h2>
-                </a>
-                <div class="ms-auto d-flex align-items-center">
-                    <small class="ms-4"><i class="fa fa-envelope me-3"></i>support@cognifylabs.ai</small>
-                    <small class="ms-4"><i class="fa fa-map-marker-alt me-3"></i>St Ives, NSW 2075, Australia</small>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Topbar End -->
-
-    <!-- Navbar Start -->
-    <div class="container-fluid bg-white sticky-top">
-        <div class="container">
-            <nav class="navbar navbar-expand-lg bg-white navbar-light p-lg-0">
-                <a href="#home" class="navbar-brand d-lg-none">
-                    <h1 class="fw-bold m-0">Cognify Labs</h1>
-                </a>
-                <button type="button" class="navbar-toggler me-0" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarCollapse">
-                    <div class="navbar-nav">
-                        <a href="#home" class="nav-item nav-link active">Home</a>
-                        <a href="#why-us" class="nav-item nav-link">Why Us</a>
-                        <a href="#features" class="nav-item nav-link">Services</a>
-                        <a href="#how-it-works" class="nav-item nav-link">How It Works</a> <!-- New Link -->
-                        <a href="#contact" class="nav-item nav-link">Contact</a>
-                    </div>
-                    <div class="ms-auto d-none d-lg-block">
-                        <a href="soa-form.html" class="btn btn-primary rounded-pill py-2 px-3">Try for Free</a>
-                    </div>
-                </div>
-            </nav>
-        </div>
-    </div>
-    <!-- Navbar End -->
-<!-- Proper H1 for SEO -->
-<header class="container text-center my-4">
-    <h1 class="fw-bold">AdviceGenie – AI-Powered Financial Advice ( Coming Soon )</h1>
-</header>
-
-<!-- Carousel Start -->
-<div class="container-fluid px-0 mb-5" id="home">
-    <div id="header-carousel" class="carousel slide carousel-fade" data-bs-ride="carousel">
-        <div class="carousel-inner">
-            <div class="carousel-item active">
-                <img class="w-100" src="img/carousel-1.jpg" alt="AI-powered financial advice and investment recommendations">
-                <div class="carousel-caption">
-                    <div class="container">
-                        <div class="row justify-content-start">
-                            <div class="col-lg-7 text-start">
-                                <p class="fs-4 text-white animated slideInRight">Welcome to <strong>Cognify Labs</strong></p>
-                                <h2 class="display-1 text-white mb-4 animated slideInRight">Smart Investing, Simplified – AI-Powered Financial Freedom.</h2>
-                                <a href="soa-form.html" class="btn btn-primary rounded-pill py-3 px-5 animated slideInRight">Try for Free</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="carousel-item">
-                <img class="w-100" src="img/carousel-2.jpg" alt="Financial planning platform powered by AI">
-                <div class="carousel-caption">
-                    <div class="container">
-                        <div class="row justify-content-end">
-                            <div class="col-lg-7 text-end">
-                                <p class="fs-4 text-white animated slideInLeft">Welcome to <strong>Cognify Labs</strong></p>
-                                <h2 class="display-1 text-white mb-5 animated slideInLeft">Empowering Your Financial Journey with AI.</h2>
-                                <a href="soa-form.html" class="btn btn-primary rounded-pill py-3 px-5 animated slideInLeft">Try for Free</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#header-carousel" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Previous</span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#header-carousel" data-bs-slide="next">
-            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Next</span>
-        </button>
-    </div>
-</div>
-<!-- Carousel End -->
-
-
-  <!-- Why Us Start -->
-<div class="container-xxl py-5" id="why-us">
-    <div class="container">
-        <div class="text-center mx-auto mb-5" style="max-width: 800px;">
-            <p class="fs-5 fw-medium text-primary">Why Us</p>
-            <h1 class="display-5 mb-4">Why Cognify Labs?</h1>
-            <p class="mb-5"><p>“AI will be the most powerful tool humanity has yet created. It will amplify creativity, productivity, and intelligence.” — <strong>Sam Altman</strong> Founder of OpenAI</p>  
-
-            <p>By harnessing this transformative power, we make financial advice more <strong>accessible, affordable, and efficient</strong>. Combining AI with the expertise of licensed advisors (AFSL), <strong>AdviceGenie</strong> empowers you with smarter, faster, and more precise financial guidance—helping you reach your goals with confidence.</p>
-             </div>
-        <div class="row g-4">
-            
-            <!-- Cost-Effective Solution -->
-            <div class="col-md-6 col-lg-4 wow fadeIn" data-wow-delay="0.1s">
-                <div class="feature-item border h-100 p-4 text-center">
-                    <img src="https://i.gifer.com/75ez.gif" alt="Cost Effective" class="img-fluid mb-3 rounded">
-                    <h5>Cost-Effective Solution</h5>
-                    <p>Get high-quality <strong>financial advice for free</strong> or at a fraction of traditional costs. Say goodbye to high financial advisor fees! Get expert investment insights for free and start growing your wealth today.</p>
-                </div>
-            </div>
-            
-            <!-- Accessibility and Convenience -->
-            <div class="col-md-6 col-lg-4 wow fadeIn" data-wow-delay="0.2s">
-                <div class="feature-item border h-100 p-4 text-center">
-                    <img src="https://i.gifer.com/RjSK.gif" alt="Accessibility" class="img-fluid mb-3 rounded">
-                    <h5>Accessibility and Convenience</h5>
-                    <p>Your investments, your schedule. Get personalised AI-driven financial advice anytime, anywhere—no appointments, no hassle.</p>
-                </div>
-            </div>
-            
-            <!-- Simplified Decision-Making -->
-            <div class="col-md-6 col-lg-4 wow fadeIn" data-wow-delay="0.3s">
-                <div class="feature-item border h-100 p-4 text-center">
-                    <img src="https://i.gifer.com/WLb0.gif" alt="Decision Making" class="img-fluid mb-3 rounded">
-                    <h5>DIY Financial Advice</h5>
-                    <p>With the <strong>AdviceGenie</strong> platform, you can take control of your financial decisions without needing to be a qualified advisor. Our specialised, fine-tuned data model provides expert-level insights, empowering you to confidently navigate your financial future with ease.</p>
-                </div>
-            </div>
-            
-            <!-- Improved Financial Literacy -->
-            <div class="col-md-6 col-lg-4 wow fadeIn" data-wow-delay="0.4s">
-                <div class="feature-item border h-100 p-4 text-center">
-                    <img src="https://i.gifer.com/Ezef.gif" alt="Financial Literacy" class="img-fluid mb-3 rounded">
-                    <h5>🔒 Your Security, Our Priority</h5>
-                        <ul class="list-unstyled">
-                            <li><strong>End-to-End Encryption:</strong> Your data is fully encrypted both at rest and in transit, ensuring maximum security.</li>
-                            <li><strong>Australian Data Sovereignty:</strong> Your data is securely stored in Australia and never leaves the country.</li>
-                </div>
-            </div>
-            
-            <!-- Faster Turnaround -->
-            <div class="col-md-6 col-lg-4 wow fadeIn" data-wow-delay="0.5s">
-                <div class="feature-item border h-100 p-4 text-center">
-                    <img src="https://i.gifer.com/J52.gif" alt="Faster Turnaround" class="img-fluid mb-3 rounded">
-                    <h5>Faster Turnaround</h5>
-                    <p>
-                        At <strong>AdviceGenie</strong>, we recognise the <strong>limitations of AI</strong>, including potential biases and hallucinations. 
-                        That’s why our platform is <strong>AI-augmented</strong>, combining the speed of automation with expert oversight.
-                    </p>
-                
-                </div>
-            </div>
-            
-           <!-- Objectivity and Consistency -->
-            <div class="col-md-6 col-lg-4 wow fadeIn" data-wow-delay="0.6s">
-                <div class="feature-item border h-100 p-4 text-center">
-                    <img src="https://i.gifer.com/JPFn.gif" alt="Objectivity" class="img-fluid mb-3 rounded">
-                    <h5>Privacy First</h5>
-                    <p>
-                        Use AdviceGenie anonymously—only provide an email if you want updates.
-                        <p>With <strong>bank-grade security</strong> and <strong>no personal data required</strong>, AdviceGenie ensures <strong>your financial privacy stays in your hands</strong>.</p>
-
-                </p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- Why Us End -->
-<!-- Comparison Table Start -->
-<div class="container-xxl py-5" id="comparison">
-    <div class="container">
-        <div class="text-center mx-auto mb-5" style="max-width: 800px;">
-
-            <h1 class="display-5 mb-4">AdviceGenie vs. Traditional Financial Advice</h1>
-            <p class="mb-5">See how AdviceGenie revolutionises financial advice with AI-powered solutions.</p>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover text-center">
-                <thead class="bg-primary text-white">
-                    <tr>
-                        <th scope="col" class="py-3">Feature</th>
-                        <th scope="col" class="py-3">AdviceGenie</th>
-                        <th scope="col" class="py-3">Traditional Financial Advice</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <th scope="row" class="text-start py-3">Cost</th>
-                        <td>First consultation is free; each additional service is $49, capped at $490 per month</td>
-                        <td>High fees, often thousands of dollars</td>
-                    </tr>
-                    <tr>
-                        <th scope="row" class="text-start py-3">Accessibility</th>
-                        <td>24/7 access from anywhere</td>
-                        <td>Limited to office hours and in-person meetings</td>
-                    </tr>
-                    <tr>
-                        <th scope="row" class="text-start py-3">Speed</th>
-                        <td>Instant AI-powered recommendations</td>
-                        <td>Weeks or months for a financial plan</td>
-                    </tr>
-                    <tr>
-                        <th scope="row" class="text-start py-3">Personalisation</th>
-                        <td>Data-driven recommendations for smarter investing</td>
-                        <td>Personalised advice fit to individual needs</td>
-                    </tr>
-                    <tr>
-                        <th scope="row" class="text-start py-3">Expert Oversight</th>
-                        <td>AI + licensed financial advisors review</td>
-                        <td>Relies solely on human advisors</td>
-                    </tr>
-                    <tr>
-                        <th scope="row" class="text-start py-3">Privacy</th>
-                        <td>Fully encrypted, anonymous options</td>
-                        <td>Requires sharing personal details upfront</td>
-                    </tr>
-                    <tr>
-                        <th scope="row" class="text-start py-3">Ease of Use</th>
-                        <td>Simple, user-friendly platform</td>
-                        <td>Complex paperwork and processes</td>
-                    </tr>
-                    <tr>
-                        <th scope="row" class="text-start py-3">Scalability</th>
-                        <td>Scalable for all financial situations</td>
-                        <td>Often limited to high-net-worth individuals</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-<!-- Comparison Table End -->
-
-<!-- Features Start -->
-<div class="container-xxl py-5" id="features">
-    <div class="container">
-        <div class="text-center mx-auto mb-5" style="max-width: 500px;">
-            <p class="fs-5 fw-medium text-primary">Our Services</p>
-            <h1 class="display-5">What We Offer</h1>
-        </div>
-
-        
-<!-- Services -->
-<div class="row g-0 feature-row">
-    <!-- Investment Portfolio -->
-    <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.1s">
-        <div class="feature-item border h-100 p-5 text-center">
-            <div class="btn-square bg-light rounded-circle mb-4" style="width: 64px; height: 64px;">
-                <i class="bi bi-pie-chart-fill text-primary fs-3"></i>
-            </div>
-            <h5 class="mb-3">Investment Portfolio</h5>
-            <p class="mb-3">Build a diversified investment portfolio with AI-powered financial advice tailored to your financial goals and risk tolerance.</p>
-            <a href="soa-form.html" class="btn btn-primary rounded-pill">Try for Free</a>
-        </div>
-    </div>
-
-    <!-- Cover Your Valuable Assets -->
-    <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.5s">
-        <div class="feature-item border h-100 p-5 text-center">
-            <div class="btn-square bg-light rounded-circle mb-4" style="width: 64px; height: 64px;">
-                <i class="bi bi-shield-fill-check text-primary fs-3"></i>
-            </div>
-            <h5 class="mb-3">Cover Your Valuable Assets</h5>
-            <p class="mb-3">Protect your valuable assets with comprehensive insurance solutions tailored to your needs.</p>
-            <a href="insurance.html"class="btn btn-primary rounded-pill">Try for Free</a>
-        </div>
-    </div>
-
-    <!-- Investment Portfolio Review -->
-    <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.3s">
-        <div class="feature-item border h-100 p-5 text-center">
-            <div class="btn-square bg-light rounded-circle mb-4" style="width: 64px; height: 64px;">
-                <i class="bi bi-bar-chart-line-fill text-primary fs-3"></i>
-            </div>
-            <h5 class="mb-3">Investment Portfolio Review</h5>
-            <p class="mb-3">Regularly review and optimize your investment portfolio with AI-powered recommendations to ensure it aligns with your changing financial objectives.</p>
-            <button class="btn btn-secondary rounded-pill" disabled>Coming Soon</button>
-        </div>
-    </div>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI-Powered Software Development</title>
     
-    <!-- Mortgage Loans -->
-    <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.7s">
-        <div class="feature-item border h-100 p-5 text-center">
-            <div class="btn-square bg-light rounded-circle mb-4" style="width: 64px; height: 64px;">
-                <i class="bi bi-house-fill text-primary fs-3"></i>
-            </div>
-            <h5 class="mb-3">Mortgage Loans</h5>
-            <p class="mb-3">Get expert advice on mortgage options and find the best loan solution for your property investment.</p>
-            <button class="btn btn-secondary rounded-pill" disabled>Coming Soon</button>
-        </div>
-    </div>
-</div>
-<!-- Features End -->
- 
-<!-- How It Works Start -->
-    <div class="container-xxl py-5" id="how-it-works">
+    <!-- External CSS Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
+    
+    <!-- Custom Styles -->
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        html {
+            scroll-behavior: smooth; /* Smooth Scrolling */
+        }
+        
+        /* Navigation Styles */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: #007bff;
+        }
+        
+        .navbar a {
+            color: white !important;
+            font-weight: bold;
+        }
+        
+        /* Hero Section Styles */
+        .hero {
+            position: relative;
+            background: url('https://source.unsplash.com/1600x900/?artificial-intelligence,technology') no-repeat center center/cover;
+            color: white;
+            text-align: center;
+            padding: 100px 20px;
+        }
+        
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5)); /* Dark gradient overlay */
+        }
+        
+        .hero .container {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Section Styles */
+        .section-heading {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        /* Feature Box Styles */
+        .feature-box {
+            padding: 30px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+        
+        .feature-box:hover {
+            transform: translateY(-10px);
+        }
+        
+        .icon-box {
+            font-size: 2.5rem;
+            color: #007bff;
+        }
+        
+        .feature-img {
+            width: 100%;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        /* Contact Section Styles */
+        .contact-section {
+            background: #007bff;
+            color: white;
+            padding: 50px;
+            text-align: center;
+        }
+        
+        .contact-section a {
+            color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        /* Counter Section Styles */
+        #stats {
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            position: relative;
+        }
+        
+        .counter-text {
+            font-size: 3.5rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.8); /* Makes text stand out */
+        }
+    </style>
+</head>
+<body>
+    <!-- Sticky Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <div class="text-center mx-auto mb-5" style="max-width: 800px;">
-                <p class="fs-5 fw-medium text-primary">How It Works</p>
-                <h1 class="display-5 mb-4">Simple Steps to Financial Freedom</h1>
-                <p class="mb-5">AdviceGenie makes it easy to get personalised financial advice in just a few steps.</p>
-            </div>
-            <div class="row g-4">
-                <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.1s">
-                    <div class="feature-item border h-100 p-5 text-center">
-                        <div class="btn-square bg-light rounded-circle mb-4 mx-auto" style="width: 64px; height: 64px;">
-                            <i class="fas fa-question-circle fa-2x text-primary"></i>
-                        </div>
-                        <h5 class="mb-3">Step 1: Answer a Few Simple Questions</h5>
-                        <p class="mb-0">Provide basic details about your financial goals, current situation, and future plans through our user-friendly questionnaire.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.3s">
-                    <div class="feature-item border h-100 p-5 text-center">
-                        <div class="btn-square bg-light rounded-circle mb-4 mx-auto" style="width: 64px; height: 64px;">
-                            <i class="fas fa-cogs fa-2x text-primary"></i>
-                        </div>
-                        <h5 class="mb-3">Step 2: Let AI Do the Heavy Lifting</h5>
-                        <p class="mb-0">Your responses are securely processed and fed into our advanced AI model, designed to analyse your unique needs.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.5s">
-                    <div class="feature-item border h-100 p-5 text-center">
-                        <div class="btn-square bg-light rounded-circle mb-4 mx-auto" style="width: 64px; height: 64px;">
-                            <i class="fas fa-lightbulb fa-2x text-primary"></i>
-                        </div>
-                        <h5 class="mb-3">Step 3: Receive Tailored Recommendations</h5>
-                        <p class="mb-0">AdviceGenie's AI generates personalised financial advice, tailored to your goals and preferences.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-3 wow fadeIn" data-wow-delay="0.7s">
-                    <div class="feature-item border h-100 p-5 text-center">
-                        <div class="btn-square bg-light rounded-circle mb-4 mx-auto" style="width: 64px; height: 64px;">
-                            <i class="fas fa-check-circle fa-2x text-primary"></i>
-                        </div>
-                        <h5 class="mb-3">Step 4: Expert Review & Delivery</h5>
-                        <p class="mb-0">Our Qualified Financial Advisers review the AI-generated recommendations to ensure they align with your best interests. The final, polished Statement of Advice (SoA) is then sent directly to your email.</p>
-                    </div>
-                </div>
+            <a class="navbar-brand" href="https://cognifylabs.ai" target="_blank">
+                <img src="img/logo.png" alt="Cognify Labs" height="40"> Cognify Labs
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#whyus">Why Us</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                </ul>
             </div>
         </div>
-    </div>
-    <!-- How It Works End -->
-<!-- Contact Start -->
-<div class="container-xxl py-5" id="contact">
+    </nav>
+
+   <!-- Hero Section -->
+<section class="hero" style="background-image: url('img/image1.jpg'); background-size: cover; background-position: center;">
     <div class="container">
-        <div class="text-center mx-auto mb-5" style="max-width: 500px;">
-            <p class="fs-5 fw-medium text-primary">Contact Us</p>
-            <h1 class="display-5">Get In Touch</h1>
-            <p>Have questions? Reach out to us, and we'll assist you with your financial needs.</p>
-        </div>
+        <h1 class="display-4">AI-Powered Software Development</h1>
+        <p class="lead">Revolutionizing the entire SDLC with intelligent automation, optimization, and AI-driven solutions.</p>
+        <a href="#contact" class="btn btn-light btn-lg">Get a Free Consultation</a>
+    </div>
+</section>
 
-        <div class="row g-4 align-items-center">
-            <!-- Left Column: Image -->
-            <!-- Left Column: Image -->
-            <div class="col-md-6 wow fadeIn" data-wow-delay="0.1s">
-                <img src="img/contactus.jpg" 
-                    alt="Contact Us Image" 
-                    class="img-fluid rounded lazy" 
-                    style="max-height: 400px; object-fit: cover;"
-                    loading="lazy"
-                    data-mouse-move>
+
+ <!-- Services Section -->
+<section id="services" class="container my-5">
+    <h2 class="section-heading">Our Services</h2>
+    <div class="row text-center">
+        <!-- First row of services -->
+        <div class="col-md-4 mb-4">
+            <div class="feature-box" data-aos="fade-up">
+                <i class="fas fa-brain icon-box"></i>
+                <h4>AI Consulting</h4>
+                <p>Expert guidance on implementing AI solutions tailored to your business needs and goals.</p>
             </div>
-
-            <!-- Right Column: Contact Information and Form -->
-            <div class="col-md-6 wow fadeIn" data-wow-delay="0.3s">
-                <div class="bg-light p-4 rounded">
-                    <h5 class="mb-4">Our Office</h5>
-                    <p class="mb-3">
-                        <i class="fa fa-map-marker-alt me-3 text-primary"></i>St Ives, NSW 2075, Australia
-                    </p>
-                    <p class="mb-3">
-                        <i class="fa fa-envelope me-3 text-primary"></i>
-                        <a href="mailto:support@cognifylabs.ai" class="text-decoration-none text-dark">support@cognifylabs.ai</a>
-                    </p>
-
-                    <!-- Contact Form -->
-                    <h5 class="mb-4">Send Us a Message</h5>
-                    <form id="contactForm">
-                        <div class="mb-3">
-                            <input type="email" id="email" class="form-control" placeholder="Your Email Address" required>
-                        </div>
-                        <div class="mb-3">
-                            <textarea id="message" class="form-control" rows="4" placeholder="Ask us about our AI-powered financial advice and investment recommendations" required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary rounded-pill py-2 px-4">Submit</button>
-                    </form>
-                    <div id="responseMessage" class="mt-3"></div>
-                </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="feature-box" data-aos="fade-up" data-aos-delay="100">
+                <i class="fas fa-code icon-box"></i>
+                <h4>Custom Software Development</h4>
+                <p>Bespoke software solutions designed and built with AI-powered tools for maximum efficiency.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="feature-box" data-aos="fade-up" data-aos-delay="200">
+                <i class="fas fa-cloud icon-box"></i>
+                <h4>Application Modernisation</h4>
+                <p>Scalable, secure cloud infrastructure optimized by AI for performance and cost-efficiency.</p>
             </div>
         </div>
     </div>
-</div>
-<!-- Contact End -->
-    <!-- Footer Start -->
-    <div class="container-fluid bg-dark footer mt-5 py-5 wow fadeIn" data-wow-delay="0.1s">
-        <div class="container py-5">
-            <div class="row g-5">
-                <div class="col-lg-3 col-md-6">
-                    <h4 class="text-white mb-4">Contact Us</h4>
-                    <p class="mb-2">
-                        <i class="fa fa-envelope me-3"></i>
-                        <a href="mailto:support@cognifylabs.ai">support@cognifylabs.ai</a>
-                    </p>
-                    <p class="mb-2"><i class="fa fa-map-marker-alt me-3"></i>St Ives, NSW 2075, Australia</p>
-                    <div class="d-flex pt-3">
-                        <a class="btn btn-square btn-light rounded-circle me-2" href=""><i class="fab fa-twitter"></i></a>
-                        <a class="btn btn-square btn-light rounded-circle me-2" href=""><i class="fab fa-facebook-f"></i></a>
-                        <a class="btn btn-square btn-light rounded-circle me-2" href=""><i class="fab fa-youtube"></i></a>
-                        <a class="btn btn-square btn-light rounded-circle me-2" href=""><i class="fab fa-linkedin-in"></i></a>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <h4 class="text-white mb-4">Quick Links</h4>
-                    <a class="btn btn-link" href="#why-us">Why   Us</a>
-                    <a class="btn btn-link" href="#contact">Contact Us</a>
-                    <a class="btn btn-link" href="#features">Our Services</a>
-                    <a class="btn btn-link" href="#how-it-works">How It Works</a> <!-- New Link -->
-                    <a class="btn btn-link" href="disclaimer.html">Terms & Conditions</a>
-                    <a class="btn btn-link" href="privacy.html">Privacy Policy</a>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <h4 class="text-white mb-4">Resources</h4>
-                    <a class="btn btn-link" href="advice.html">Advisors</a>
-                    <a class="btn btn-link" href="faqs.html">FAQs</a>
-                    <a class="btn btn-link" href="">Support</a>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <h4 class="text-white mb-4">Subscribe</h4>
-                    <p>Sign up for the latest financial tips and insights.</p>
-                    <div class="position-relative w-100">
-                        <input class="form-control bg-transparent w-100 py-3 ps-4 pe-5" type="text" placeholder="Your email">
-                        <button type="button" class="btn btn-light py-2 position-absolute top-0 end-0 mt-2 me-2">SignUp</button>
-                    </div>
-                </div>
+
+    <div class="row text-center">
+        <!-- Second row of services -->
+        <div class="col-md-6 mb-4">
+            <div class="feature-box" data-aos="fade-up">
+                <i class="fas fa-robot icon-box"></i>
+                <h4>ML Implementation</h4>
+                <p>End-to-end machine learning solutions from data preparation to model deployment and monitoring.</p>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="feature-box" data-aos="fade-up" data-aos-delay="100">
+                <i class="fas fa-digital-tachograph icon-box"></i>
+                <h4>Digital Transformation</h4>
+                <p>Comprehensive strategies to modernize your business processes with AI-driven technologies.</p>
             </div>
         </div>
     </div>
-    <!-- Footer End -->
-<!-- Disclaimer -->
-<div class="container text-center mt-4">
-    <p class="text-muted small">
-        The Information provided is general in nature only and does not constitute personal financial advice. AdviceGenie is an AI-powered financial planning platform offering investment recommendations and financial advice tailored to your needs. Before acting on any information presented, you should consider the appropriateness of the information having regard to your objectives, financial situation, and needs. We highly recommend you seek professional advice to check how the information relates to your unique circumstances. AdviceGenie is not liable for any loss caused, whether due to negligence or otherwise, arising from the use of, or reliance on, the information provided.
-    </p>
-</div>
-<!-- Disclaimer End -->
-    <!-- Copyright Start -->
-    <div class="container-fluid copyright py-4">
-        <div class="container">
+</section>
+    <!-- Why Choose Us Section -->
+    <section id="whyus" class="container my-5">
+        <h2 class="section-heading">Why Choose Us?</h2>
+        <div class="row text-center">
+            <div class="col-md-4 mb-4">
+                <div class="feature-box" data-aos="fade-right">
+                    <i class="fas fa-brain icon-box"></i>
+                    <h4>Cutting-Edge AI Solutions</h4>
+                    <p>We leverage the latest AI technologies to optimize software development and business workflows.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-box" data-aos="fade-up">
+                    <i class="fas fa-bolt icon-box"></i>
+                    <h4>Faster Time to Market</h4>
+                    <p>AI-driven automation speeds up development, reduces errors, and accelerates deployment.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-box" data-aos="fade-left">
+                    <i class="fas fa-shield-alt icon-box"></i>
+                    <h4>Security & Compliance</h4>
+                    <p>We ensure that all AI-powered solutions meet the highest security and industry standards.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Counter Section -->
+    <section id="stats" class="py-5 text-center text-white">
+        <div class="container position-relative">
             <div class="row">
-                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                    &copy; <a class="fw-medium text-light" href="#">Cognify Labs</a>, All Rights Reserved.
+                <!-- Years of Experience -->
+                <div class="col-md-4">
+                    <h2 class="display-4 fw-bold counter-text">
+                        <span class="counter" data-target="25">0</span>+
+                    </h2>
+                    <p class="lead">Years of Experience</p>
                 </div>
-                <div class="col-md-6 text-center text-md-end">
-                    Designed By <a class="fw-medium text-light" href="https://cognifylabs.ai">Cognify Labs</a>
+
+                <!-- App Development Cost Saving -->
+                <div class="col-md-4">
+                    <h2 class="display-4 fw-bold counter-text">
+                        <span class="counter" data-target="80">0</span>%
+                    </h2>
+                    <p class="lead">App Dev Cost Savings</p>
+                </div>
+
+                <!-- Operating Cost Saving -->
+                <div class="col-md-4">
+                    <h2 class="display-4 fw-bold counter-text">
+                        <span class="counter" data-target="90">0</span>%
+                    </h2>
+                    <p class="lead">Operating Cost Savings</p>
                 </div>
             </div>
         </div>
+    </section>
+
+    <!-- Contact Section -->
+<section id="contact" class="contact-section">
+    <div class="container">
+        <h2>Send Us a Message</h2>
+        <p class="mb-4">Let's build the future together with AI-powered software development.</p>
+        
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <!-- Contact Form -->
+                <h5 class="mb-4">Send Us a Message</h5>
+                <form id="contactForm">
+                    <div class="mb-3">
+                        <input type="email" id="email" class="form-control" placeholder="Your Email Address" required>
+                    </div>
+                    <div class="mb-3">
+                        <textarea id="message" class="form-control" rows="4" placeholder="Ask us about our AI-powered financial advice and investment recommendations" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary rounded-pill py-2 px-4">Submit</button>
+                </form>
+            </div>
+        </div>
     </div>
-    <!-- Copyright End -->
-
-    <!-- Back to Top -->
-    <a href="#" class="btn btn-lg btn-primary btn-lg-square rounded-circle back-to-top"><i class="bi bi-arrow-up"></i></a>
-
-    <!-- JavaScript Libraries -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="lib/wow/wow.min.js"></script>
-    <script src="lib/easing/easing.min.js"></script>
-    <script src="lib/waypoints/waypoints.min.js"></script>
-    <script src="lib/owlcarousel/owl.carousel.min.js"></script>
-    <script src="lib/lightbox/js/lightbox.min.js"></script>
-
-    <!-- Template Javascript -->
-    <script src="js/main.js"></script>
+</section>
+<!-- Footer Section -->
+<footer class="footer pt-5 pb-3" style="background-color: #051c33; color: #f8f9fa;">
+    <div class="container">
+        <!-- Main Footer Content -->
+        <div class="row">
+            <!-- Company Info -->
+            <div class="col-lg-4 mb-4">
+                <h5 class="text-white mb-3">Cognify Labs</h5>
+                <p class="text-light">Revolutionizing software development with cutting-edge AI solutions that reduce costs, improve quality, and accelerate time to market.</p>
+                <div class="mt-3">
+                    <!-- Social Media Icons -->
+                    <a href="#" class="me-2 text-white" style="font-size: 1.5rem;"><i class="fab fa-linkedin"></i></a>
+                    <a href="#" class="me-2 text-white" style="font-size: 1.5rem;"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="me-2 text-white" style="font-size: 1.5rem;"><i class="fab fa-github"></i></a>
+                    <a href="#" class="me-2 text-white" style="font-size: 1.5rem;"><i class="fab fa-facebook"></i></a>
+                </div>
+            </div>
+            
+            <!-- Quick Links -->
+            <div class="col-lg-2 mb-4">
+                <h5 class="text-white mb-3">Quick Links</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><a href="#services" class="text-light text-decoration-none">Services</a></li>
+                    <li class="mb-2"><a href="#whyus" class="text-light text-decoration-none">Why Choose Us</a></li>
+                    <li class="mb-2"><a href="#contact" class="text-light text-decoration-none">Contact</a></li>
+                </ul>
+            </div>
+            
+            <!-- Services -->
+            <div class="col-lg-3 mb-4">
+                <h5 class="text-white mb-3">Our Services</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><a href="#" class="text-light text-decoration-none">AI Consulting</a></li>
+                    <li class="mb-2"><a href="#" class="text-light text-decoration-none">Custom Software Development</a></li>
+                    <li class="mb-2"><a href="#" class="text-light text-decoration-none">Application Modernisation</a></li>
+                    <li class="mb-2"><a href="#" class="text-light text-decoration-none">ML Implementation</a></li>
+                    <li class="mb-2"><a href="#" class="text-light text-decoration-none">Digital Transformation</a></li>
+                </ul>
+            </div>
+            
+            <!-- Contact Info -->
+            <div class="col-lg-3 mb-4">
+                <h5 class="text-white mb-3">Contact Us</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><i class="fas fa-map-marker-alt me-2"></i>30 Raleigh Crescent, St Ives Chase, NSW 2075, Australia</li>
+                    <li class="mb-2"><i class="fas fa-envelope me-2"></i> info@cognifylabs.ai</li>
+                </ul>
+                <!-- Newsletter Signup -->
+                <form class="mt-3">
+                    <div class="input-group">
+                        <input type="email" class="form-control" placeholder="Subscribe to newsletter">
+                        <button class="btn btn-primary" type="submit">Go</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Divider -->
+        <hr class="mt-4 mb-3" style="border-color: rgba(255,255,255,0.1);">
+        
+        <!-- Copyright Row -->
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <p class="text-light mb-0">&copy; 2025 Cognify Labs. All rights reserved.</p>
+            </div>
+            <div class="col-md-6 mb-2 text-md-end">
+                <a href="#" class="text-light text-decoration-none me-3">Privacy Policy</a>
+                <a href="#" class="text-light text-decoration-none me-3">Terms of Service</a>
+                <a href="#" class="text-light text-decoration-none">Cookie Policy</a>
+            </div>
+        </div>
+    </div>
+</footer>
+    <!-- External JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    
+    <!-- Custom Scripts -->
+    <script>
+        // Initialize AOS (Animate On Scroll)
+        document.addEventListener('DOMContentLoaded', function() {
+            AOS.init({
+                duration: 800,
+                easing: 'ease-in-out',
+                once: true
+            });
+            
+            // Counter Animation
+            const counters = document.querySelectorAll(".counter");
+            
+            function runCounter(counter) {
+                const target = +counter.getAttribute("data-target");
+                let count = 0;
+                const speed = target / 100; // Adjust speed based on target value
+                
+                function updateCounter() {
+                    if (count < target) {
+                        count += speed;
+                        counter.innerText = Math.ceil(count);
+                        setTimeout(updateCounter, 20); // Controls animation speed
+                    } else {
+                        counter.innerText = target; // Ensures exact final number
+                    }
+                }
+                
+                updateCounter();
+            }
+            
+            // Run counter when section is in view
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        runCounter(entry.target);
+                        observer.unobserve(entry.target); // Stop observing once triggered
+                    }
+                });
+            }, { threshold: 0.5 });
+            
+            counters.forEach(counter => observer.observe(counter));
+        });
+    </script>
 </body>
-
 </html>
