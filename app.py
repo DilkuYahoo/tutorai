@@ -71,7 +71,187 @@ def send_email():
         return jsonify({"error": str(e)}), 500    
 
 
+@app.route('/get_retirement_soa', methods=['POST'])
+def get_retirement_soa():
+    # Validate JSON input
+    if not request.is_json:
+        return jsonify({"error": "Invalid input: JSON data expected"}), 400
 
+    data = request.get_json()
+
+    # Extract all the required fields from JSON data
+    current_age = data.get('current_age')
+    retirement_age = data.get('retirement_age')
+    comfortable_retirement_lifestyle = data.get('comfortable_retirement_lifestyle')
+    retirement_income_goal = data.get('retirement_income_goal')
+    current_superannuation_balance = data.get('current_superannuation_balance')
+    superannuation_investment = data.get('superannuation_investment')
+    additional_savings = data.get('additional_savings')
+    voluntary_super_contributions = data.get('voluntary_super_contributions')
+    other_sources_of_income = data.get('other_sources_of_income')
+    monthly_living_expenses = data.get('monthly_living_expenses')
+    major_expenses_retirement = data.get('major_expenses_retirement')
+    buffer_for_unexpected_expenses = data.get('buffer_for_unexpected_expenses')
+    preferred_retirement_income_type = data.get('preferred_retirement_income_type')
+    income_sources = data.get('income_sources')
+    risk_tolerance = data.get('risk_tolerance')
+    growth_or_stability = data.get('growth_or_stability')
+    conservative_or_growth_approach = data.get('conservative_or_growth_approach')
+    ongoing_financial_advice = data.get('ongoing_financial_advice')
+    review_frequency = data.get('review_frequency')
+    aged_care_planning = data.get('aged_care_planning')
+    eligibility_age_pension = data.get('eligibility_age_pension')
+    awareness_tax_implications = data.get('awareness_tax_implications')
+    minimize_tax = data.get('minimize_tax')
+    valid_will_estate_plan = data.get('valid_will_estate_plan')
+    beneficiaries_superannuation = data.get('beneficiaries_superannuation')
+    existing_insurance_policies = data.get('existing_insurance_policies')
+    concerns_aged_care_medical_expenses = data.get('concerns_aged_care_medical_expenses')
+    risk_tolerance_investments = data.get('risk_tolerance_investments')
+
+    # Check if required fields are present
+    if not all([current_age, retirement_income_goal, risk_tolerance]):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    # Get the current date and local time
+    current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Get Google Sheet instance
+    sheet = mylib.get_google_sheet("leads", "Sheet1")
+
+    # Append row data to Google Sheet, including the current date and time
+    sheet.append_row([
+        current_age,
+        retirement_age,
+        comfortable_retirement_lifestyle,
+        retirement_income_goal,
+        current_superannuation_balance,
+        superannuation_investment,
+        additional_savings,
+        voluntary_super_contributions,
+        other_sources_of_income,
+        monthly_living_expenses,
+        #major_expenses_retirement,
+        buffer_for_unexpected_expenses,
+        preferred_retirement_income_type,
+        #income_sources,
+        risk_tolerance,
+        growth_or_stability,
+        conservative_or_growth_approach,
+        ongoing_financial_advice,
+        review_frequency,
+        aged_care_planning,
+        eligibility_age_pension,
+        awareness_tax_implications,
+        minimize_tax,
+        valid_will_estate_plan,
+        beneficiaries_superannuation,
+        existing_insurance_policies,
+        concerns_aged_care_medical_expenses,
+        risk_tolerance_investments,
+        current_datetime  # Add the current date and time
+    ])
+
+    # Prepare customer details for financial advisor
+    customer_details = {
+        "current_age": current_age,
+        "retirement_age": retirement_age,
+        "comfortable_retirement_lifestyle": comfortable_retirement_lifestyle,
+        "retirement_income_goal": retirement_income_goal,
+        "current_superannuation_balance": current_superannuation_balance,
+        "superannuation_investment": superannuation_investment,
+        "additional_savings": additional_savings,
+        "voluntary_super_contributions": voluntary_super_contributions,
+        "other_sources_of_income": other_sources_of_income,
+        "monthly_living_expenses": monthly_living_expenses,
+        "major_expenses_retirement": major_expenses_retirement,
+        "buffer_for_unexpected_expenses": buffer_for_unexpected_expenses,
+        "preferred_retirement_income_type": preferred_retirement_income_type,
+        "income_sources": income_sources,
+        "risk_tolerance": risk_tolerance,
+        "growth_or_stability": growth_or_stability,
+        "conservative_or_growth_approach": conservative_or_growth_approach,
+        "ongoing_financial_advice": ongoing_financial_advice,
+        "review_frequency": review_frequency,
+        "aged_care_planning": aged_care_planning,
+        "eligibility_age_pension": eligibility_age_pension,
+        "awareness_tax_implications": awareness_tax_implications,
+        "minimize_tax": minimize_tax,
+        "valid_will_estate_plan": valid_will_estate_plan,
+        "beneficiaries_superannuation": beneficiaries_superannuation,
+        "existing_insurance_policies": existing_insurance_policies,
+        "concerns_aged_care_medical_expenses": concerns_aged_care_medical_expenses,
+        "risk_tolerance_investments": risk_tolerance_investments
+    }
+
+    # Get financial advice
+    analysis = mylib.retirementAdvisor(customer_details)
+
+    # Construct the email body with HTML formatting
+    email_body = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; }}
+            h1 {{ color: #333366; }}
+            .customer-details {{ background-color: #f4f4f4; padding: 10px; border-radius: 5px; }}
+            .analysis {{ margin-top: 20px; }}
+        </style>
+    </head>
+    <body>
+        <h1>Customer Details</h1>
+        <div class="customer-details">
+            <p><strong>Current Age:</strong> {current_age}</p>
+            <p><strong>Retirement Age:</strong> {retirement_age}</p>
+            <p><strong>Comfortable Retirement Lifestyle:</strong> {comfortable_retirement_lifestyle}</p>
+            <p><strong>Retirement Income Goal:</strong> {retirement_income_goal}</p>
+            <p><strong>Current Superannuation Balance:</strong> {current_superannuation_balance}</p>
+            <p><strong>Superannuation Investment:</strong> {superannuation_investment}</p>
+            <p><strong>Additional Savings:</strong> {additional_savings}</p>
+            <p><strong>Voluntary Super Contributions:</strong> {voluntary_super_contributions}</p>
+            <p><strong>Other Sources of Income:</strong> {other_sources_of_income}</p>
+            <p><strong>Monthly Living Expenses:</strong> {monthly_living_expenses}</p>
+            <p><strong>Major Expenses in Retirement:</strong> {major_expenses_retirement}</p>
+            <p><strong>Buffer for Unexpected Expenses:</strong> {buffer_for_unexpected_expenses}</p>
+            <p><strong>Preferred Retirement Income Type:</strong> {preferred_retirement_income_type}</p>
+            <p><strong>Income Sources:</strong> {income_sources}</p>
+            <p><strong>Risk Tolerance:</strong> {risk_tolerance}</p>
+            <p><strong>Growth or Stability:</strong> {growth_or_stability}</p>
+            <p><strong>Conservative or Growth Approach:</strong> {conservative_or_growth_approach}</p>
+            <p><strong>Ongoing Financial Advice:</strong> {ongoing_financial_advice}</p>
+            <p><strong>Review Frequency:</strong> {review_frequency}</p>
+            <p><strong>Aged Care Planning:</strong> {aged_care_planning}</p>
+            <p><strong>Eligibility for Age Pension:</strong> {eligibility_age_pension}</p>
+            <p><strong>Awareness of Tax Implications:</strong> {awareness_tax_implications}</p>
+            <p><strong>Minimize Tax:</strong> {minimize_tax}</p>
+            <p><strong>Valid Will and Estate Plan:</strong> {valid_will_estate_plan}</p>
+            <p><strong>Beneficiaries for Superannuation:</strong> {beneficiaries_superannuation}</p>
+            <p><strong>Existing Insurance Policies:</strong> {existing_insurance_policies}</p>
+            <p><strong>Concerns About Aged Care and Medical Expenses:</strong> {concerns_aged_care_medical_expenses}</p>
+            <p><strong>Risk Tolerance for Investments:</strong> {risk_tolerance_investments}</p>
+            <p><strong>Date and Time:</strong> {current_datetime}</p>
+        </div>
+        <div class="analysis">
+            <h1>Financial Analysis</h1>
+            {analysis}
+        </div>
+    </body>
+    </html>
+    """
+
+    # Send the analysis via email
+    try:
+        response = ses_client.send_email(
+            Source=SENDER_EMAIL,  # Use hardcoded sender email
+            Destination={"ToAddresses": ["info@advicegenie.com.au"]},
+            Message={
+                "Subject": {"Data": f"Retirement SOA for {current_age}-year-old", "Charset": CHARSET},
+                "Body": {"Html": {"Data": email_body, "Charset": CHARSET}},
+            },
+        )
+        return jsonify({"message": "Data successfully added to Google Sheet and email sent", "email_response": response}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/get_soi', methods=['POST'])
 def get_soi():
@@ -311,7 +491,7 @@ def update_leads():
         return jsonify({"error": str(e)}), 500
     
 
-from datetime import datetime  # Import datetime module (if not already imported)
+
 
 @app.route("/onboard_advisors", methods=["POST"])
 def onboard_advisors():

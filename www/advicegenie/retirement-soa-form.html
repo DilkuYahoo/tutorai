@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retirement SOA Questionnaire</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="css/soa-form.css" rel="stylesheet">
+</head>
+<body>
+      <!-- Topbar Start -->
+      <div class="container-fluid bg-primary text-dark d-none d-lg-flex">
+        <div class="container py-3">
+            <div class="d-flex align-items-center">
+                <a href="index.html">
+                    <h2 class="text-dark fw-bold m-0">AdviceGenie</h2>
+                </a>
+                <div class="ms-auto d-flex align-items-center">
+                    <small class="ms-4"><i class="fa fa-envelope me-3"></i>support@advicegenie.com.au</small>
+                    <small class="ms-4"><i class="fa fa-map-marker-alt me-3"></i>Sydney, Australia</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Topbar End -->
+
+    <div class="container py-5">
+        <h1 class="text-center mb-4">Retirement SOA Questionnaire</h1>
+        <div class="progress mb-4">
+            <div id="progressBar" class="progress-bar" role="progressbar" style="width: 5%;"></div>
+        </div>
+        
+        <form id="soaForm">
+            <div class="card shadow p-4 mb-4 form-step active">
+                <h2 class="mb-3">Step 1: Personal & Retirement Goals</h2>
+                <label class="form-label">What is your current age and desired retirement age?</label>
+                <input type="number" class="form-control mb-3" name="current_age" placeholder="Current Age" required>
+                <input type="number" class="form-control mb-3" name="retirement_age" placeholder="Retirement Age" required>
+                <label class="form-label">What does a comfortable retirement lifestyle look like for you?</label>
+                <textarea class="form-control mb-3" name="lifestyle" placeholder="Describe your ideal retirement..." required></textarea>
+                <label class="form-label">Do you have a specific retirement income goal?</label>
+                <input type="number" class="form-control mb-3" name="income_goal" placeholder="Annual Income Goal ($)" required>
+                <button type="button" class="btn btn-primary next-step">Next</button>
+            </div>
+            
+            <div class="card shadow p-4 mb-4 form-step">
+                <h2 class="mb-3">Step 2: Current Financial Position</h2>
+                <label class="form-label">What is your current superannuation balance?</label>
+                <input type="number" class="form-control mb-3" name="super_balance" placeholder="Super Balance ($)" required>
+                <label class="form-label">How is your superannuation currently invested?</label>
+                <input type="text" class="form-control mb-3" name="super_investment" placeholder="E.g., Balanced, Growth, Conservative">
+                <label class="form-label">Do you have additional savings or investments outside of super?</label>
+                <textarea class="form-control mb-3" name="investments" placeholder="E.g., Shares, Property, Bonds"></textarea>
+                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                <button type="button" class="btn btn-primary next-step">Next</button>
+            </div>
+            
+            <div class="card shadow p-4 mb-4 form-step">
+                <h2 class="mb-3">Step 3: Income & Contributions</h2>
+                <label class="form-label">Are you currently making voluntary super contributions?</label>
+                <input type="number" class="form-control mb-3" name="voluntary_contributions" placeholder="Annual Contributions ($)">
+                <label class="form-label">Do you have other sources of income?</label>
+                <textarea class="form-control mb-3" name="income_sources" placeholder="E.g., Rental Income, Dividends"></textarea>
+                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                <button type="button" class="btn btn-primary next-step">Next</button>
+            </div>
+
+            <div class="card shadow p-4 mb-4 form-step">
+                <h2 class="mb-3">Step 4: Expenses & Budgeting for Retirement</h2>
+                <label class="form-label">What are your current monthly living expenses?</label>
+                <input type="number" class="form-control mb-3" name="current_expenses" required>
+              
+                <label class="form-label">Do you anticipate any major expenses in retirement (e.g., travel, home renovations, healthcare)?</label>
+                <textarea class="form-control mb-3" name="major_expenses" rows="3"></textarea>
+              
+                <label class="form-label">Would you like to have a buffer for unexpected expenses?</label>
+                <select class="form-control mb-3" name="buffer_fund">
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              
+                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                <button type="button" class="btn btn-primary next-step">Next</button>
+              </div>
+
+            <div class="card shadow p-4 mb-4 form-step">
+                <h2 class="mb-3">Step 5: Retirement Income Strategy</h2>
+                <label class="form-label">Would you prefer a lump sum withdrawal or an account-based pension from super?</label>
+                <select class="form-control mb-3" name="super_withdrawal_type" required>
+                  <option value="lump_sum">Lump Sum</option>
+                  <option value="account_pension">Account-Based Pension</option>
+                </select>
+              
+                <label class="form-label">Do you want a mix of income sources (e.g., super pension, rental income, dividends)?</label>
+                <select class="form-control mb-3" name="income_sources" multiple>
+                  <option value="super_pension">Super Pension</option>
+                  <option value="rental_income">Rental Income</option>
+                  <option value="dividends">Dividends</option>
+                </select>
+              
+                <label class="form-label">Are you comfortable with some level of investment risk in retirement?</label>
+                <select class="form-control mb-3" name="risk_tolerance">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              
+                <label class="form-label">Do you want to ensure your retirement income lasts a lifetime?</label>
+                <select class="form-control mb-3" name="lifetime_income">
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              
+                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                <button type="button" class="btn btn-primary next-step">Next</button>
+              </div>
+
+
+              <div class="card shadow p-4 mb-4 form-step">
+                <h2 class="mb-3">Step 6: Government Benefits & Tax Considerations</h2>
+                <label class="form-label">Are you eligible for the Age Pension or other Centrelink benefits?</label>
+                <select class="form-control mb-3" name="age_pension">
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              
+                <label class="form-label">Are you aware of the tax implications of withdrawing from super?</label>
+                <select class="form-control mb-3" name="tax_awareness">
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              
+                <label class="form-label">Would you like to minimize tax by optimizing your super withdrawals?</label>
+                <select class="form-control mb-3" name="tax_optimization">
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              
+                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                <button type="button" class="btn btn-primary next-step">Next</button>
+              </div>
+            
+              <div class="card shadow p-4 mb-4 form-step">
+                <h2 class="mb-3">Step 7: Estate Planning & Risk Management</h2>
+                <label class="form-label">Do you have a valid Will and Estate Plan?</label>
+                <select class="form-control mb-3" name="will_status">
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              
+                <label class="form-label">Have you nominated beneficiaries for your superannuation?</label>
+                <select class="form-control mb-3" name="super_beneficiaries">
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              
+                <label class="form-label">Do you have existing insurance policies (e.g., life, income protection, health)?</label>
+                <select class="form-control mb-3" name="insurance_coverage">
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              
+                <label class="form-label">Do you have concerns about aged care planning or medical expenses in later years?</label>
+                <select class="form-control mb-3" name="aged_care_concerns">
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              
+                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                <button type="button" class="btn btn-primary next-step">Next</button>
+              </div>
+
+
+              <div class="card shadow p-4 mb-4 form-step">
+                <h2 class="mb-3">Step 8: Risk Tolerance & Investment Preferences</h2>
+                <label class="form-label">What is your risk tolerance for investments? (Low, Moderate, High)</label>
+                <select class="form-control mb-3" name="risk_tolerance">
+                  <option value="low">Low</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="high">High</option>
+                </select>
+              
+                <label class="form-label">Would you like to keep growing your investments in retirement or prioritize stability?</label>
+                <select class="form-control mb-3" name="growth_vs_stability">
+                  <option value="growth">Growth</option>
+                  <option value="stability">Stability</option>
+                </select>
+              
+                <label class="form-label">Would you prefer a conservative approach (more cash and bonds) or a growth strategy (more stocks and property)?</label>
+                <select class="form-control mb-3" name="investment_approach">
+                  <option value="conservative">Conservative</option>
+                  <option value="growth">Growth</option>
+                </select>
+              
+                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                <button type="button" class="btn btn-primary next-step">Next</button>
+              </div>
+
+
+              <div class="card shadow p-4 mb-4 form-step">
+                <h2 class="mb-3">Step 9: Next Steps & Ongoing Management</h2>
+                <label class="form-label">Would you like ongoing financial advice and regular reviews of your retirement strategy?</label>
+                <select class="form-control mb-3" name="ongoing_advice">
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              
+                <label class="form-label">How frequently would you like to review and adjust your investments?</label>
+                <select class="form-control mb-3" name="review_frequency">
+                  <option value="annually">Annually</option>
+                  <option value="semiannually">Semiannually</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="as_needed">As needed</option>
+                </select>
+              
+                <label class="form-label">Do you want to explore aged care planning options in advance?</label>
+                <select class="form-control mb-3" name="aged_care_planning">
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              
+                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                <button type="submit" class="btn btn-success">Submit</button>
+              </div>
+              
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const steps = document.querySelectorAll(".form-step");
+            const nextBtns = document.querySelectorAll(".next-step");
+            const prevBtns = document.querySelectorAll(".prev-step");
+            const progressBar = document.getElementById("progressBar");
+            let currentStep = 0;
+
+            function updateSteps() {
+                steps.forEach((step, index) => {
+                    step.classList.toggle("active", index === currentStep);
+                });
+                progressBar.style.width = `${((currentStep + 1) / steps.length) * 100}%`;
+            }
+
+            nextBtns.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    if (currentStep < steps.length - 1) {
+                        currentStep++;
+                        updateSteps();
+                    }
+                });
+            });
+
+            prevBtns.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    if (currentStep > 0) {
+                        currentStep--;
+                        updateSteps();
+                    }
+                });
+            });
+
+            document.getElementById("soaForm").addEventListener("submit", function(e) {
+                e.preventDefault();
+                alert("Form submitted successfully!");
+            });
+        });
+    </script>
+
+      <!-- Copyright Start -->
+<div class="container-fluid copyright py-4">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                &copy; <a class="fw-medium text-dark" href="index.html">AdviceGenie</a>, All Rights Reserved.
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+                Designed By <a class="fw-medium text-dark" href="https://cognifylabs.ai">Cognify Labs</a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Copyright End -->
+</body>
+</html>

@@ -6,11 +6,12 @@
 #API='submit-soa'
 #API='ticker_analysis'
 #API='sentiment_tracker'
-API='update_leads'
+#API='update_leads'
+API='get_retirement_soa'
 #API='onboard_advisors'
 #API='get_soi'  # New endpoint for insurance advice
-#URL='http://localhost:8080'
-URL="https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev/"
+URL='http://localhost:8080'
+#URL="https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev/"
 #URL='https://192.168.1.106:8080/'
 
 # Concatenate the variables to create the full URL
@@ -30,7 +31,41 @@ FULL_URL="${URL}/${API}"
 #curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"recipient": "dilku@yahoo.com", "subject": "Subject Testing","body":"Testing Body"}'
 
 
-curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"fullName": "John Doe", "email": "johndoe@example.com", "phone": "1234567890", "age": 30, "financialGoal": "Medium-term Goals (3-5 years)", "investmentAmount": 50000, "riskTolerance": "Medium", "acknowledgeDisclaimer": true}'
+#curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"fullName": "John Doe", "email": "johndoe@example.com", "phone": "1234567890", "age": 30, "financialGoal": "Medium-term Goals (3-5 years)", "investmentAmount": 50000, "riskTolerance": "Medium", "acknowledgeDisclaimer": true}'
+
+#curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"current_age":55,"retirement_age":65,"comfortable_retirement_lifestyle":"Travel and comfortable housing","retirement_income_goal":60000,"current_superannuation_balance":300000,"superannuation_investment":"Balanced","additional_savings":150000,"voluntary_super_contributions":true,"other_sources_of_income":"Part-time job","monthly_living_expenses":4500,"major_expenses_retirement":[ "Travel", "Home renovations" ],"buffer_for_unexpected_expenses":true,"preferred_retirement_income_type":"Account-Based Pension","income_sources":[ "Super Pension", "Rental Income" ],"risk_tolerance":"Moderate","growth_or_stability":"Growth","conservative_or_growth_approach":"Growth","ongoing_financial_advice":true,"review_frequency":"Semiannually","aged_care_planning":true,"eligibility_age_pension":false,"awareness_tax_implications":true,"minimize_tax":true,"valid_will_estate_plan":true,"beneficiaries_superannuation":true,"existing_insurance_policies":true,"concerns_aged_care_medical_expenses":true,"risk_tolerance_investments":"Moderate"}'
+curl -X POST "$FULL_URL" -H "Content-Type: application/json" \
+-d '{
+    "current_age": 55,
+    "retirement_age": 65,
+    "comfortable_retirement_lifestyle": "Travel and comfortable housing",
+    "retirement_income_goal": 60000,
+    "current_superannuation_balance": 300000,
+    "superannuation_investment": "Balanced",
+    "additional_savings": 150000,
+    "voluntary_super_contributions": true,
+    "other_sources_of_income": "Part-time job",
+    "monthly_living_expenses": 4500,
+    "major_expenses_retirement": ["Travel", "Home renovations"],
+    "buffer_for_unexpected_expenses": true,
+    "preferred_retirement_income_type": "Account-Based Pension",
+    "income_sources": ["Super Pension", "Rental Income"],
+    "risk_tolerance": "Moderate",
+    "growth_or_stability": "Growth",
+    "conservative_or_growth_approach": "Growth",
+    "ongoing_financial_advice": true,
+    "review_frequency": "Semiannually",
+    "aged_care_planning": true,
+    "eligibility_age_pension": false,
+    "awareness_tax_implications": true,
+    "minimize_tax": true,
+    "valid_will_estate_plan": true,
+    "beneficiaries_superannuation": true,
+    "existing_insurance_policies": true,
+    "concerns_aged_care_medical_expenses": true,
+    "risk_tolerance_investments": "Moderate"
+}'
+
 #curl -X POST \
 #  "$FULL_URL" \
 #  -H "Content-Type: application/json" \
