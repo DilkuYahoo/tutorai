@@ -80,6 +80,9 @@ def get_retirement_soa():
     data = request.get_json()
 
     # Extract all the required fields from JSON data
+    name = data.get('name')
+    contact_number = data.get('contact_number')
+    email_address = data.get('email_address')
     current_age = data.get('current_age')
     retirement_age = data.get('retirement_age')
     comfortable_retirement_lifestyle = data.get('comfortable_retirement_lifestyle')
@@ -121,6 +124,10 @@ def get_retirement_soa():
 
     # Append row data to Google Sheet, including the current date and time
     sheet.append_row([
+        name,
+        contact_number,
+        email_address,
+        current_age,
         current_age,
         retirement_age,
         comfortable_retirement_lifestyle,
