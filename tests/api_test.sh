@@ -10,8 +10,8 @@
 API='get_retirement_soa'
 #API='onboard_advisors'
 #API='get_soi'  # New endpoint for insurance advice
-#URL='http://localhost:8080'
-URL="https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev/"
+URL='http://localhost:8080'
+#URL="https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev/"
 #URL='https://192.168.1.106:8080/'
 
 # Concatenate the variables to create the full URL
@@ -73,7 +73,7 @@ curl -X POST "$FULL_URL" -H "Content-Type: application/json" \
 #  "$FULL_URL" \
 #  -H "Content-Type: application/json" \
 #  -d '{
-##    "fullName": "John Doe",
+#    "fullName": "John Doe",
 #    "email": "johndoe@example.com",
 #    "phone": "1234567890",
 #    "age": 30,

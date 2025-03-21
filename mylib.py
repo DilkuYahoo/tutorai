@@ -3,16 +3,22 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-
 import os
-import mylib
 import datetime
 import markdown
+import base64
+import boto3
 
 load_dotenv()
-client = OpenAI(
-        api_key=os.environ.get("OPENAI_API_KEY")
-        )
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+# AWS SES Configuration
+AWS_REGION = os.getenv("AWS_REGION", "ap-southeast-2")
+CHARSET = "UTF-8"
+SENDER_EMAIL = "info@mail.advicegenie.com.au"
+
+# Initialize the AWS SES client
+ses_client = boto3.client("ses", region_name=AWS_REGION)
 
 def openai_response_to_html(response_text: str) -> str:
     """
@@ -21,13 +27,17 @@ def openai_response_to_html(response_text: str) -> str:
     :param response_text: Markdown-formatted text from OpenAI API.
     :return: HTML-formatted string.
     """
-    # Convert Markdown to HTML
     html_output = markdown.markdown(response_text, extensions=['fenced_code', 'tables'])
-    
     return html_output
 
-# Google Sheets setup
 def get_google_sheet(spreadsheet_name: str, sheet_name: str):
+    """
+    Get a Google Sheet instance.
+    
+    :param spreadsheet_name: Name of the Google Spreadsheet.
+    :param sheet_name: Name of the sheet within the spreadsheet.
+    :return: Google Sheet instance.
+    """
     scope = [
         "https://spreadsheets.google.com/feeds", 
         "https://www.googleapis.com/auth/spreadsheets",
@@ -37,19 +47,120 @@ def get_google_sheet(spreadsheet_name: str, sheet_name: str):
     
     creds = ServiceAccountCredentials.from_json_keyfile_name('.fintelle-gsheet.json', scope)
     client = gspread.authorize(creds)
-    sheet = client.open(spreadsheet_name).worksheet(sheet_name)  # Select sheet by name
-    
+    sheet = client.open(spreadsheet_name).worksheet(sheet_name)
     return sheet
 
+def append_to_google_sheet(sheet_name: str, sheet_tab: str, data: list):
+    """
+    Append data to a Google Sheet.
+    
+    :param sheet_name: Name of the Google Spreadsheet.
+    :param sheet_tab: Name of the sheet within the spreadsheet.
+    :param data: List of data to append.
+    """
+    sheet = get_google_sheet(sheet_name, sheet_tab)
+    sheet.append_row(data)
 
-def financialAdvisor(customer_details):
-    #combined_news = " ".join(headlines)
-    my_message = [] 
-    # Create the analysis prompt
+def validate_json_input(data: dict, required_fields: list) -> bool:
+    """
+    Validate JSON input to ensure all required fields are present.
+    
+    :param data: JSON data to validate.
+    :param required_fields: List of required fields.
+    :return: True if all required fields are present, False otherwise.
+    """
+    return all(data.get(field) for field in required_fields)
+
+def send_email_via_ses(recipient: str, subject: str, body: str, body_type: str = "text", attachment: str = None, attachment_name: str = None, attachment_type: str = None):
+    """
+    Send an email via AWS SES.
+    
+    :param recipient: Email recipient.
+    :param subject: Email subject.
+    :param body: Email body.
+    :param body_type: Type of email body (text or html).
+    :param attachment: Base64 encoded attachment.
+    :param attachment_name: Name of the attachment.
+    :param attachment_type: MIME type of the attachment.
+    :return: SES response.
+    """
+    try:
+        body_content_type = "text/html" if body_type.lower() == "html" else "text/plain"
+        message = {
+            "Subject": {"Data": subject, "Charset": CHARSET},
+            "Body": {
+                "Html" if body_type.lower() == "html" else "Text": {"Data": body, "Charset": CHARSET}
+            },
+        }
+
+        if attachment and attachment_name and attachment_type:
+            attachment_data = base64.b64decode(attachment)
+            raw_message = {
+                "Source": SENDER_EMAIL,
+                "Destinations": [recipient],
+                "RawMessage": {
+                    "Data": f"From: {SENDER_EMAIL}\nTo: {recipient}\nSubject: {subject}\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=boundary\n\n--boundary\nContent-Type: {body_content_type}; charset=UTF-8\n\n{body}\n\n--boundary\nContent-Type: {attachment_type}; name={attachment_name}\nContent-Disposition: attachment; filename={attachment_name}\nContent-Transfer-Encoding: base64\n\n{attachment}\n\n--boundary--"
+                }
+            }
+            response = ses_client.send_raw_email(**raw_message)
+        else:
+            response = ses_client.send_email(
+                Source=SENDER_EMAIL,
+                Destination={"ToAddresses": [recipient]},
+                Message=message,
+            )
+        return response
+    except Exception as e:
+        raise e
+
+def msgAppend(message: list, role: str, content: str) -> list:
+    """
+    Append a message to the message list.
+    
+    :param message: List of messages.
+    :param role: Role of the message (system, user, assistant).
+    :param content: Content of the message.
+    :return: Updated message list.
+    """
+    message.append({"role": role, "content": [{"type": "text", "text": content}]})
+    return message
+
+def chatcompletion2message(response) -> str:
+    """
+    Extract the message content from the OpenAI chat completion response.
+    
+    :param response: OpenAI chat completion response.
+    :return: Message content.
+    """
+    return response.choices[0].message.content
+
+def request2ai(message: list):
+    """
+    Send a request to OpenAI's chat completion API.
+    
+    :param message: List of messages.
+    :return: OpenAI chat completion response.
+    """
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=message,
+        temperature=0.8,
+        max_tokens=2048,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0
+    )
+    return response
+
+def financialAdvisor(customer_details: dict) -> str:
+    """
+    Generate financial advice based on customer details.
+    
+    :param customer_details: Dictionary containing customer details.
+    :return: HTML-formatted financial advice.
+    """
+    my_message = []
     prompt = f" {customer_details}"
-    # system_content = ""
-    # system_content = "You are a financial advisor specializing in constructing personalized share portfolios tailored to user-provided financial goals, risk tolerance, and market preferences within the Australian investment landscape. Recommend an optimized portfolio of ASX-listed Index Funds (ETFs) and Managed Funds with a strong track record of performance improvement. Provide 5 to 10 diversified fund selections, specifying investment allocation as both a percentage and AUD value. Offer a comparative analysis with an alternative ASX-listed fund for each recommendation and justify choices based on historical performance, fees, sector exposure, and growth potential. Ensure the portfolio includes local and international exposure, considering key Australian sectors like materials, energy, infrastructure, and financials. The goal is to provide a data-driven investment strategy that maximizes returns within the user's risk tolerance. Exclude any delisted companies for last 6 month and the list is MKG,LRS,SXG,CAI,CDD,ADA,DRA,GDA,EP1,NTL,CAJ,ANL,POX,CE1,TNJ,CSE,AME,POW,RB1,TT3,VT2,E33,LT6,AMT,RXM,ME1,NAM,WEK,ZER,IMQ,RFC,PSI,APM,BSE,SRX,K2F,SCL,VUK,PU2,PNX,KED,AND,ECG,AC8,AJQ,AJY,BKG,CFO,ELE,HLF,LVT,MCL,NGL,PAN,ROO,RVS,TBA,LT5,QIP,MMM,DCG,MLM,SIH"  
-
     system_content = """
 1. Portfolio Table:
 
@@ -72,24 +183,22 @@ All selected ASX-listed funds must be verified and limited to the following list
 Goal:
 Deliver a data-driven investment strategy that maximizes returns while aligning with the user’s risk tolerance.
 """
-
-
-    message = msgAppend(message=my_message, role='system',content=system_content) 
-    message = msgAppend(message= message, role='user',content=prompt)
-    analysis = mylib.request2ai(message=message)
-    analysis = mylib.chatcompletion2message(response=analysis)
-    analysis = mylib.openai_response_to_html(response_text=analysis)
-    
+    message = msgAppend(message=my_message, role='system', content=system_content)
+    message = msgAppend(message=message, role='user', content=prompt)
+    analysis = request2ai(message=message)
+    analysis = chatcompletion2message(response=analysis)
+    analysis = openai_response_to_html(response_text=analysis)
     return analysis
 
-def insuranceAdvice(customer_details):
-    #combined_news = " ".join(headlines)
-    my_message = [] 
-    # Create the analysis prompt
+def insuranceAdvice(customer_details: dict) -> str:
+    """
+    Generate insurance advice based on customer details.
+    
+    :param customer_details: Dictionary containing customer details.
+    :return: HTML-formatted insurance advice.
+    """
+    my_message = []
     prompt = f" {customer_details}"
-    # system_content = ""
-    # system_content = "You are a financial advisor specializing in constructing personalized share portfolios tailored to user-provided financial goals, risk tolerance, and market preferences within the Australian investment landscape. Recommend an optimized portfolio of ASX-listed Index Funds (ETFs) and Managed Funds with a strong track record of performance improvement. Provide 5 to 10 diversified fund selections, specifying investment allocation as both a percentage and AUD value. Offer a comparative analysis with an alternative ASX-listed fund for each recommendation and justify choices based on historical performance, fees, sector exposure, and growth potential. Ensure the portfolio includes local and international exposure, considering key Australian sectors like materials, energy, infrastructure, and financials. The goal is to provide a data-driven investment strategy that maximizes returns within the user's risk tolerance. Exclude any delisted companies for last 6 month and the list is MKG,LRS,SXG,CAI,CDD,ADA,DRA,GDA,EP1,NTL,CAJ,ANL,POX,CE1,TNJ,CSE,AME,POW,RB1,TT3,VT2,E33,LT6,AMT,RXM,ME1,NAM,WEK,ZER,IMQ,RFC,PSI,APM,BSE,SRX,K2F,SCL,VUK,PU2,PNX,KED,AND,ECG,AC8,AJQ,AJY,BKG,CFO,ELE,HLF,LVT,MCL,NGL,PAN,ROO,RVS,TBA,LT5,QIP,MMM,DCG,MLM,SIH"  
-
     system_content = """
 You are a financial advisor specialising in personalized insurance solutions for individuals and families in Australia. Your expertise lies in recommending tailored insurance plans that align with clients' unique needs, risk profiles, and financial goals. Provide a comprehensive insurance portfolio that ensures optimal coverage and value for money.
 
@@ -105,22 +214,22 @@ You are a financial advisor specialising in personalized insurance solutions for
 ### Goal:
 Deliver a data-driven insurance strategy that maximizes coverage and financial security while staying within the client's budget and risk tolerance.
 """
-
-    message = msgAppend(message=my_message, role='system',content=system_content) 
-    message = msgAppend(message= message, role='user',content=prompt)
-    analysis = mylib.request2ai(message=message)
-    analysis = mylib.chatcompletion2message(response=analysis)
-    analysis = mylib.openai_response_to_html(response_text=analysis)
-    
+    message = msgAppend(message=my_message, role='system', content=system_content)
+    message = msgAppend(message=message, role='user', content=prompt)
+    analysis = request2ai(message=message)
+    analysis = chatcompletion2message(response=analysis)
+    analysis = openai_response_to_html(response_text=analysis)
     return analysis
-def retirementAdvisor(customer_details):
-    #combined_news = " ".join(headlines)
-    my_message = [] 
-    # Create the analysis prompt
-    prompt = f" {customer_details}"
-    # system_content = ""
-    # system_content = "You are a financial advisor specializing in constructing personalized share portfolios tailored to user-provided financial goals, risk tolerance, and market preferences within the Australian investment landscape. Recommend an optimized portfolio of ASX-listed Index Funds (ETFs) and Managed Funds with a strong track record of performance improvement. Provide 5 to 10 diversified fund selections, specifying investment allocation as both a percentage and AUD value. Offer a comparative analysis with an alternative ASX-listed fund for each recommendation and justify choices based on historical performance, fees, sector exposure, and growth potential. Ensure the portfolio includes local and international exposure, considering key Australian sectors like materials, energy, infrastructure, and financials. The goal is to provide a data-driven investment strategy that maximizes returns within the user's risk tolerance. Exclude any delisted companies for last 6 month and the list is MKG,LRS,SXG,CAI,CDD,ADA,DRA,GDA,EP1,NTL,CAJ,ANL,POX,CE1,TNJ,CSE,AME,POW,RB1,TT3,VT2,E33,LT6,AMT,RXM,ME1,NAM,WEK,ZER,IMQ,RFC,PSI,APM,BSE,SRX,K2F,SCL,VUK,PU2,PNX,KED,AND,ECG,AC8,AJQ,AJY,BKG,CFO,ELE,HLF,LVT,MCL,NGL,PAN,ROO,RVS,TBA,LT5,QIP,MMM,DCG,MLM,SIH"  
 
+def retirementAdvisor(customer_details: dict) -> str:
+    """
+    Generate retirement advice based on customer details.
+    
+    :param customer_details: Dictionary containing customer details.
+    :return: HTML-formatted retirement advice.
+    """
+    my_message = []
+    prompt = f" {customer_details}"
     system_content = """
 ### **System Context Prompt for Retirement Statement of Advice (SoA) Generation**  
 
@@ -168,35 +277,9 @@ You are an AI-powered **Financial Advisor** specializing in **retirement plannin
 To generate a **compliant, actionable, and client-focused** Retirement SoA that empowers the client with informed financial decisions while ensuring **full regulatory compliance** under AFSL standards.  
 
 """
-
-
-    message = msgAppend(message=my_message, role='system',content=system_content) 
-    message = msgAppend(message= message, role='user',content=prompt)
-    analysis = mylib.request2ai(message=message)
-    analysis = mylib.chatcompletion2message(response=analysis)
-    analysis = mylib.openai_response_to_html(response_text=analysis)
-    
+    message = msgAppend(message=my_message, role='system', content=system_content)
+    message = msgAppend(message=message, role='user', content=prompt)
+    analysis = request2ai(message=message)
+    analysis = chatcompletion2message(response=analysis)
+    analysis = openai_response_to_html(response_text=analysis)
     return analysis
-
-
-
-
-
-def msgAppend(message,role,content):
-    message.append( {"role": role, "content": [{ "type": "text","text": content }]} )
-    return (message)
-
-def chatcompletion2message(response):
-    return response.choices[0].message.content
-
-def request2ai(message):
-    response = client.chat.completions.create(
-    model="gpt-4o-mini",
-    messages=message,
-    temperature=0.8,
-    max_tokens=2048,
-    top_p=1,
-    frequency_penalty=0,
-    presence_penalty=0
-    )
-    return(response)
