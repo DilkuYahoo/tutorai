@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Base URL for the Flask app
-BASE_URL="http://localhost:8080"
-#BASE_URL="https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev/"
+#BASE_URL="http://localhost:8080"
+BASE_URL="https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev/"
 
 # Function to print a test result
 print_result() {
@@ -26,7 +26,7 @@ fi
 echo "Testing send-email endpoint..."
 response=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/send-email" \
     -H "Content-Type: application/json" \
-    -d '{"recipient": "test@example.com", "subject": "Test Subject", "body": "Test Body"}')
+    -d '{"recipient": "dilkushan@gmail.com", "subject": "Test Subject", "body": "Test Body"}')
 if [ "$response" -eq 200 ]; then
     print_result 0 "send-email endpoint"
 else
