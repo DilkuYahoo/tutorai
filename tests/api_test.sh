@@ -1,123 +1,124 @@
 #!/bin/bash
 
-# Define the API endpoint and base URL
-#API='multiply'
-#API='send-email'
-#API='submit-soa'
-#API='ticker_analysis'
-#API='sentiment_tracker'
-#API='update_leads'
-API='get_retirement_soa'
-#API='onboard_advisors'
-#API='get_soi'  # New endpoint for insurance advice
-URL='http://localhost:8080'
-#URL="https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev/"
-#URL='https://192.168.1.106:8080/'
+# Base URL for the Flask app
+BASE_URL="http://localhost:8080"
+#BASE_URL="https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev/"
 
-# Concatenate the variables to create the full URL
-FULL_URL="${URL}/${API}"
+# Function to print a test result
+print_result() {
+    if [ "$1" -eq 0 ]; then
+        echo -e "\033[32mPASS\033[0m: $2"
+    else
+        echo -e "\033[31mFAIL\033[0m: $2"
+    fi
+}
 
-# Make the POST request with curl
-#curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"a": "12", "b": "15"}'
+# Test health check endpoint
+echo "Testing health check endpoint..."
+response=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/")
+if [ "$response" -eq 200 ]; then
+    print_result 0 "Health check endpoint"
+else
+    print_result 1 "Health check endpoint"
+fi
 
-#curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"TickerSymbol": "GEM", "exchangeName": ".ax", "period": "3mo"}'
+# Test send-email endpoint
+echo "Testing send-email endpoint..."
+response=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/send-email" \
+    -H "Content-Type: application/json" \
+    -d '{"recipient": "test@example.com", "subject": "Test Subject", "body": "Test Body"}')
+if [ "$response" -eq 200 ]; then
+    print_result 0 "send-email endpoint"
+else
+    print_result 1 "send-email endpoint"
+fi
 
-#curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"TickerSymbol": "ANZ", "exchangeName": ".ax"}'
+# Test get_retirement_soa endpoint
+echo "Testing get_retirement_soa endpoint..."
+response=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/get_retirement_soa" \
+    -H "Content-Type: application/json" \
+    -d '{"current_age": 30, "retirement_income_goal": 50000, "risk_tolerance": "medium"}')
+if [ "$response" -eq 200 ]; then
+    print_result 0 "get_retirement_soa endpoint"
+else
+    print_result 1 "get_retirement_soa endpoint"
+fi
 
-#curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"name": "ANZ", "email": ".ax","message":"Testing"}'
+# Test get_soi endpoint
+echo "Testing get_soi endpoint..."
+response=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/get_soi" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "fullName": "John Doe",
+        "email": "john.doe@example.com",
+        "phone": "1234567890",
+        "age": 30,
+        "annualIncome": 60000,
+        "dependents": 2,
+        "debts": 10000,
+        "survivalMonths": 6,
+        "occupation": "Engineer",
+        "medicalConditions": "None",
+        "smokeDrink": "No",
+        "insuranceType": "Life",
+        "healthCoverage": "Yes",
+        "monthlyPremium": 100
+    }')
+if [ "$response" -eq 200 ]; then
+    print_result 0 "get_soi endpoint"
+else
+    print_result 1 "get_soi endpoint"
+fi
 
-# Uncomment the following line to use a specific URL without concatenation
-#curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"a": "12", "b": "15"}'
-#curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"recipient": "dilku@yahoo.com", "subject": "Subject Testing","body":"Testing Body"}'
+# Test update_leads endpoint
+echo "Testing update_leads endpoint..."
+response=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/update_leads" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "fullName": "Jane Doe",
+        "email": "jane.doe@example.com",
+        "phone": "0987654321",
+        "age": 25,
+        "financialGoal": "Retirement",
+        "investmentAmount": 50000,
+        "riskTolerance": "high"
+    }')
+if [ "$response" -eq 200 ]; then
+    print_result 0 "update_leads endpoint"
+else
+    print_result 1 "update_leads endpoint"
+fi
 
+# Test onboard_advisors endpoint
+echo "Testing onboard_advisors endpoint..."
+response=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/onboard_advisors" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "Advisor Name",
+        "phone": "1234567890",
+        "email": "advisor@example.com",
+        "afsl": "123456",
+        "businessName": "Advisor Business",
+        "businessAddress": "123 Business St",
+        "businessURL": "https://advisor.com",
+        "agreement1": true,
+        "agreement2": true
+    }')
+if [ "$response" -eq 200 ]; then
+    print_result 0 "onboard_advisors endpoint"
+else
+    print_result 1 "onboard_advisors endpoint"
+fi
 
-#curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"fullName": "John Doe", "email": "johndoe@example.com", "phone": "1234567890", "age": 30, "financialGoal": "Medium-term Goals (3-5 years)", "investmentAmount": 50000, "riskTolerance": "Medium", "acknowledgeDisclaimer": true}'
+# Test multiply endpoint
+echo "Testing multiply endpoint..."
+response=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/multiply" \
+    -H "Content-Type: application/json" \
+    -d '{"a": 5, "b": 10}')
+if [ "$response" -eq 200 ]; then
+    print_result 0 "multiply endpoint"
+else
+    print_result 1 "multiply endpoint"
+fi
 
-#curl -X POST "$FULL_URL" -H "Content-Type: application/json" -d '{"current_age":55,"retirement_age":65,"comfortable_retirement_lifestyle":"Travel and comfortable housing","retirement_income_goal":60000,"current_superannuation_balance":300000,"superannuation_investment":"Balanced","additional_savings":150000,"voluntary_super_contributions":true,"other_sources_of_income":"Part-time job","monthly_living_expenses":4500,"major_expenses_retirement":[ "Travel", "Home renovations" ],"buffer_for_unexpected_expenses":true,"preferred_retirement_income_type":"Account-Based Pension","income_sources":[ "Super Pension", "Rental Income" ],"risk_tolerance":"Moderate","growth_or_stability":"Growth","conservative_or_growth_approach":"Growth","ongoing_financial_advice":true,"review_frequency":"Semiannually","aged_care_planning":true,"eligibility_age_pension":false,"awareness_tax_implications":true,"minimize_tax":true,"valid_will_estate_plan":true,"beneficiaries_superannuation":true,"existing_insurance_policies":true,"concerns_aged_care_medical_expenses":true,"risk_tolerance_investments":"Moderate"}'
-curl -X POST "$FULL_URL" -H "Content-Type: application/json" \
--d '{
-    "name": "John Doe",
-    "contact_number": "1234567890",
-    "email_address": "john.doe@example.com",
-    "current_age": 60,
-    "retirement_age": 65,
-    "comfortable_retirement_lifestyle": "Travel and comfortable housing",
-    "retirement_income_goal": 40000,
-    "current_superannuation_balance": 300000,
-    "superannuation_investment": "Balanced",
-    "additional_savings": 150000,
-    "voluntary_super_contributions": true,
-    "other_sources_of_income": "Part-time job",
-    "monthly_living_expenses": 3500,
-    "major_expenses_retirement": ["Travel", "Home renovations"],
-    "buffer_for_unexpected_expenses": true,
-    "preferred_retirement_income_type": "Account-Based Pension",
-    "income_sources": ["Super Pension", "Rental Income"],
-    "risk_tolerance": "Moderate",
-    "growth_or_stability": "Growth",
-    "conservative_or_growth_approach": "Growth",
-    "ongoing_financial_advice": true,
-    "review_frequency": "Semiannually",
-    "aged_care_planning": true,
-    "eligibility_age_pension": false,
-    "awareness_tax_implications": true,
-    "minimize_tax": true,
-    "valid_will_estate_plan": true,
-    "beneficiaries_superannuation": true,
-    "existing_insurance_policies": true,
-    "concerns_aged_care_medical_expenses": true,
-    "risk_tolerance_investments": "Moderate"
-}'
-
-#curl -X POST \
-#  "$FULL_URL" \
-#  -H "Content-Type: application/json" \
-#  -d '{
-#    "fullName": "John Doe",
-#    "email": "johndoe@example.com",
-#    "phone": "1234567890",
-#    "age": 30,
-#    "financialGoal": "Medium-term Goals (3-5 years)",
-#    "investmentAmount": 50000,
-#    "riskTolerance": "Medium",
-#    "acknowledgeDisclaimer": true
-#  }'
-
-# Test the onboard_advisors endpoint
-#curl -X POST \
-#  "$FULL_URL" \
-#  -H "Content-Type: application/json" \
-#  -d '{
-#    "name": "Jane Doe",
-#    "phone": "0987654321",
-#    "email": "janedoe@example.com",
-#    "afsl": "123456",
-#    "businessName": "Doe Financial Services",
-#    "businessAddress": "123 Financial St, Sydney, NSW",
-#    "businessURL": "https://doefinancial.com",
-#    "agreement1": true,
-#    "agreement2": true
-#  }'
-
-# Test the get_soi endpoint
-#curl -X POST \
-#  "$FULL_URL" \
-#  -H "Content-Type: application/json" \
-#  -d '{
-#    "fullName": "John Doe",
-#    "email": "johndoe@example.com",
-#    "phone": "1234567890",
-#    "age": 35,
-#    "annualIncome": 80000,
-#    "dependents": "Yes",
-#    "debts": 200000,
-#    "survivalMonths": 6,
-#    "occupation": "Software Engineer",
-#    "medicalConditions": "No",
-#    "smokeDrink": "No",
-#    "insuranceType": "Hybrid",
-#    "healthCoverage": "Both",
-#    "monthlyPremium": 200,
-#    "existingPolicies": "Life Insurance",
-#    "payoutPreference": "Lump Sum"
-#  }'
+echo "All tests completed."
