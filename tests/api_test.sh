@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Base URL for the Flask app
-#BASE_URL="http://localhost:8080"
-BASE_URL="https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev/"
+BASE_URL="http://localhost:8080"
+#BASE_URL="https://n54lm5igkl.execute-api.ap-southeast-2.amazonaws.com/dev/"
 
 # Function to print a test result
 print_result() {

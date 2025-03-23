@@ -2,41 +2,9 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from datetime import datetime
 import mylib
-import config
 
 app = Flask(__name__)
 CORS(app)
-
-# Helper Functions
-def validate_and_extract_data(data, required_fields):
-    if not request.is_json:
-        return None, "Invalid input: JSON data expected"
-    if not mylib.validate_json_input(data, required_fields):
-        return None, "Missing required fields"
-    return data, None
-
-def generate_email_body(title, details, analysis_title, analysis, current_datetime):
-    return config.EMAIL_TEMPLATES["customer_details"].format(
-        google_fonts=config.GOOGLE_FONTS,
-        bootstrap_css=config.BOOTSTRAP_CSS,
-        body=config.EMAIL_STYLES["body"],
-        container=config.EMAIL_STYLES["container"],
-        card=config.EMAIL_STYLES["card"],
-        heading=config.EMAIL_STYLES["heading"],
-        table=config.EMAIL_STYLES["table"],
-        table_cell=config.EMAIL_STYLES["table_cell"],
-        table_header=config.EMAIL_STYLES["table_header"],
-        title=title,
-        details=''.join(f'<p><strong>{key}:</strong> {value}</p>' for key, value in details.items() if value),
-        analysis_title=analysis_title,
-        analysis=analysis,
-        current_datetime=current_datetime
-    )
-
-def append_to_sheet_and_send_email(sheet_name, sheet_data, email_subject, email_body, recipient="info@advicegenie.com.au"):
-    mylib.append_to_google_sheet(sheet_name, "Sheet1", sheet_data)
-    response = mylib.send_email_via_ses(recipient, email_subject, email_body, "html")
-    return response
 
 # Routes
 @app.route("/send-email", methods=["POST"])
@@ -58,7 +26,7 @@ def send_email():
 
 @app.route('/get_retirement_soa', methods=['POST'])
 def get_retirement_soa():
-    data, error = validate_and_extract_data(request.get_json(), ["current_age", "retirement_income_goal", "risk_tolerance"])
+    data, error = mylib.validate_and_extract_data(request.get_json(), ["current_age", "retirement_income_goal", "risk_tolerance"])
     if error:
         return jsonify({"error": error}), 400
 
@@ -78,12 +46,12 @@ def get_retirement_soa():
 
     customer_details = {key: data.get(key) for key in data}
     analysis = mylib.retirementAdvisor(customer_details)
-    email_body = generate_email_body(
+    email_body = mylib.generate_email_body(
         "Customer Details", customer_details, "Financial Analysis", analysis, current_datetime
     )
 
     try:
-        response = append_to_sheet_and_send_email(
+        response = mylib.append_to_sheet_and_send_email(
             "leads", sheet_data, f"Retirement SOA for {data.get('current_age')}-year-old", email_body
         )
         return jsonify({"message": "Data successfully added to Google Sheet and email sent", "email_response": response}), 200
@@ -92,7 +60,7 @@ def get_retirement_soa():
 
 @app.route('/get_soi', methods=['POST'])
 def get_soi():
-    data, error = validate_and_extract_data(request.get_json(), [
+    data, error = mylib.validate_and_extract_data(request.get_json(), [
         "fullName", "email", "phone", "age", "annualIncome", "dependents", "debts", 
         "survivalMonths", "occupation", "medicalConditions", "smokeDrink", "insuranceType", 
         "healthCoverage", "monthlyPremium"
@@ -109,12 +77,12 @@ def get_soi():
 
     customer_details = {key: data.get(key) for key in data}
     analysis = mylib.insuranceAdvice(customer_details)
-    email_body = generate_email_body(
+    email_body = mylib.generate_email_body(
         "Customer Details", customer_details, "Insurance Analysis", analysis, current_datetime
     )
 
     try:
-        response = append_to_sheet_and_send_email(
+        response = mylib.append_to_sheet_and_send_email(
             "leads", sheet_data, f"Statement of Insurance for {data.get('fullName')}", email_body
         )
         return jsonify({"message": "Data successfully added to Google Sheet and email sent", "email_response": response}), 200
@@ -123,7 +91,7 @@ def get_soi():
 
 @app.route('/update_leads', methods=['POST'])
 def update_leads():
-    data, error = validate_and_extract_data(request.get_json(), [
+    data, error = mylib.validate_and_extract_data(request.get_json(), [
         "fullName", "email", "phone", "age", "financialGoal", "investmentAmount", "riskTolerance"
     ])
     if error:
@@ -136,12 +104,12 @@ def update_leads():
 
     customer_details = {key: data.get(key) for key in data}
     analysis = mylib.financialAdvisor(customer_details)
-    email_body = generate_email_body(
+    email_body = mylib.generate_email_body(
         "Customer Details", customer_details, "Financial Analysis", analysis, current_datetime
     )
 
     try:
-        response = append_to_sheet_and_send_email(
+        response = mylib.append_to_sheet_and_send_email(
             "leads", sheet_data, f"Statement of Advice for {data.get('fullName')}", email_body
         )
         return jsonify({"message": "Data successfully added to Google Sheet and email sent", "email_response": response}), 200
@@ -151,7 +119,7 @@ def update_leads():
 @app.route("/onboard_advisors", methods=["POST"])
 def onboard_advisors():
     try:
-        data, error = validate_and_extract_data(request.get_json(), [
+        data, error = mylib.validate_and_extract_data(request.get_json(), [
             "name", "phone", "email", "afsl", "businessName", "businessAddress", 
             "businessURL", "agreement1", "agreement2"
         ])
@@ -167,11 +135,11 @@ def onboard_advisors():
             'businessURL', 'agreement1', 'agreement2'
         ]] + [current_datetime]
 
-        email_body = generate_email_body(
+        email_body = mylib.generate_email_body(
             "New Advisor Onboarding", data, "Advisor Details", "", current_datetime
         )
 
-        response = append_to_sheet_and_send_email(
+        response = mylib.append_to_sheet_and_send_email(
             "leads", sheet_data, f"New Advisor Onboarding: {data.get('name')}", email_body
         )
         return jsonify({"message": "Advisor onboarding data received and processed", "email_response": response}), 200
