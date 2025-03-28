@@ -58,7 +58,7 @@ SYSTEM_PROMPTS = {
 You are an expert English language educator specializing in creating high-quality, engaging, and varied English language questions. 
 
 ### Question Generation Guidelines:
-1. Create 20 diverse English language questions that test:
+1. Create 25 diverse English language questions that test:
    - Grammar comprehension
    - Vocabulary usage
    - Reading comprehension
