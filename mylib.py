@@ -201,6 +201,23 @@ def retirementAdvisor(customer_details: dict) -> str:
     analysis = openai_response_to_html(response_text=analysis)
     return analysis
 
+def englishGeneration(customer_details: dict) -> str:
+    """
+    Generate English language questions based on customer details.
+    
+    :param customer_details: Dictionary containing customer details.
+    :return: HTML-formatted English questions.
+    """
+    my_message = []
+    prompt = f" {customer_details}"
+    message = msgAppend(message=my_message, role='system', content=SYSTEM_PROMPTS["english_generation"])
+    message = msgAppend(message=message, role='user', content=prompt)
+    analysis = request2ai(message=message)
+    analysis = chatcompletion2message(response=analysis)
+    analysis = openai_response_to_html(response_text=analysis)
+    return analysis
+
+
 # Helper Functions moved from app.py
 def validate_and_extract_data(data, required_fields):
     """

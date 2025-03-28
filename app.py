@@ -163,5 +163,32 @@ def multiply():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/generate_english', methods=['POST'])
+def generate_english():
+    data, error = mylib.validate_and_extract_data(request.get_json(), [
+        "name", "email", "language_level", "learning_goal"
+    ])
+    if error:
+        return jsonify({"error": error}), 400
+
+    current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    sheet_data = [data.get(key) for key in [
+        'name', 'email', 'language_level', 'learning_goal'
+    ]] + [current_datetime]
+
+    customer_details = {key: data.get(key) for key in data}
+    analysis = mylib.englishGeneration(customer_details)
+    email_body = mylib.generate_email_body(
+        "English Language Questions", customer_details, "Generated Questions", analysis, current_datetime
+    )
+
+    try:
+        response = mylib.append_to_sheet_and_send_email(
+            "leads", sheet_data, f"English Language Questions for {data.get('name')}", email_body
+        )
+        return jsonify({"message": "English language questions generated and email sent", "email_response": response}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(debug=True)
