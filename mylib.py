@@ -4,11 +4,13 @@ from dotenv import load_dotenv
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
+import re
 import datetime
-import markdown
 import base64
 import boto3
 from config import SYSTEM_PROMPTS, EMAIL_TEMPLATES, EMAIL_STYLES, GOOGLE_FONTS, BOOTSTRAP_CSS
+import markdown2
+from typing import List
 
 load_dotenv()
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
@@ -21,15 +23,28 @@ SENDER_EMAIL = "info@mail.advicegenie.com.au"
 # Initialize the AWS SES client
 ses_client = boto3.client("ses", region_name=AWS_REGION)
 
-def openai_response_to_html(response_text: str) -> str:
+def convert_markdown_to_html_email(md_content: str, extras: List[str] = None) -> str:
     """
-    Converts OpenAI API Markdown response to HTML.
-    
-    :param response_text: Markdown-formatted text from OpenAI API.
-    :return: HTML-formatted string.
+    Converts Markdown content to HTML suitable for email formatting.
+
+    Args:
+        md_content (str): The Markdown content to convert.
+        extras (List[str], optional): List of markdown2 extras to enable. 
+            Defaults to common email-safe features.
+
+    Returns:
+        str: HTML representation of the Markdown content.
     """
-    html_output = markdown.markdown(response_text, extensions=['fenced_code', 'tables'])
-    return html_output
+    if extras is None:
+        extras = [
+            "fenced-code-blocks",
+            "tables",
+            "footnotes",
+            "strike",
+            "header-ids"
+        ]
+
+    return markdown2.markdown(md_content, extras=extras)
 
 def get_google_sheet(spreadsheet_name: str, sheet_name: str):
     """
@@ -145,7 +160,7 @@ def request2ai(message: list):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=message,
-        temperature=0.8,
+        temperature=1.0,
         max_tokens=2048,
         top_p=1,
         frequency_penalty=0,
@@ -158,65 +173,56 @@ def financialAdvisor(customer_details: dict) -> str:
     Generate financial advice based on customer details.
     
     :param customer_details: Dictionary containing customer details.
-    :return: HTML-formatted financial advice.
+    :return: Financial advice as plain text.
     """
     my_message = []
     prompt = f" {customer_details}"
     message = msgAppend(message=my_message, role='system', content=SYSTEM_PROMPTS["financial_advisor"])
     message = msgAppend(message=message, role='user', content=prompt)
     analysis = request2ai(message=message)
-    analysis = chatcompletion2message(response=analysis)
-    analysis = openai_response_to_html(response_text=analysis)
-    return analysis
+    return chatcompletion2message(response=analysis)
 
 def insuranceAdvice(customer_details: dict) -> str:
     """
     Generate insurance advice based on customer details.
     
     :param customer_details: Dictionary containing customer details.
-    :return: HTML-formatted insurance advice.
+    :return: Insurance advice as plain text.
     """
     my_message = []
     prompt = f" {customer_details}"
     message = msgAppend(message=my_message, role='system', content=SYSTEM_PROMPTS["insurance_advice"])
     message = msgAppend(message=message, role='user', content=prompt)
     analysis = request2ai(message=message)
-    analysis = chatcompletion2message(response=analysis)
-    analysis = openai_response_to_html(response_text=analysis)
-    return analysis
+    return chatcompletion2message(response=analysis)
 
 def retirementAdvisor(customer_details: dict) -> str:
     """
     Generate retirement advice based on customer details.
     
     :param customer_details: Dictionary containing customer details.
-    :return: HTML-formatted retirement advice.
+    :return: Retirement advice as plain text.
     """
     my_message = []
     prompt = f" {customer_details}"
     message = msgAppend(message=my_message, role='system', content=SYSTEM_PROMPTS["retirement_advisor"])
     message = msgAppend(message=message, role='user', content=prompt)
     analysis = request2ai(message=message)
-    analysis = chatcompletion2message(response=analysis)
-    analysis = openai_response_to_html(response_text=analysis)
-    return analysis
+    return chatcompletion2message(response=analysis)
 
 def englishGeneration(customer_details: dict) -> str:
     """
     Generate English language questions based on customer details.
     
     :param customer_details: Dictionary containing customer details.
-    :return: HTML-formatted English questions.
+    :return: English questions as plain text.
     """
     my_message = []
     prompt = f" {customer_details}"
     message = msgAppend(message=my_message, role='system', content=SYSTEM_PROMPTS["english_generation"])
     message = msgAppend(message=message, role='user', content=prompt)
     analysis = request2ai(message=message)
-    analysis = chatcompletion2message(response=analysis)
-    analysis = openai_response_to_html(response_text=analysis)
-    return analysis
-
+    return chatcompletion2message(response=analysis)
 
 # Helper Functions moved from app.py
 def validate_and_extract_data(data, required_fields):

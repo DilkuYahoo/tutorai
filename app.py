@@ -26,37 +26,66 @@ def send_email():
 
 @app.route('/get_retirement_soa', methods=['POST'])
 def get_retirement_soa():
-    data, error = mylib.validate_and_extract_data(request.get_json(), ["current_age", "retirement_income_goal", "risk_tolerance"])
-    if error:
-        return jsonify({"error": error}), 400
-
-    current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sheet_data = [data.get(key) for key in [
-        'name', 'contact_number', 'email_address', 'current_age', 'retirement_age', 
-        'comfortable_retirement_lifestyle', 'retirement_income_goal', 'current_superannuation_balance', 
-        'superannuation_investment', 'additional_savings', 'voluntary_super_contributions', 
-        'other_sources_of_income', 'monthly_living_expenses', 'buffer_for_unexpected_expenses', 
-        'preferred_retirement_income_type', 'risk_tolerance', 'growth_or_stability', 
-        'conservative_or_growth_approach', 'ongoing_financial_advice', 'review_frequency', 
-        'aged_care_planning', 'eligibility_age_pension', 'awareness_tax_implications', 
-        'minimize_tax', 'valid_will_estate_plan', 'beneficiaries_superannuation', 
-        'existing_insurance_policies', 'concerns_aged_care_medical_expenses', 
-        'risk_tolerance_investments'
-    ]] + [current_datetime]
-
-    customer_details = {key: data.get(key) for key in data}
-    analysis = mylib.retirementAdvisor(customer_details)
-    email_body = mylib.generate_email_body(
-        "Customer Details", customer_details, "Financial Analysis", analysis, current_datetime
-    )
-
     try:
-        response = mylib.append_to_sheet_and_send_email(
-            "leads", sheet_data, f"Retirement SOA for {data.get('current_age')}-year-old", email_body
+        # Get the JSON data from the request
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ["fullName", "email", "phone", "persona"]
+        if not all(field in data for field in required_fields):
+            return jsonify({"error": f"Missing required fields. Required: {', '.join(required_fields)}"}), 400
+
+        # Extract persona details (assuming it's a string that needs parsing)
+        persona_text = data["persona"]
+        
+        # Here you would typically parse the persona text into structured data
+        # For now, we'll just use the raw text
+        customer_details = {
+            "name": data["fullName"],
+            "email": data["email"],
+            "phone": data["phone"],
+            "persona": persona_text
+        }
+
+        current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Prepare data for Google Sheet
+        sheet_data = [
+            data["fullName"],
+            data["email"],
+            data["phone"],
+            current_datetime
+        ]
+
+        # Generate analysis (assuming mylib has this function)
+        analysis = mylib.retirementAdvisor(customer_details)
+        
+        analysis=mylib.convert_markdown_to_html_email(analysis)
+        # Generate email body
+        email_body = mylib.generate_email_body(
+            "Retirement SOA Request Details",
+            customer_details,
+            "Retirement Analysis",
+            analysis,
+            current_datetime
         )
-        return jsonify({"message": "Data successfully added to Google Sheet and email sent", "email_response": response}), 200
+
+        # Send to Google Sheet and send email
+        response = mylib.append_to_sheet_and_send_email(
+            "leads",
+            sheet_data,
+            f"Retirement SOA for {data['fullName']}",
+            email_body
+        )
+
+        return jsonify({
+            "message": "Retirement SOA request processed successfully",
+            "email_response": response
+        }), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
 
 @app.route('/get_soi', methods=['POST'])
 def get_soi():
@@ -77,6 +106,7 @@ def get_soi():
 
     customer_details = {key: data.get(key) for key in data}
     analysis = mylib.insuranceAdvice(customer_details)
+    analysis=mylib.convert_markdown_to_html_email(analysis)
     email_body = mylib.generate_email_body(
         "Customer Details", customer_details, "Insurance Analysis", analysis, current_datetime
     )
@@ -104,6 +134,7 @@ def update_leads():
 
     customer_details = {key: data.get(key) for key in data}
     analysis = mylib.financialAdvisor(customer_details)
+    analysis=mylib.convert_markdown_to_html_email(analysis)
     email_body = mylib.generate_email_body(
         "Customer Details", customer_details, "Financial Analysis", analysis, current_datetime
     )
@@ -178,6 +209,7 @@ def generate_english():
 
     customer_details = {key: data.get(key) for key in data}
     analysis = mylib.englishGeneration(customer_details)
+    analysis=mylib.convert_markdown_to_html_email(analysis)
     email_body = mylib.generate_email_body(
         "English Language Questions", customer_details, "Generated Questions", analysis, current_datetime
     )
