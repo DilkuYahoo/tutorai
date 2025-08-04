@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Tutor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center p-4">
+  <h1 class="text-3xl font-bold mb-6">🎓 AI Tutor</h1>
+
+  <div class="w-full max-w-xl bg-gray-800 border border-gray-700 rounded-xl p-4">
+    <div id="chat-log" class="space-y-2 max-h-64 overflow-y-auto text-sm mb-4"></div>
+
+    <input 
+      id="answer-input" 
+      type="text" 
+      class="w-full p-2 rounded bg-gray-700 text-white mb-2" 
+      placeholder="Type your answer..." 
+      disabled 
+    />
+
+    <div class="flex space-x-2 mb-2">
+      <button 
+        id="submit-btn" 
+        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50" 
+        disabled
+      >
+        Submit Answer
+      </button>
+      <button 
+        id="start-btn" 
+        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+      >
+        Start New Question
+      </button>
+    </div>
+
+    <div id="continue-prompt" class="hidden space-x-2 mt-2">
+      <button 
+        id="yes-btn" 
+        class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+      >
+        Yes
+      </button>
+      <button 
+        id="no-btn" 
+        class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded"
+      >
+        No
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const chatLog = document.getElementById('chat-log');
+    const answerInput = document.getElementById('answer-input');
+    const submitBtn = document.getElementById('submit-btn');
+    const startBtn = document.getElementById('start-btn');
+    const continuePrompt = document.getElementById('continue-prompt');
+    const yesBtn = document.getElementById('yes-btn');
+    const noBtn = document.getElementById('no-btn');
+
+    let currentQuestion = '';
+
+    function addMessage(role, text) {
+      const p = document.createElement('p');
+      p.textContent = `${role} ${text}`;
+      chatLog.appendChild(p);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    async function askQuestion() {
+      try {
+        const res = await fetch('http://localhost:8080/api/ask-question', { method: 'POST' });
+        const data = await res.json();
+        currentQuestion = data.question;
+        addMessage('🤖', data.question);
+        answerInput.disabled = false;
+        submitBtn.disabled = false;
+        answerInput.value = '';
+        answerInput.focus();
+      } catch (err) {
+        addMessage('🤖', 'Error fetching question.');
+      }
+    }
+
+    async function evaluateAnswer() {
+      const userAnswer = answerInput.value.trim();
+      if (!userAnswer) return;
+      addMessage('🧑', userAnswer);
+
+      submitBtn.disabled = true;
+      answerInput.disabled = true;
+
+      try {
+        const res = await fetch('http://localhost:8080/api/evaluate-answer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: currentQuestion, answer: userAnswer }),
+        });
+        const data = await res.json();
+        addMessage('🤖', data.evaluation);
+        continuePrompt.classList.remove('hidden');
+      } catch (err) {
+        addMessage('🤖', 'Error evaluating answer.');
+      }
+    }
+
+    submitBtn.addEventListener('click', evaluateAnswer);
+    startBtn.addEventListener('click', () => {
+      continuePrompt.classList.add('hidden');
+      askQuestion();
+    });
+
+    yesBtn.addEventListener('click', () => {
+      continuePrompt.classList.add('hidden');
+      askQuestion();
+    });
+
+    noBtn.addEventListener('click', () => {
+      continuePrompt.classList.add('hidden');
+      addMessage('👋', 'Ending the session. Great work!');
+      answerInput.disabled = true;
+      submitBtn.disabled = true;
+    });
+
+    answerInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        evaluateAnswer();
+      }
+    });
+  </script>
+</body>
+</html>
