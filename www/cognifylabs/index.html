@@ -27,6 +27,7 @@
         font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         line-height: 1.6;
         color: var(--text-dark);
+        padding-top: 80px;
       }
 
       /* Header/Navbar */
@@ -34,6 +35,15 @@
         background: var(--primary-dark) !important;
         padding: 1rem 0;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: 1000;
+        transition: transform 0.3s ease-in-out;
+      }
+
+      .navbar.navbar-hidden {
+        transform: translateY(-100%);
       }
 
       .navbar-brand {
@@ -146,66 +156,10 @@
         line-height: 1.6;
       }
 
-      /* Why Choose Us Section */
-      .why-choose-section {
-        background: var(--light-gray);
-        padding: 80px 0;
-      }
-
-      .feature-card {
-        background: var(--white);
-        border-radius: 12px;
-        padding: 2.5rem 2rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        border: 1px solid #e5e7eb;
-        transition: all 0.3s ease;
-        height: 100%;
-      }
-
-      .feature-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-      }
-
-      .feature-icon {
-        width: 80px;
-        height: 80px;
-        background: var(--light-blue);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.5rem;
-        font-size: 2rem;
-        color: var(--white);
-      }
-
-      /* Statistics Section */
-      .stats-section {
-        background: var(--primary-blue);
-        color: var(--white);
-        padding: 80px 0;
-      }
-
-      .stat-item {
-        text-align: center;
-      }
-
-      .stat-number {
-        font-size: 3rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-      }
-
-      .stat-label {
-        font-size: 1.1rem;
-        opacity: 0.9;
-      }
-
       /* Contact Section */
       .contact-section {
         background: var(--white);
-        padding: 80px 0;
+        padding: 0 0 80px 0;
       }
 
       .contact-card {
@@ -215,35 +169,6 @@
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         border: 1px solid #e5e7eb;
         height: 100%;
-      }
-
-      .contact-info {
-        display: flex;
-        align-items: center;
-        margin-bottom: 1.5rem;
-      }
-
-      .contact-icon {
-        width: 50px;
-        height: 50px;
-        background: var(--light-blue);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 1rem;
-        color: var(--white);
-      }
-
-      .contact-details h5 {
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-        color: var(--text-dark);
-      }
-
-      .contact-details p {
-        margin: 0;
-        color: var(--text-light);
       }
 
       .form-control {
@@ -310,51 +235,6 @@
         opacity: 1;
       }
 
-      .social-icons {
-        display: flex;
-        gap: 1rem;
-        margin-top: 1rem;
-      }
-
-      .social-icon {
-        width: 40px;
-        height: 40px;
-        border: 2px solid var(--white);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--white);
-        transition: all 0.3s ease;
-      }
-
-      .social-icon:hover {
-        background: var(--white);
-        color: var(--primary-dark);
-      }
-
-      .newsletter-input {
-        display: flex;
-        gap: 0.5rem;
-        margin-top: 1rem;
-      }
-
-      .newsletter-input input {
-        flex: 1;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 8px 12px;
-      }
-
-      .btn-newsletter {
-        background: var(--primary-blue);
-        color: var(--white);
-        border: none;
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-weight: 600;
-      }
-
       .footer-bottom {
         border-top: 1px solid #374151;
         padding-top: 20px;
@@ -389,7 +269,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
       <div class="container">
         <a class="navbar-brand" href="#">
-          <i class="fas fa-star me-2"></i>Cognify Labs
+          <img src="img/logo.png" alt="Cognify Labs" height="40" /> Cognify Labs
         </a>
         <button
           class="navbar-toggler"
@@ -407,9 +287,7 @@
             <li class="nav-item">
               <a class="nav-link" href="#services">Services</a>
             </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#why-us">Why Us</a>
-            </li>
+
             <li class="nav-item">
               <a class="nav-link" href="#contact">Contact</a>
             </li>
@@ -421,10 +299,10 @@
     <!-- Hero Section -->
     <section class="hero" id="home">
       <div class="container">
-        <h1>AI-Powered Software Development</h1>
+        <h1>Your Trusted Virtual CIO Partner</h1>
         <p>
-          Revolutionizing the entire SDLC with intelligent automation,
-          optimization, and AI-driven solutions.
+          Strategic technology leadership tailored to drive innovation and
+          growth across your organisation.
         </p>
         <a href="#contact" class="btn btn-primary-custom"
           >Get a Free Consultation</a
@@ -434,14 +312,14 @@
 
     <!-- Services Section -->
     <section id="services" class="container my-5 py-5">
-      <h2 class="section-heading">Our Services</h2>
+      <h2 class="section-heading">vCIO Services</h2>
       <div class="row">
         <div class="col-lg-4 col-md-6 mb-4">
           <div class="service-card">
             <div class="service-icon">
-              <i class="fas fa-brain"></i>
+              <i class="fas fa-route"></i>
             </div>
-            <h4>AI Consulting</h4>
+            <h4>IT Strategy & Roadmap</h4>
             <p>
               Strategic AI implementation guidance and governance for successful
               digital transformation.
@@ -451,120 +329,61 @@
         <div class="col-lg-4 col-md-6 mb-4">
           <div class="service-card">
             <div class="service-icon">
-              <i class="fas fa-code"></i>
+              <i class="fas fa-shield-alt"></i>
             </div>
-            <h4>Custom Software Development</h4>
+            <h4>Risk & Compliance</h4>
             <p>
-              Tailored software solutions designed to meet your specific
-              business requirements.
+              Mitigate risk through governance, cybersecurity frameworks, and
+              Essential Eight alignment.
             </p>
           </div>
         </div>
         <div class="col-lg-4 col-md-6 mb-4">
           <div class="service-card">
             <div class="service-icon">
-              <i class="fas fa-cloud"></i>
+              <i class="fas fa-calculator"></i>
             </div>
-            <h4>Application Modernisation</h4>
+            <h4>IT Budgeting & Cost Optimisation</h4>
             <p>
-              Transform legacy systems into modern, scalable cloud-native
-              applications.
+              Plan and monitor IT budgets while optimising vendor contracts and
+              reducing TCO.
             </p>
           </div>
         </div>
         <div class="col-lg-4 col-md-6 mb-4">
           <div class="service-card">
             <div class="service-icon">
-              <i class="fas fa-chart-line"></i>
+              <i class="fas fa-users-cog"></i>
             </div>
-            <h4>ML Implementation</h4>
+            <h4>Cloud & Vendor Management</h4>
             <p>
-              End-to-end machine learning solutions to drive data-driven
-              decision making.
+              Lead cloud migration projects and manage vendor relationships
+              effectively.
             </p>
           </div>
         </div>
         <div class="col-lg-4 col-md-6 mb-4">
           <div class="service-card">
             <div class="service-icon">
-              <i class="fas fa-file-alt"></i>
+              <i class="fas fa-robot"></i>
+            </div>
+            <h4>AI & Automation Advisory</h4>
+            <p>
+              Identify AI opportunities and design governance for successful
+              implementation.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="service-card">
+            <div class="service-icon">
+              <i class="fas fa-sync-alt"></i>
             </div>
             <h4>Digital Transformation</h4>
             <p>
-              Comprehensive digital transformation strategies to future-proof
-              your business.
+              Drive change management, systems integration, and innovation at
+              scale.
             </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Why Choose Us Section -->
-    <section class="why-choose-section" id="why-us">
-      <div class="container">
-        <h2 class="section-heading">Why Choose Us?</h2>
-        <div class="row">
-          <div class="col-lg-4 col-md-6 mb-4">
-            <div class="feature-card">
-              <div class="feature-icon">
-                <i class="fas fa-brain"></i>
-              </div>
-              <h4>Cutting-Edge AI Solutions</h4>
-              <p>
-                Leverage the latest AI technologies to gain competitive
-                advantages and drive innovation.
-              </p>
-            </div>
-          </div>
-          <div class="col-lg-4 col-md-6 mb-4">
-            <div class="feature-card">
-              <div class="feature-icon">
-                <i class="fas fa-rocket"></i>
-              </div>
-              <h4>Faster Time to Market</h4>
-              <p>
-                Accelerate development cycles and reduce time-to-market with our
-                efficient processes.
-              </p>
-            </div>
-          </div>
-          <div class="col-lg-4 col-md-6 mb-4">
-            <div class="feature-card">
-              <div class="feature-icon">
-                <i class="fas fa-shield-alt"></i>
-              </div>
-              <h4>Security & Compliance</h4>
-              <p>
-                Enterprise-grade security and compliance standards to protect
-                your business assets.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Statistics Section -->
-    <section class="stats-section">
-      <div class="container">
-        <div class="row">
-          <div class="col-md-4">
-            <div class="stat-item">
-              <div class="stat-number">25+</div>
-              <div class="stat-label">Years of Experience</div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="stat-item">
-              <div class="stat-number">80%</div>
-              <div class="stat-label">App Dev Cost Savings</div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="stat-item">
-              <div class="stat-number">90%</div>
-              <div class="stat-label">Operating Cost Savings</div>
-            </div>
           </div>
         </div>
       </div>
@@ -575,44 +394,12 @@
       <div class="container">
         <h2 class="section-heading">Get In Touch</h2>
         <p class="text-center mb-5">
-          Have questions? Reach out to us, and we'll assist you with your
-          financial needs.
+          Looking to boost your organisation's IT capability and strategic
+          direction? Let's connect.
         </p>
 
-        <div class="row">
-          <div class="col-lg-6 mb-4">
-            <div class="contact-card">
-              <h4 class="mb-4">Contact Us</h4>
-              <div class="contact-info">
-                <div class="contact-icon">
-                  <i class="fas fa-map-marker-alt"></i>
-                </div>
-                <div class="contact-details">
-                  <h5>Address</h5>
-                  <p>123 Business Street, Sydney NSW 2000, Australia</p>
-                </div>
-              </div>
-              <div class="contact-info">
-                <div class="contact-icon">
-                  <i class="fas fa-envelope"></i>
-                </div>
-                <div class="contact-details">
-                  <h5>Email</h5>
-                  <p>info@cognifylabs.ai</p>
-                </div>
-              </div>
-              <div class="contact-info">
-                <div class="contact-icon">
-                  <i class="fas fa-phone"></i>
-                </div>
-                <div class="contact-details">
-                  <h5>Phone</h5>
-                  <p>+61 2 1234 5678</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-6 mb-4">
+        <div class="row justify-content-center">
+          <div class="col-lg-8 col-md-10 col-12">
             <div class="contact-card">
               <h4 class="mb-4">Send Us a Message</h4>
               <form>
@@ -631,10 +418,12 @@
                 <textarea
                   class="form-control"
                   rows="4"
-                  placeholder="Ask us about our AI-powered financial advice and investment recommendations"
+                  placeholder="Tell us about your challenges or project goals"
                   required
                 ></textarea>
-                <button type="submit" class="btn btn-submit">Submit</button>
+                <button type="submit" class="btn btn-submit">
+                  Submit Enquiry
+                </button>
               </form>
             </div>
           </div>
@@ -646,61 +435,18 @@
     <footer class="footer">
       <div class="container">
         <div class="row">
-          <div class="col-lg-3 col-md-6 mb-4">
+          <div class="col-12 text-center mb-4">
             <h5>Cognify Labs</h5>
             <p>
               Trusted vCIO services designed for Australian businesses seeking
               expert guidance, security, and innovation.
             </p>
-            <div class="social-icons">
-              <a href="#" class="social-icon"
-                ><i class="fab fa-facebook-f"></i
-              ></a>
-              <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
-              <a href="#" class="social-icon"
-                ><i class="fab fa-linkedin-in"></i
-              ></a>
-              <a href="#" class="social-icon"
-                ><i class="fab fa-instagram"></i
-              ></a>
-            </div>
-          </div>
-          <div class="col-lg-3 col-md-6 mb-4">
-            <h5>Quick Links</h5>
-            <ul class="footer-links">
-              <li><a href="#services">Services</a></li>
-              <li><a href="#why-us">Why Choose Us</a></li>
-              <li><a href="#contact">Contact</a></li>
-            </ul>
-          </div>
-          <div class="col-lg-3 col-md-6 mb-4">
-            <h5>Our Services</h5>
-            <ul class="footer-links">
-              <li><a href="#">AI Consulting</a></li>
-              <li><a href="#">Custom Software Development</a></li>
-              <li><a href="#">Application Modernisation</a></li>
-              <li><a href="#">ML Implementation</a></li>
-              <li><a href="#">Digital Transformation</a></li>
-            </ul>
-          </div>
-          <div class="col-lg-3 col-md-6 mb-4">
-            <h5>Newsletter</h5>
-            <p>Subscribe to our newsletter for the latest updates.</p>
-            <div class="newsletter-input">
-              <input type="email" placeholder="Your email address" />
-              <button class="btn-newsletter">Go</button>
-            </div>
           </div>
         </div>
         <div class="footer-bottom">
           <div class="row">
-            <div class="col-md-6">
+            <div class="col-12 text-center">
               <p class="mb-0">&copy; 2023 Cognify Labs. All rights reserved.</p>
-            </div>
-            <div class="col-md-6 text-md-end">
-              <a href="#">Privacy Policy</a>
-              <a href="#">Terms of Service</a>
-              <a href="#">Cookie Policy</a>
             </div>
           </div>
         </div>
@@ -708,5 +454,32 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Smart navbar - hide on scroll down, show on scroll up
+      let lastScrollTop = 0;
+      const navbar = document.querySelector(".navbar");
+      let scrollingDown = false;
+
+      window.addEventListener("scroll", function () {
+        let scrollTop =
+          window.pageYOffset || document.documentElement.scrollTop;
+
+        if (scrollTop > lastScrollTop && scrollTop > 100) {
+          // Scrolling down and past 100px
+          if (!scrollingDown) {
+            navbar.classList.add("navbar-hidden");
+            scrollingDown = true;
+          }
+        } else if (scrollTop < lastScrollTop) {
+          // Scrolling up
+          if (scrollingDown) {
+            navbar.classList.remove("navbar-hidden");
+            scrollingDown = false;
+          }
+        }
+
+        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; // For Mobile or negative scrolling
+      });
+    </script>
   </body>
 </html>
