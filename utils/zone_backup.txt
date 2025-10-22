@@ -1,0 +1,27 @@
+advicegenie.com.au.		IN	A	d22k1fffwiz9a9.cloudfront.net.
+advicegenie.com.au.	60	IN	MX	10 inbound-smtp.ap-southeast-2.amazonaws.com
+advicegenie.com.au.	172800	IN	NS	ns-711.awsdns-24.net.
+advicegenie.com.au.	172800	IN	NS	ns-285.awsdns-35.com.
+advicegenie.com.au.	172800	IN	NS	ns-1173.awsdns-18.org.
+advicegenie.com.au.	172800	IN	NS	ns-1614.awsdns-09.co.uk.
+advicegenie.com.au.	900	IN	SOA	ns-711.awsdns-24.net. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400
+advicegenie.com.au.	300	IN	TXT	"google-site-verification=LMG4mnZF4yXyzg1esAUXVd_t2jnEXQdmgAYCbabWmAk"
+advicegenie.com.au.	300	IN	TXT	"mailerlite-domain-verification=36f0b9de9af6ac26a1708bcfdc0c2c939782b308"
+advicegenie.com.au.	300	IN	TXT	"v=spf1 a mx include:_spf.mlsend.com ~all"
+advicegenie.com.au.	300	IN	TXT	"mailerlite-domain-verification=e15b38c6bb952592a27f9d922808da581a2e68ce"
+advicegenie.com.au.	300	IN	TXT	"facebook-domain-verification=xik3a3148gg6vjhml8pdwyfdtuqky7"
+\100.advicegenie.com.au.	300	IN	TXT	"v=spf1 a mx include:_spf.mlsend.com ?all"
+_dmarc.advicegenie.com.au.	300	IN	TXT	"v=DMARC1; p=none"
+fhcllgb5yrfif6gobgvdynovzyae46qm._domainkey.advicegenie.com.au.	1800	IN	CNAME	fhcllgb5yrfif6gobgvdynovzyae46qm.dkim.amazonses.com
+lci6h4sfgcrl5f3r2zbkimhjyyqdu42f._domainkey.advicegenie.com.au.	1800	IN	CNAME	lci6h4sfgcrl5f3r2zbkimhjyyqdu42f.dkim.amazonses.com
+litesrv._domainkey.advicegenie.com.au.	300	IN	CNAME	litesrv._domainkey.mlsend.com
+luia2lw67pm736xgwms33q7kvh3couuh._domainkey.advicegenie.com.au.	1800	IN	CNAME	luia2lw67pm736xgwms33q7kvh3couuh.dkim.amazonses.com
+qzqtpyptfrsl4i7r32oxq7d2abb5dvza._domainkey.advicegenie.com.au.	1800	IN	CNAME	qzqtpyptfrsl4i7r32oxq7d2abb5dvza.dkim.amazonses.com
+sanghlkqfy5qvjg5cfftndm4rolwugmc._domainkey.advicegenie.com.au.	1800	IN	CNAME	sanghlkqfy5qvjg5cfftndm4rolwugmc.dkim.amazonses.com
+vzej7cvihaqdkvqv6nap4wg4crw6u46m._domainkey.advicegenie.com.au.	1800	IN	CNAME	vzej7cvihaqdkvqv6nap4wg4crw6u46m.dkim.amazonses.com
+_ebd3417da16319514bb570b07a19c854.advicegenie.com.au.	300	IN	CNAME	_df6f081694da1bea6b941f5b3d61eae8.djqtsrsxkq.acm-validations.aws.
+mail.advicegenie.com.au.	300	IN	MX	10 feedback-smtp.ap-southeast-2.amazonses.com
+mail.advicegenie.com.au.	300	IN	TXT	"v=spf1 include:amazonses.com ~all"
+_dmarc.mail.advicegenie.com.au.	300	IN	TXT	"v=DMARC1; p=none"
+www.advicegenie.com.au.	300	IN	CNAME	_32ec8208d55f5625bdffd85cfe26bcc1.www.advicegenie.com.au.
+_32ec8208d55f5625bdffd85cfe26bcc1.www.advicegenie.com.au.	300	IN	CNAME	_60c6bd31c38e502b82efad3485ce41a2.djqtsrsxkq.acm-validations.aws.

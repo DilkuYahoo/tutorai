@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>1984 Vocabulary Quiz</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .quiz-header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .quiz-header h1 {
+      margin: 0 0 10px 0;
+      color: #2c3e50;
+      font-size: 2.5rem;
+      font-weight: 700;
+    }
+
+    .quiz-header .subtitle {
+      color: #7f8c8d;
+      font-size: 1.1rem;
+      margin-bottom: 0;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .question-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .question-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .question-number {
+      display: inline-block;
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 32px;
+      font-weight: bold;
+      margin-right: 12px;
+    }
+
+    .question-title {
+      display: inline;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #2c3e50;
+      margin: 0;
+    }
+
+    .context {
+      background: #f8f9fa;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+      font-style: italic;
+      color: #5a6c7d;
+      border-left: 4px solid #3498db;
+    }
+
+    .question-text {
+      font-size: 1.1rem;
+      margin: 16px 0;
+      line-height: 1.5;
+      color: #34495e;
+    }
+
+    .options {
+      display: grid;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .option {
+      position: relative;
+    }
+
+    .option-label {
+      display: flex;
+      align-items: center;
+      padding: 16px 20px;
+      background: white;
+      border: 2px solid #e1e8ed;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+
+    .option-label:hover {
+      border-color: #3498db;
+      background: #f8f9ff;
+    }
+
+    .option-input {
+      margin-right: 12px;
+      width: 20px;
+      height: 20px;
+      accent-color: #3498db;
+    }
+
+    .option-input:checked + .option-text {
+      color: #3498db;
+      font-weight: 600;
+    }
+
+    .submit-container {
+      text-align: center;
+      margin-top: 40px;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .submit-btn {
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      border: none;
+      padding: 16px 40px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);
+      min-width: 200px;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(52, 152, 219, 0.4);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .results-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .score-display {
+      font-size: 3rem;
+      font-weight: 700;
+      margin: 20px 0;
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .result-details {
+      text-align: left;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      background: #f8f9fa;
+    }
+
+    .result-word {
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .result-answer {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .correct-answer {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .incorrect-answer {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .no-answer {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .retry-btn {
+      background: linear-gradient(135deg, #2ecc71, #27ae60);
+      color: white;
+      border: none;
+      padding: 14px 30px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 16px rgba(46, 204, 113, 0.3);
+    }
+
+    .retry-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(46, 204, 113, 0.4);
+    }
+
+    .error-message {
+      background: rgba(220, 53, 69, 0.1);
+      border: 1px solid rgba(220, 53, 69, 0.2);
+      color: #721c24;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px;
+      }
+
+      .quiz-header {
+        padding: 20px;
+      }
+
+      .quiz-header h1 {
+        font-size: 2rem;
+      }
+
+      .question-card {
+        padding: 20px 16px;
+      }
+
+      .question-title {
+        font-size: 1.2rem;
+        display: block;
+        margin-top: 8px;
+      }
+
+      .question-number {
+        margin-right: 0;
+        margin-bottom: 8px;
+      }
+
+      .option-label {
+        padding: 14px 16px;
+        font-size: 0.95rem;
+      }
+
+      .submit-container {
+        padding: 20px;
+      }
+
+      .submit-btn {
+        width: 100%;
+        padding: 16px 20px;
+      }
+
+      .score-display {
+        font-size: 2.5rem;
+      }
+
+      .result-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .result-answer {
+        align-self: flex-end;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .quiz-header h1 {
+        font-size: 1.8rem;
+      }
+
+      .question-title {
+        font-size: 1.1rem;
+      }
+
+      .question-text {
+        font-size: 1rem;
+      }
+
+      .option-label {
+        padding: 12px 14px;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body class="bg-light">
+  <div class="container py-4">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-10 col-xl-8">
+        <div class="card shadow-sm border-0 mb-4">
+          <div class="card-body text-center py-5">
+            <h1 class="display-4 text-primary mb-3">📚 1984 Vocabulary Quiz</h1>
+            <p class="lead text-muted">Test your knowledge of Orwell's classic vocabulary</p>
+          </div>
+        </div>
+
+        <div id="app">
+          <div class="text-center p-5">
+            <div class="loading">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <p class="mt-3 text-muted">Loading questions...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+const API_BASE = "https://xwb2kfdd3m.execute-api.ap-southeast-2.amazonaws.com/dev"; // HSC Agent API Gateway endpoint
+
+class QuizApp {
+  constructor() {
+    this.questions = [];
+    this.currentAnswers = new Map();
+    this.isSubmitting = false;
+  }
+
+  async init() {
+    try {
+      this.showLoading();
+      const data = await this.fetchQuestions();
+      this.questions = data.questions;
+      this.renderQuiz(data);
+    } catch (error) {
+      this.showError(`Failed to load questions: ${error.message}`);
+    }
+  }
+
+  showLoading() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Loading questions...</p>
+      </div>
+    `;
+  }
+
+  showError(message) {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="error-message">
+        <strong>Error:</strong> ${message}
+        <br><br>
+        <button onclick="quizApp.init()" class="retry-btn">Try Again</button>
+      </div>
+    `;
+  }
+
+  async fetchQuestions() {
+    const response = await fetch(`${API_BASE}/questions`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  renderQuiz(data) {
+    const app = document.getElementById('app');
+    app.innerHTML = '';
+
+    // Create quiz form
+    const form = document.createElement('form');
+    form.id = 'quizForm';
+    form.className = 'slide-in';
+
+    // Render each question
+    data.questions.forEach((question, index) => {
+      const questionCard = this.createQuestionCard(question, index);
+      form.appendChild(questionCard);
+    });
+
+    // Add submit section
+    const submitSection = this.createSubmitSection();
+    form.appendChild(submitSection);
+
+    // Add form event listener
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await this.submitAnswers();
+    });
+
+    app.appendChild(form);
+  }
+
+  createQuestionCard(question, index) {
+    const card = document.createElement('div');
+    card.className = 'card border-0 shadow-sm mb-3 fade-in';
+
+    const cardBody = document.createElement('div');
+    cardBody.className = 'card-body p-4';
+
+    const questionNumber = document.createElement('span');
+    questionNumber.className = 'badge bg-primary text-white me-2';
+    questionNumber.textContent = index + 1;
+
+    const questionTitle = document.createElement('h5');
+    questionTitle.className = 'card-title d-inline text-dark fw-bold';
+    questionTitle.textContent = question.word;
+
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'd-flex align-items-center mb-3';
+    headerDiv.appendChild(questionNumber);
+    headerDiv.appendChild(questionTitle);
+
+    const context = document.createElement('div');
+    context.className = 'alert alert-info py-2 mb-3';
+    context.innerHTML = `<strong>Context:</strong> ${question.context}`;
+
+    const questionText = document.createElement('p');
+    questionText.className = 'card-text text-dark mb-4';
+    questionText.textContent = question.question;
+
+    const options = document.createElement('div');
+    options.className = 'd-grid gap-2';
+
+    question.options.forEach((optionText, optionIndex) => {
+      const optionElement = this.createOption(question.id, optionIndex, optionText);
+      options.appendChild(optionElement);
+    });
+
+    cardBody.appendChild(headerDiv);
+    cardBody.appendChild(context);
+    cardBody.appendChild(questionText);
+    cardBody.appendChild(options);
+    card.appendChild(cardBody);
+
+    return card;
+  }
+
+  createOption(questionId, optionIndex, optionText) {
+    const optionDiv = document.createElement('div');
+    optionDiv.className = 'form-check p-3 border rounded mb-2';
+
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.className = 'form-check-input';
+    input.name = `question_${questionId}`;
+    input.value = String.fromCharCode(65 + optionIndex);
+    input.id = `q${questionId}_opt${optionIndex}`;
+
+    const label = document.createElement('label');
+    label.className = 'form-check-label w-100';
+    label.htmlFor = `q${questionId}_opt${optionIndex}`;
+    label.style.cursor = 'pointer';
+    label.innerHTML = `
+      <strong>${String.fromCharCode(65 + optionIndex)}.</strong> ${optionText}
+    `;
+
+    optionDiv.appendChild(input);
+    optionDiv.appendChild(label);
+
+    return optionDiv;
+  }
+
+  createSubmitSection() {
+    const container = document.createElement('div');
+    container.className = 'text-center p-4 bg-white rounded shadow-sm';
+
+    const submitBtn = document.createElement('button');
+    submitBtn.type = 'submit';
+    submitBtn.className = 'btn btn-primary btn-lg px-5';
+    submitBtn.textContent = 'Submit Quiz';
+    submitBtn.disabled = this.isSubmitting;
+
+    if (this.isSubmitting) {
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Submitting...';
+    }
+
+    container.appendChild(submitBtn);
+    return container;
+  }
+
+  async submitAnswers() {
+    if (this.isSubmitting) return;
+
+    // Collect answers
+    const answers = {};
+    let answeredCount = 0;
+
+    this.questions.forEach(question => {
+      const radios = document.getElementsByName(`question_${question.id}`);
+      let chosen = null;
+
+      for (const radio of radios) {
+        if (radio.checked) {
+          chosen = radio.value;
+          answeredCount++;
+          break;
+        }
+      }
+
+      answers[question.id] = chosen;
+    });
+
+    // Validate that all questions are answered
+    if (answeredCount < this.questions.length) {
+      this.showError(`Please answer all ${this.questions.length} questions before submitting. (${answeredCount}/${this.questions.length} answered)`);
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.updateSubmitButton();
+
+    try {
+      const response = await fetch(`${API_BASE}/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ answers }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      this.renderResults(result);
+
+    } catch (error) {
+      this.showError(`Failed to submit quiz: ${error.message}`);
+    } finally {
+      this.isSubmitting = false;
+      this.updateSubmitButton();
+    }
+  }
+
+  updateSubmitButton() {
+    const submitBtn = document.querySelector('.submit-btn');
+    if (submitBtn) {
+      submitBtn.disabled = this.isSubmitting;
+      if (this.isSubmitting) {
+        submitBtn.innerHTML = '<div class="spinner" style="display: inline-block; margin-right: 8px;"></div>Submitting...';
+      } else {
+        submitBtn.textContent = 'Submit Quiz';
+      }
+    }
+  }
+
+  renderResults(result) {
+    const app = document.getElementById('app');
+    app.innerHTML = '';
+
+    const container = document.createElement('div');
+    container.className = 'card border-0 shadow-sm fade-in';
+
+    const cardBody = document.createElement('div');
+    cardBody.className = 'card-body text-center p-5';
+
+    const scoreDiv = document.createElement('h2');
+    scoreDiv.className = 'display-3 text-primary mb-3';
+    scoreDiv.textContent = `${result.correct} / ${result.total}`;
+
+    const percentDiv = document.createElement('p');
+    percentDiv.className = 'h4 text-muted mb-4';
+    percentDiv.textContent = `(${result.percent}%)`;
+
+    const performanceText = document.createElement('div');
+    performanceText.className = 'mb-4';
+
+    if (result.percent >= 90) {
+      performanceText.innerHTML = '<div class="alert alert-success h5">🌟 Outstanding! You have excellent vocabulary knowledge!</div>';
+    } else if (result.percent >= 80) {
+      performanceText.innerHTML = '<div class="alert alert-success h5">🎉 Great job! You have a strong understanding of the vocabulary.</div>';
+    } else if (result.percent >= 70) {
+      performanceText.innerHTML = '<div class="alert alert-warning h5">👍 Good work! Keep studying to improve further.</div>';
+    } else {
+      performanceText.innerHTML = '<div class="alert alert-danger h5">📚 Keep studying! Review the vocabulary and try again.</div>';
+    }
+
+    const detailsDiv = document.createElement('div');
+    detailsDiv.className = 'row justify-content-center mb-4';
+
+    const detailsCol = document.createElement('div');
+    detailsCol.className = 'col-md-8';
+
+    result.details.forEach(detail => {
+      const item = document.createElement('div');
+      item.className = 'd-flex justify-content-between align-items-center p-3 mb-2 rounded';
+
+      if (detail.is_correct) {
+        item.className += ' bg-success bg-opacity-10';
+      } else if (detail.chosen === null) {
+        item.className += ' bg-warning bg-opacity-10';
+      } else {
+        item.className += ' bg-danger bg-opacity-10';
+      }
+
+      const wordDiv = document.createElement('div');
+      wordDiv.innerHTML = `<strong>${detail.word}</strong>`;
+
+      const answerDiv = document.createElement('span');
+      answerDiv.className = `badge ${
+        detail.is_correct ? 'bg-success' :
+        detail.chosen === null ? 'bg-warning text-dark' : 'bg-danger'
+      }`;
+      answerDiv.textContent = detail.chosen || 'No answer';
+
+      item.appendChild(wordDiv);
+      item.appendChild(answerDiv);
+      detailsCol.appendChild(item);
+    });
+
+    detailsDiv.appendChild(detailsCol);
+
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'btn btn-success btn-lg';
+    retryBtn.innerHTML = '🔄 Try Again';
+    retryBtn.onclick = () => this.init();
+
+    cardBody.appendChild(scoreDiv);
+    cardBody.appendChild(percentDiv);
+    cardBody.appendChild(performanceText);
+    cardBody.appendChild(detailsDiv);
+    cardBody.appendChild(retryBtn);
+    container.appendChild(cardBody);
+
+    app.appendChild(container);
+  }
+}
+
+// Initialize the quiz app
+const quizApp = new QuizApp();
+document.addEventListener('DOMContentLoaded', () => {
+  quizApp.init();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Demo - Calculator</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .demo-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .calculator {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .calculator h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .calculate-btn {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(46, 204, 113, 0.3);
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(46, 204, 113, 0.4);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 10px 20px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .back-link:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .demo-container {
+                padding: 10px;
+            }
+
+            .calculator {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="card shadow border-0 fade-in">
+                    <div class="card-body p-5">
+                        <h2 class="card-title text-center text-primary mb-4">🧮 Simple Calculator Demo</h2>
+                        <p class="card-text text-center text-muted mb-4">
+                            This demo uses the /sum endpoint from the HSC Agent API
+                        </p>
+
+                        <div class="mb-3">
+                            <label for="num1" class="form-label text-dark">First Number:</label>
+                            <input type="number" class="form-control form-control-lg" id="num1"
+                                   placeholder="Enter first number" step="any" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="num2" class="form-label text-dark">Second Number:</label>
+                            <input type="number" class="form-control form-control-lg" id="num2"
+                                   placeholder="Enter second number" step="any" required>
+                        </div>
+
+                        <button class="btn btn-success btn-lg w-100 mb-3" onclick="calculateSum()">
+                            <span id="calcBtnText">Calculate Sum</span>
+                        </button>
+
+                        <div id="result" class="alert" style="display: none;" role="alert"></div>
+
+                        <div class="text-center">
+                            <a href="index.html" class="btn btn-outline-primary">
+                                ← Back to Quiz
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const API_BASE = "https://xwb2kfdd3m.execute-api.ap-southeast-2.amazonaws.com";
+
+        async function calculateSum() {
+            const num1 = parseFloat(document.getElementById('num1').value);
+            const num2 = parseFloat(document.getElementById('num2').value);
+            const resultDiv = document.getElementById('result');
+            const calculateBtn = document.querySelector('.btn-success');
+            const btnText = document.getElementById('calcBtnText');
+
+            if (isNaN(num1) || isNaN(num2)) {
+                showResult('Please enter valid numbers', 'danger');
+                return;
+            }
+
+            // Show loading state
+            const originalText = btnText.textContent;
+            btnText.textContent = 'Calculating...';
+            calculateBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/sum`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ num1, num2 }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                showResult(`✅ <strong>${data.num1} + ${data.num2} = ${data.sum}</strong>`, 'success');
+
+            } catch (error) {
+                showResult(`❌ <strong>Error:</strong> ${error.message}`, 'danger');
+            } finally {
+                btnText.textContent = originalText;
+                calculateBtn.disabled = false;
+            }
+        }
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = message;
+            resultDiv.className = `alert alert-${type} alert-dismissible`;
+            resultDiv.style.display = 'block';
+
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    resultDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Allow Enter key to submit
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('num1').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') calculateSum();
+            });
+            document.getElementById('num2').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') calculateSum();
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 1984 Vocab Quiz - Lambda + API Gateway
+
+Parameters:
+  KeyPrefix:
+    Type: String
+    Default: data/
+    Description: S3 key prefix for data files
+  DataBucketName:
+    Type: String
+    Default: hsc-agent-bucket-2
+    Description: Name of the existing S3 bucket
+
+Globals:
+  Function:
+    Runtime: python3.13
+    Timeout: 10
+    MemorySize: 128
+    Handler: handler.lambda_handler
+
+Resources:
+  QuizFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 1984VocabQuizFunction
+      CodeUri: .
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:DeleteObject
+                - s3:ListBucket
+              Resource:
+                - !Sub arn:aws:s3:::${DataBucketName}
+                - !Sub arn:aws:s3:::${DataBucketName}/*
+      Environment:
+        Variables:
+          S3_BUCKET: !Ref DataBucketName
+          S3_KEY_PREFIX: !Ref KeyPrefix
+      Events:
+        HttpApiRoot:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref QuizApi
+            Path: /
+            Method: GET
+        HttpApiQuestions:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref QuizApi
+            Path: /questions
+            Method: GET
+        HttpApiSubmit:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref QuizApi
+            Path: /submit
+            Method: POST
+        HttpApiSum:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref QuizApi
+            Path: /sum
+            Method: POST
+
+  QuizApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: prod
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+
+Outputs:
+  ApiUrl:
+    Description: "Base URL for the API"
+    Value: !Sub
+      - "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/prod"
+      - Api: !Ref QuizApi
+
+  FunctionName:
+    Description: "Lambda function name"
+    Value: !Ref QuizFunction
+
+  DataBucketName:
+    Description: "S3 bucket containing quiz data"
+    Value: !Ref DataBucketName

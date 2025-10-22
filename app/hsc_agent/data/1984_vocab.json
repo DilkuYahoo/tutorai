@@ -1,0 +1,87 @@
+{
+    "title": "1984 Vocabulary Booster",
+    "author": "George Orwell",
+    "questions": [
+      {
+        "id": 1,
+        "word": "Sanguine",
+        "context": "Winston’s face was naturally sanguine, his skin roughened by coarse soap and blunt razor blades.",
+        "question": "What does the word 'sanguine' most likely mean in this context?",
+        "options": ["Pale and unhealthy", "Cheerful and optimistic", "Reddish and ruddy", "Dark and gloomy"],
+        "answer": "Reddish and ruddy"
+      },
+      {
+        "id": 2,
+        "word": "Orthodoxy",
+        "context": "Orthodoxy means not thinking—not needing to think. Orthodoxy is unconsciousness.",
+        "question": "What does 'orthodoxy' most nearly mean as used here?",
+        "options": ["Independent thought", "Traditional or accepted beliefs", "Intellectual freedom", "Creative innovation"],
+        "answer": "Traditional or accepted beliefs"
+      },
+      {
+        "id": 3,
+        "word": "Abolish",
+        "context": "The past was to be abolished. Every record destroyed, every book rewritten.",
+        "question": "What does 'abolish' mean in this passage?",
+        "options": ["Erase completely", "Reduce in size", "Record carefully", "Preserve faithfully"],
+        "answer": "Erase completely"
+      },
+      {
+        "id": 4,
+        "word": "Heretical",
+        "context": "It was a heretical thought, dangerous and punishable by death.",
+        "question": "What does 'heretical' mean in this sentence?",
+        "options": ["Holy or sacred", "Different from accepted beliefs", "Mildly controversial", "Relating to history"],
+        "answer": "Different from accepted beliefs"
+      },
+      {
+        "id": 5,
+        "word": "Obliterate",
+        "context": "All history was a palimpsest, scraped clean and reinscribed exactly as often as was necessary; and thus the past could be obliterated.",
+        "question": "The word 'obliterated' most nearly means?",
+        "options": ["Erased completely", "Hidden temporarily", "Recorded inaccurately", "Celebrated openly"],
+        "answer": "Erased completely"
+      },
+      {
+        "id": 6,
+        "word": "Furtive",
+        "context": "He looked round furtively, as though to make sure he was alone.",
+        "question": "What does the word 'furtively' suggest about Winston’s behaviour?",
+        "options": ["He was acting secretively", "He was acting proudly", "He was acting carelessly", "He was acting joyfully"],
+        "answer": "He was acting secretively"
+      },
+      {
+        "id": 7,
+        "word": "Inexorably",
+        "context": "It was always at night—the arrests invariably happened at night. The sudden jerk out of sleep, the rough hand shaking your shoulder, the lights glaring in your eyes, the ring of hard faces round the bed. The inexorable voice would say, 'You are under arrest.'",
+        "question": "What does 'inexorable' mean in this description?",
+        "options": ["Unstoppable or relentless", "Gentle and kind", "Calm and persuasive", "Unexpected or surprising"],
+        "answer": "Unstoppable or relentless"
+      },
+      {
+        "id": 8,
+        "word": "Abject",
+        "context": "He was sitting on a narrow bed with his hands clasped together, an abject creature who had been crushed by fear.",
+        "question": "What is the meaning of 'abject' in this context?",
+        "options": ["Hopeless and miserable", "Strong and determined", "Calm and reflective", "Angry and defiant"],
+        "answer": "Hopeless and miserable"
+      },
+      {
+        "id": 9,
+        "word": "Tacitly",
+        "context": "They looked at each other in the eyes, and tacitly agreed to meet again.",
+        "question": "What does 'tacitly' mean here?",
+        "options": ["Verbally", "Secretly", "Without words", "Reluctantly"],
+        "answer": "Without words"
+      },
+      {
+        "id": 10,
+        "word": "Zealot",
+        "context": "He was a zealous Party member, almost a zealot, who believed everything the Party told him.",
+        "question": "What does 'zealot' mean in this passage?",
+        "options": ["A passionate believer", "A doubtful critic", "A silent observer", "A fearful follower"],
+        "answer": "A passionate believer"
+      }
+    ]
+  }
+  

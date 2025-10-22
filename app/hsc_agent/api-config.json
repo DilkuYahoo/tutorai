@@ -1,0 +1,55 @@
+{
+  "api_name": "hsc-agent-api",
+  "region": "ap-southeast-2",
+  "description": "API Gateway for HSC Agent Lambda function",
+  "endpoints": [
+    {
+      "path": "/questions",
+      "method": "GET",
+      "lambda_integration": {
+        "function_name": "hsc-agent-lambda-function",
+        "timeout": 30
+      }
+    },
+    {
+      "path": "/submit",
+      "method": "POST",
+      "lambda_integration": {
+        "function_name": "hsc-agent-lambda-function",
+        "timeout": 30
+      }
+    },
+    {
+      "path": "/sum",
+      "method": "POST",
+      "lambda_integration": {
+        "function_name": "hsc-agent-lambda-function",
+        "timeout": 30
+      }
+    },
+    {
+      "path": "/{proxy+}",
+      "method": "ANY",
+      "lambda_integration": {
+        "function_name": "hsc-agent-lambda-function",
+        "timeout": 30
+      }
+    }
+  ],
+  "cors": {
+    "enabled": true,
+    "origins": ["*"],
+    "headers": ["Content-Type"],
+    "methods": ["GET", "POST", "OPTIONS"]
+  },
+  "stages": [
+    {
+      "name": "dev",
+      "description": "Development stage"
+    },
+    {
+        "name": "prod",
+        "description": "Production stage"
+      }
+  ]
+}
