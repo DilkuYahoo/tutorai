@@ -247,6 +247,72 @@ class LambdaDeployer:
             print(f"❌ Error attaching S3 policy: {e}")
             return False
     
+    def attach_dynamodb_policy(self, role_name):
+        """Attach DynamoDB access policy to the IAM role"""
+        if not self.get_client('iam'):
+            return False
+        
+        account_id = self.get_account_id()
+        if not account_id:
+            print("❌ Could not get AWS account ID for DynamoDB policy")
+            return False
+        
+        # Custom policy for DynamoDB access
+        dynamodb_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "dynamodb:PutItem"
+                    ],
+                    "Resource": "arn:aws:dynamodb:ap-southeast-2:*:table/hsc_agent_quiz_attempts"
+                }
+            ]
+        }
+        
+        policy_name = f"{role_name}-dynamodb-policy"
+        
+        try:
+            # Check if policy already exists
+            try:
+                self.iam_client.get_policy(PolicyArn=f"arn:aws:iam::{account_id}:policy/{policy_name}")
+                print(f"DynamoDB policy {policy_name} already exists")
+            except ClientError as e:
+                if e.response['Error']['Code'] == 'NoSuchEntity':
+                    # Create the policy
+                    print(f"Creating DynamoDB policy: {policy_name}")
+                    policy_response = self.iam_client.create_policy(
+                        PolicyName=policy_name,
+                        PolicyDocument=json.dumps(dynamodb_policy),
+                        Description=f'DynamoDB access policy for {role_name}'
+                    )
+                    print(f"✅ Created DynamoDB policy: {policy_response['Policy']['Arn']}")
+                else:
+                    print(f"❌ Error checking DynamoDB policy: {e}")
+                    return False
+            
+            # Attach the policy to the role
+            print(f"Attaching DynamoDB policy to role: {role_name}")
+            try:
+                self.iam_client.attach_role_policy(
+                    RoleName=role_name,
+                    PolicyArn=f"arn:aws:iam::{account_id}:policy/{policy_name}"
+                )
+                print(f"✅ Attached DynamoDB policy to role: {role_name}")
+                return True
+            except ClientError as e:
+                if e.response['Error']['Code'] == 'PolicyAlreadyAttached':
+                    print(f"DynamoDB policy already attached to role: {role_name}")
+                    return True
+                else:
+                    print(f"❌ Error attaching DynamoDB policy: {e}")
+                    return False
+            
+        except ClientError as e:
+            print(f"❌ Error attaching DynamoDB policy: {e}")
+            return False
+    
     def create_iam_role(self):
         """Create IAM role for Lambda function"""
         role_name = self.config.get('role_name') or f'{self.function_name}-lambda-role'
@@ -300,6 +366,10 @@ class LambdaDeployer:
             # Attach S3 policy to the role
             if not self.attach_s3_policy(role_name):
                 print(f"⚠️  Warning: Failed to attach S3 policy to role {role_name}")
+            
+            # Attach DynamoDB policy to the role
+            if not self.attach_dynamodb_policy(role_name):
+                print(f"⚠️  Warning: Failed to attach DynamoDB policy to role {role_name}")
             
             return role_arn
             

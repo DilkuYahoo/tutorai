@@ -1,6 +1,9 @@
 import json
 import os
 import boto3
+import uuid
+from datetime import datetime
+from decimal import Decimal
 from botocore.exceptions import ClientError, NoCredentialsError
 
 # Base directory for file paths
@@ -13,6 +16,10 @@ S3_QUESTIONS_KEY = f"{S3_KEY_PREFIX}1984_vocab.json"
 
 # Initialize S3 client
 s3_client = boto3.client('s3')
+
+# Initialize DynamoDB resource
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('hsc_agent_quiz_attempts')
 
 def load_questions_from_s3():
     """Load questions from S3 bucket"""
@@ -90,6 +97,15 @@ def get_method(event):
     # REST API (v1) uses httpMethod
     return event.get("httpMethod", "GET")
 
+def get_source_ip(event):
+    # HTTP API (v2) uses requestContext.http.sourceIp
+    if "requestContext" in event and "http" in event["requestContext"]:
+        return event["requestContext"]["http"].get("sourceIp", "unknown")
+    # REST API (v1) uses requestContext.identity.sourceIp
+    if "requestContext" in event and "identity" in event["requestContext"]:
+        return event["requestContext"]["identity"].get("sourceIp", "unknown")
+    return "unknown"
+
 def build_response(status_code=200, body="", headers=None, is_base64=False):
     default_headers = {
         "Access-Control-Allow-Origin": "*",
@@ -122,11 +138,35 @@ def serve_questions():
     payload = {"title": TITLE, "questions": safe_questions}
     return build_response(200, payload)
 
-def validate_submission(body_json):
+def write_attempt_to_dynamodb(user_id, success_percentage):
+    attempt_id = str(uuid.uuid4())
+    timestamp = datetime.utcnow().isoformat()
+    item = {
+        'user_id': user_id,
+        'attempt_id': attempt_id,
+        'timestamp': timestamp,
+        'success_percentage': Decimal(str(success_percentage))
+    }
+    print(f"LOG: Preparing to insert into DynamoDB table '{table.table_name}'")
+    # Convert Decimal to float for logging
+    log_item = {k: float(v) if isinstance(v, Decimal) else v for k, v in item.items()}
+    print(f"LOG: Item to insert: {json.dumps(log_item, indent=2)}")
+    try:
+        response = table.put_item(Item=item)
+        print(f"LOG: Successfully inserted item into DynamoDB")
+        print(f"LOG: Response metadata: {response['ResponseMetadata']['HTTPStatusCode']}")
+        print(f"LOG: Recorded attempt - user_id: {user_id}, attempt_id: {attempt_id}, success_percentage: {success_percentage}, timestamp: {timestamp}")
+    except ClientError as e:
+        print(f"LOG: ERROR - Failed to write to DynamoDB: {str(e)}")
+        print(f"LOG: ERROR - Error code: {e.response['Error']['Code']}, Message: {e.response['Error']['Message']}")
+    except Exception as e:
+        print(f"LOG: ERROR - Unexpected error writing to DynamoDB: {str(e)}")
+
+def validate_submission(body_json, user_id):
     """
     Expecting:
     {
-      "answers": { "<id>": "A" | "B" | "C" | "D" | "<option text>" , ... }
+       "answers": { "<id>": "A" | "B" | "C" | "D" | "<option text>" , ... }
     }
     """
     print(f"LOG: validate_submission() called - starting quiz validation process")
@@ -187,6 +227,11 @@ def validate_submission(body_json):
         "details": per_question
     }
     print(f"LOG: Quiz validation complete - {correct}/{total} correct ({score['percent']}%)")
+
+    # Write to DynamoDB
+    print(f"LOG: Attempting to record attempt in DynamoDB for user_id: {user_id}")
+    write_attempt_to_dynamodb(user_id, score['percent'])
+    
     return build_response(200, score)
 
 def calculate_sum(body_json):
@@ -260,7 +305,8 @@ def lambda_handler(event, context):
             except Exception as e:
                 print(f"LOG: ERROR - Failed to parse JSON body: {str(e)}")
                 return build_response(400, {"error": "invalid json body"})
-            return validate_submission(body_json)
+            user_id = get_source_ip(event)
+            return validate_submission(body_json, user_id)
 
         if method == "POST" and p == "/sum":
             print(f"LOG: Processing POST request for sum endpoint")

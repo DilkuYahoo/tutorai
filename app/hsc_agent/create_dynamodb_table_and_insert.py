@@ -1,6 +1,7 @@
 import boto3
 import time
 from botocore.exceptions import ClientError
+from decimal import Decimal
 
 # Configuration
 region_name = 'ap-southeast-2'  # Sydney
@@ -10,12 +11,12 @@ sort_key = 'attempt_id'  # Sort key
 
 # Sample JSON item to insert
 sample_item = {
-    'id': '001',
-    'name': 'John Doe',
-    'email': 'john.doe@example.com',
-    'age': 30,
-    'is_active': True
+    'user_id': '192.168.1.1',           # Required partition key
+    'attempt_id': '550e8400-e29b-41d4-a716-446655440000',     # Required sort key
+    'timestamp': '2023-10-23T12:00:00',
+    'success_percentage': Decimal('85.5')
 }
+
 
 def create_dynamodb_table(dynamodb):
     try:
