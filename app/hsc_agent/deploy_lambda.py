@@ -210,8 +210,39 @@ class LambdaDeployer:
         try:
             # Check if policy already exists
             try:
-                self.iam_client.get_policy(PolicyArn=f"arn:aws:iam::{account_id}:policy/{policy_name}")
+                existing_policy = self.iam_client.get_policy(PolicyArn=f"arn:aws:iam::{account_id}:policy/{policy_name}")
                 print(f"S3 policy {policy_name} already exists")
+                
+                # Check if the policy document is the same
+                existing_policy_version = self.iam_client.get_policy_version(
+                    PolicyArn=f"arn:aws:iam::{account_id}:policy/{policy_name}",
+                    VersionId=existing_policy['Policy']['DefaultVersionId']
+                )
+                existing_document = existing_policy_version['PolicyVersion']['Document']
+                
+                if existing_document != s3_policy:
+                    print(f"Policy {policy_name} has outdated permissions, updating...")
+                    # Detach old policy
+                    try:
+                        self.iam_client.detach_role_policy(
+                            RoleName=role_name,
+                            PolicyArn=f"arn:aws:iam::{account_id}:policy/{policy_name}"
+                        )
+                        print(f"Detached old S3 policy from role: {role_name}")
+                    except ClientError as e:
+                        if e.response['Error']['Code'] != 'NoSuchEntity':
+                            print(f"Warning: Could not detach old policy: {e}")
+                    
+                    # Create new policy version
+                    self.iam_client.create_policy_version(
+                        PolicyArn=f"arn:aws:iam::{account_id}:policy/{policy_name}",
+                        PolicyDocument=json.dumps(s3_policy),
+                        SetAsDefault=True
+                    )
+                    print(f"Updated S3 policy: {policy_name}")
+                else:
+                    print(f"Policy {policy_name} is up to date")
+                    
             except ClientError as e:
                 if e.response['Error']['Code'] == 'NoSuchEntity':
                     # Create the policy
@@ -264,9 +295,14 @@ class LambdaDeployer:
                 {
                     "Effect": "Allow",
                     "Action": [
-                        "dynamodb:PutItem"
+                        "dynamodb:PutItem",
+                        "dynamodb:Scan",
+                        "dynamodb:GetItem"
                     ],
-                    "Resource": "arn:aws:dynamodb:ap-southeast-2:*:table/hsc_agent_quiz_attempts"
+                    "Resource": [
+                        "arn:aws:dynamodb:ap-southeast-2:*:table/hsc_agent_quiz_attempts",
+                        "arn:aws:dynamodb:ap-southeast-2:*:table/hsc_agent_questions_mapping"
+                    ]
                 }
             ]
         }
@@ -276,8 +312,39 @@ class LambdaDeployer:
         try:
             # Check if policy already exists
             try:
-                self.iam_client.get_policy(PolicyArn=f"arn:aws:iam::{account_id}:policy/{policy_name}")
+                existing_policy = self.iam_client.get_policy(PolicyArn=f"arn:aws:iam::{account_id}:policy/{policy_name}")
                 print(f"DynamoDB policy {policy_name} already exists")
+                
+                # Check if the policy document is the same
+                existing_policy_version = self.iam_client.get_policy_version(
+                    PolicyArn=f"arn:aws:iam::{account_id}:policy/{policy_name}",
+                    VersionId=existing_policy['Policy']['DefaultVersionId']
+                )
+                existing_document = existing_policy_version['PolicyVersion']['Document']
+                
+                if existing_document != dynamodb_policy:
+                    print(f"Policy {policy_name} has outdated permissions, updating...")
+                    # Detach old policy
+                    try:
+                        self.iam_client.detach_role_policy(
+                            RoleName=role_name,
+                            PolicyArn=f"arn:aws:iam::{account_id}:policy/{policy_name}"
+                        )
+                        print(f"Detached old DynamoDB policy from role: {role_name}")
+                    except ClientError as e:
+                        if e.response['Error']['Code'] != 'NoSuchEntity':
+                            print(f"Warning: Could not detach old policy: {e}")
+                    
+                    # Create new policy version
+                    self.iam_client.create_policy_version(
+                        PolicyArn=f"arn:aws:iam::{account_id}:policy/{policy_name}",
+                        PolicyDocument=json.dumps(dynamodb_policy),
+                        SetAsDefault=True
+                    )
+                    print(f"Updated DynamoDB policy: {policy_name}")
+                else:
+                    print(f"Policy {policy_name} is up to date")
+                    
             except ClientError as e:
                 if e.response['Error']['Code'] == 'NoSuchEntity':
                     # Create the policy

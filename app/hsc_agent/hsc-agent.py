@@ -19,14 +19,60 @@ s3_client = boto3.client('s3')
 
 # Initialize DynamoDB resource
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('hsc_agent_quiz_attempts')
+attempts_table = dynamodb.Table('hsc_agent_quiz_attempts')
+questions_table = dynamodb.Table('hsc_agent_questions_mapping')
+
+# Global variable to store current questions mapping id
+CURRENT_QUESTIONS_MAPPING_ID = None
+
+def get_question_location_from_dynamodb(year, subject, area, stage):
+    """Get question file location and id from DynamoDB"""
+    try:
+        print(f"LOG: Scanning DynamoDB for question location - year: {year}, subject: {subject}, area: {area}, stage: {stage}")
+        response = questions_table.scan(
+            FilterExpression=boto3.dynamodb.conditions.Attr('year').eq(year) &
+                           boto3.dynamodb.conditions.Attr('subject').eq(subject) &
+                           boto3.dynamodb.conditions.Attr('area').eq(area) &
+                           boto3.dynamodb.conditions.Attr('stage').eq(stage)
+        )
+        items = response.get('Items', [])
+        if items:
+            item = items[0]
+            location = item.get('location')
+            mapping_id = item.get('id')
+            print(f"LOG: Found question location in DynamoDB: {location}, id: {mapping_id}")
+            return location, mapping_id
+        else:
+            print(f"LOG: No item found in DynamoDB for year: {year}, subject: {subject}, area: {area}, stage: {stage}")
+        return None, None
+    except ClientError as e:
+        print(f"LOG: ERROR - Failed to scan DynamoDB: {str(e)}")
+        print(f"LOG: ERROR - Error code: {e.response['Error']['Code']}, Message: {e.response['Error']['Message']}")
+        return None, None
+    except Exception as e:
+        print(f"LOG: ERROR - Unexpected error scanning DynamoDB: {str(e)}")
+        return None, None
 
 def load_questions_from_s3():
-    """Load questions from S3 bucket"""
+    """Load questions from S3 bucket using location from DynamoDB"""
+    global CURRENT_QUESTIONS_MAPPING_ID
+    # Query DynamoDB for question location
+    year = '12'  # Assuming Year 12
+    subject = 'Advanced English'  # Assuming Advanced English
+    area = 'vocab'  # Assuming vocabulary area
+    stage = '1'  # Assuming stage 1-10
+    s3_key, mapping_id = get_question_location_from_dynamodb(year, subject, area, stage)
+    CURRENT_QUESTIONS_MAPPING_ID = mapping_id
+    
+    if not s3_key:
+        # Fallback to environment variable
+        print(f"LOG: DynamoDB query failed, falling back to environment variable")
+        s3_key = S3_QUESTIONS_KEY
+    
     try:
-        print(f"DEBUG: Attempting to load from bucket: {S3_BUCKET}, key: {S3_QUESTIONS_KEY}")
+        print(f"DEBUG: Attempting to load from bucket: {S3_BUCKET}, key: {s3_key}")
         print(f"DEBUG: S3 client region: {s3_client.meta.region_name}")
-        response = s3_client.get_object(Bucket=S3_BUCKET, Key=S3_QUESTIONS_KEY)
+        response = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
         content = response['Body'].read().decode('utf-8')
         q_data = json.loads(content)
         print(f"DEBUG: Successfully loaded {len(q_data.get('questions', []))} questions")
@@ -37,7 +83,7 @@ def load_questions_from_s3():
     except ClientError as e:
         print(f"DEBUG: ClientError - Code: {e.response['Error']['Code']}, Message: {e.response['Error']['Message']}")
         if e.response['Error']['Code'] == 'NoSuchKey':
-            raise Exception(f"Questions file not found in S3: {S3_QUESTIONS_KEY}")
+            raise Exception(f"Questions file not found in S3: {s3_key}")
         elif e.response['Error']['Code'] == 'NoSuchBucket':
             raise Exception(f"S3 bucket not found: {S3_BUCKET}")
         else:
@@ -142,20 +188,21 @@ def write_attempt_to_dynamodb(user_id, success_percentage):
     attempt_id = str(uuid.uuid4())
     timestamp = datetime.utcnow().isoformat()
     item = {
+        'attempt_id': attempt_id,  # Partition key: UUID
         'user_id': user_id,
-        'attempt_id': attempt_id,
         'timestamp': timestamp,
-        'success_percentage': Decimal(str(success_percentage))
+        'success_percentage': Decimal(str(success_percentage)),
+        'questions_mapping_id': CURRENT_QUESTIONS_MAPPING_ID
     }
-    print(f"LOG: Preparing to insert into DynamoDB table '{table.table_name}'")
+    print(f"LOG: Preparing to insert into DynamoDB table '{attempts_table.table_name}'")
     # Convert Decimal to float for logging
     log_item = {k: float(v) if isinstance(v, Decimal) else v for k, v in item.items()}
     print(f"LOG: Item to insert: {json.dumps(log_item, indent=2)}")
     try:
-        response = table.put_item(Item=item)
+        response = attempts_table.put_item(Item=item)
         print(f"LOG: Successfully inserted item into DynamoDB")
         print(f"LOG: Response metadata: {response['ResponseMetadata']['HTTPStatusCode']}")
-        print(f"LOG: Recorded attempt - user_id: {user_id}, attempt_id: {attempt_id}, success_percentage: {success_percentage}, timestamp: {timestamp}")
+        print(f"LOG: Recorded attempt - attempt_id: {attempt_id}, user_id: {user_id}, success_percentage: {success_percentage}, timestamp: {timestamp}, questions_mapping_id: {CURRENT_QUESTIONS_MAPPING_ID}")
     except ClientError as e:
         print(f"LOG: ERROR - Failed to write to DynamoDB: {str(e)}")
         print(f"LOG: ERROR - Error code: {e.response['Error']['Code']}, Message: {e.response['Error']['Message']}")
