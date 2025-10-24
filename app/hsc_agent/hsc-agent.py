@@ -53,14 +53,95 @@ def get_question_location_from_dynamodb(year, subject, area, stage):
         print(f"LOG: ERROR - Unexpected error scanning DynamoDB: {str(e)}")
         return None, None
 
-def load_questions_from_s3():
-    """Load questions from S3 bucket using location from DynamoDB"""
+def get_next_stage(year, subject, area, current_stage):
+    """Get the next stage number for the given year, subject, area"""
+    try:
+        next_stage = str(int(current_stage) + 1)
+        print(f"LOG: Checking for next stage: {next_stage}")
+        response = questions_table.scan(
+            FilterExpression=boto3.dynamodb.conditions.Attr('year').eq(year) &
+                           boto3.dynamodb.conditions.Attr('subject').eq(subject) &
+                           boto3.dynamodb.conditions.Attr('area').eq(area) &
+                           boto3.dynamodb.conditions.Attr('stage').eq(next_stage)
+        )
+        items = response.get('Items', [])
+        if items:
+            print(f"LOG: Next stage {next_stage} found")
+            return next_stage
+        else:
+            print(f"LOG: No next stage found for {next_stage}")
+            return None
+    except ClientError as e:
+        print(f"LOG: ERROR - Failed to scan for next stage: {str(e)}")
+        return None
+    except Exception as e:
+        print(f"LOG: ERROR - Unexpected error getting next stage: {str(e)}")
+        return None
+
+def get_current_stage_for_user(user_id, year, subject, area):
+    """Determine the current stage for a user based on their latest attempt"""
+    try:
+        print(f"LOG: Querying attempts for user_id: {user_id}")
+        response = attempts_table.scan(
+            FilterExpression=boto3.dynamodb.conditions.Attr('user_id').eq(user_id)
+        )
+        items = response.get('Items', [])
+        if not items:
+            print(f"LOG: No attempts found for user_id: {user_id}, starting at stage 1")
+            return '1', None  # Start at stage 1 if no attempts
+
+        # Sort by timestamp descending to get latest
+        items.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        latest_attempt = items[0]
+        success_percentage = float(latest_attempt.get('success_percentage', 0))
+        questions_mapping_id = latest_attempt.get('questions_mapping_id')
+
+        if success_percentage == 100.0:
+            # Advance to next stage
+            current_stage = get_stage_from_mapping_id(questions_mapping_id)
+            next_stage = get_next_stage(year, subject, area, current_stage)
+            if next_stage:
+                print(f"LOG: User {user_id} advanced to stage {next_stage}")
+                return next_stage, None
+            else:
+                print(f"LOG: User {user_id} completed all stages")
+                return current_stage, 'completed'  # No more stages
+        else:
+            # Retry current stage
+            current_stage = get_stage_from_mapping_id(questions_mapping_id)
+            print(f"LOG: User {user_id} retrying stage {current_stage}")
+            return current_stage, None
+    except ClientError as e:
+        print(f"LOG: ERROR - Failed to query attempts: {str(e)}")
+        return '1', None
+    except Exception as e:
+        print(f"LOG: ERROR - Unexpected error getting current stage: {str(e)}")
+        return '1', None
+
+def get_stage_from_mapping_id(mapping_id):
+    """Get stage from questions_mapping_id by querying questions_table"""
+    if not mapping_id:
+        return '1'
+    try:
+        response = questions_table.get_item(Key={'id': mapping_id})
+        item = response.get('Item')
+        if item:
+            return item.get('stage', '1')
+        return '1'
+    except ClientError as e:
+        print(f"LOG: ERROR - Failed to get stage from mapping_id: {str(e)}")
+        return '1'
+    except Exception as e:
+        print(f"LOG: ERROR - Unexpected error getting stage: {str(e)}")
+        return '1'
+
+def load_questions_from_s3(stage='1'):
+    """Load questions from S3 bucket using location from DynamoDB for the given stage"""
     global CURRENT_QUESTIONS_MAPPING_ID
     # Query DynamoDB for question location
     year = '12'  # Assuming Year 12
     subject = 'Advanced English'  # Assuming Advanced English
     area = 'vocab'  # Assuming vocabulary area
-    stage = '1'  # Assuming stage 1-10
     s3_key, mapping_id = get_question_location_from_dynamodb(year, subject, area, stage)
     CURRENT_QUESTIONS_MAPPING_ID = mapping_id
     
@@ -75,7 +156,7 @@ def load_questions_from_s3():
         response = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
         content = response['Body'].read().decode('utf-8')
         q_data = json.loads(content)
-        print(f"DEBUG: Successfully loaded {len(q_data.get('questions', []))} questions")
+        print(f"DEBUG: Successfully loaded {len(q_data.get('questions', []))} questions for stage {stage}")
         return q_data.get("questions", []), q_data.get("title", "1984 Vocabulary Booster")
     except NoCredentialsError:
         print("DEBUG: No AWS credentials configured")
@@ -92,8 +173,9 @@ def load_questions_from_s3():
         print(f"DEBUG: Unexpected error: {str(e)}")
         raise Exception(f"Error loading questions from S3: {str(e)}")
 
-# Load questions at cold start from S3
-QUESTIONS, TITLE = load_questions_from_s3()
+# Global variables for questions and title, loaded dynamically per request
+QUESTIONS = []
+TITLE = ""
 
 # Helper: load HTML from S3 static directory
 def load_index_html():
@@ -152,6 +234,14 @@ def get_source_ip(event):
         return event["requestContext"]["identity"].get("sourceIp", "unknown")
     return "unknown"
 
+def get_user_id(event):
+    # First, check for user_id in query parameters
+    query_params = event.get("queryStringParameters", {})
+    if query_params and "user_id" in query_params:
+        return query_params["user_id"]
+    # Fallback to source IP
+    return get_source_ip(event)
+
 def build_response(status_code=200, body="", headers=None, is_base64=False):
     default_headers = {
         "Access-Control-Allow-Origin": "*",
@@ -167,8 +257,19 @@ def build_response(status_code=200, body="", headers=None, is_base64=False):
         "isBase64Encoded": is_base64,
     }
 
-def serve_questions():
-    print(f"LOG: serve_questions() called - preparing {len(QUESTIONS)} questions for response")
+def serve_questions(event):
+    user_id = get_user_id(event)
+    year = '12'
+    subject = 'Advanced English'
+    area = 'vocab'
+    current_stage, status = get_current_stage_for_user(user_id, year, subject, area)
+    if status == 'completed':
+        print(f"LOG: User {user_id} has completed all stages")
+        return build_response(200, {"message": "Congratulations! You have completed all stages.", "questions": [], "title": "Completed"})
+    
+    global QUESTIONS, TITLE
+    QUESTIONS, TITLE = load_questions_from_s3(current_stage)
+    print(f"LOG: serve_questions() called for user {user_id} at stage {current_stage} - preparing {len(QUESTIONS)} questions for response")
     # Return the questions array (no answers). We intentionally exclude 'answer' field
     safe_questions = []
     for q in QUESTIONS:
@@ -181,7 +282,7 @@ def serve_questions():
         }
         safe_questions.append(safe_q)
     print(f"LOG: Filtered {len(safe_questions)} questions (removed answer fields for security)")
-    payload = {"title": TITLE, "questions": safe_questions}
+    payload = {"title": TITLE, "questions": safe_questions, "stage": current_stage}
     return build_response(200, payload)
 
 def write_attempt_to_dynamodb(user_id, success_percentage):
@@ -209,11 +310,11 @@ def write_attempt_to_dynamodb(user_id, success_percentage):
     except Exception as e:
         print(f"LOG: ERROR - Unexpected error writing to DynamoDB: {str(e)}")
 
-def validate_submission(body_json, user_id):
+def validate_submission(body_json, user_id, year='12', subject='Advanced English', area='vocab'):
     """
     Expecting:
     {
-       "answers": { "<id>": "A" | "B" | "C" | "D" | "<option text>" , ... }
+        "answers": { "<id>": "A" | "B" | "C" | "D" | "<option text>" , ... }
     }
     """
     print(f"LOG: validate_submission() called - starting quiz validation process")
@@ -278,7 +379,24 @@ def validate_submission(body_json, user_id):
     # Write to DynamoDB
     print(f"LOG: Attempting to record attempt in DynamoDB for user_id: {user_id}")
     write_attempt_to_dynamodb(user_id, score['percent'])
-    
+
+    # Check if 100% success and advance stage if possible
+    current_stage = get_stage_from_mapping_id(CURRENT_QUESTIONS_MAPPING_ID)
+    if score['percent'] == 100.0:
+        next_stage = get_next_stage(year, subject, area, current_stage)
+        if next_stage:
+            print(f"LOG: User {user_id} achieved 100%, advancing to stage {next_stage}")
+            score['next_stage'] = next_stage
+            score['message'] = f"Congratulations! You've advanced to stage {next_stage}."
+        else:
+            print(f"LOG: User {user_id} completed all stages")
+            score['completed'] = True
+            score['message'] = "Congratulations! You have completed all stages."
+    else:
+        print(f"LOG: User {user_id} needs to retry stage {current_stage}")
+        score['retry'] = True
+        score['message'] = f"Keep trying! Retry stage {current_stage} to improve."
+
     return build_response(200, score)
 
 def calculate_sum(body_json):
@@ -332,7 +450,7 @@ def lambda_handler(event, context):
 
         if method == "GET" and p == "/questions":
             print(f"LOG: Processing GET request for questions endpoint")
-            return serve_questions()
+            return serve_questions(event)
 
         if method == "POST" and p == "/submit":
             print(f"LOG: Processing POST request for submit endpoint")
@@ -352,7 +470,7 @@ def lambda_handler(event, context):
             except Exception as e:
                 print(f"LOG: ERROR - Failed to parse JSON body: {str(e)}")
                 return build_response(400, {"error": "invalid json body"})
-            user_id = get_source_ip(event)
+            user_id = body_json.get('user_id', get_user_id(event))
             return validate_submission(body_json, user_id)
 
         if method == "POST" and p == "/sum":
