@@ -8,7 +8,7 @@
       "method": "GET",
       "lambda_integration": {
         "function_name": "hsc-agent-lambda-function",
-        "timeout": 30
+        "timeout": 10
       }
     },
     {
@@ -16,7 +16,7 @@
       "method": "POST",
       "lambda_integration": {
         "function_name": "hsc-agent-lambda-function",
-        "timeout": 30
+        "timeout": 10
       }
     },
     {
@@ -24,7 +24,23 @@
       "method": "POST",
       "lambda_integration": {
         "function_name": "hsc-agent-lambda-function",
-        "timeout": 30
+        "timeout": 10
+      }
+    },
+    {
+      "path": "/metadata",
+      "method": "GET",
+      "lambda_integration": {
+        "function_name": "hsc-agent-lambda-function",
+        "timeout": 10
+      }
+    },
+    {
+      "path": "/filters",
+      "method": "GET",
+      "lambda_integration": {
+        "function_name": "hsc-agent-lambda-function",
+        "timeout": 10
       }
     },
     {
@@ -32,7 +48,7 @@
       "method": "ANY",
       "lambda_integration": {
         "function_name": "hsc-agent-lambda-function",
-        "timeout": 30
+        "timeout": 10
       }
     }
   ],

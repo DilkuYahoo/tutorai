@@ -1,4 +1,4 @@
-const API_BASE = "https://8coymb3i1h.execute-api.ap-southeast-2.amazonaws.com/dev"; // HSC Agent API Gateway endpoint
+const API_BASE = "https://t2n4m8126c.execute-api.ap-southeast-2.amazonaws.com/dev"; // HSC Agent API Gateway endpoint
 
 class QuizApp {
   constructor() {
@@ -6,6 +6,9 @@ class QuizApp {
     this.currentAnswers = new Map();
     this.isSubmitting = false;
     this.userId = this.getOrGenerateUserId();
+    this.title = '';
+    this.author = '';
+    this.poem = '';
   }
 
   getOrGenerateUserId() {
@@ -22,6 +25,7 @@ class QuizApp {
       this.showLoading();
       const data = await this.fetchQuestions();
       this.questions = data.questions;
+      await this.fetchMetadata();
       this.renderQuiz(data);
     } catch (error) {
       this.showError(`Failed to load questions: ${error.message}`);
@@ -51,16 +55,54 @@ class QuizApp {
 
   async fetchQuestions() {
     const userId = this.getOrGenerateUserId();
-    const response = await fetch(`${API_BASE}/questions?user_id=${encodeURIComponent(userId)}`);
+    const params = new URLSearchParams(window.location.search);
+    const year = params.get('year') || localStorage.getItem('quizYear') || '12';
+    const subject = params.get('subject') || localStorage.getItem('quizSubject') || 'Advanced English';
+    const area = params.get('area') || localStorage.getItem('quizArea') || 'vocab';
+    const response = await fetch(`${API_BASE}/questions?user_id=${encodeURIComponent(userId)}&year=${encodeURIComponent(year)}&subject=${encodeURIComponent(subject)}&area=${encodeURIComponent(area)}`);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     return response.json();
   }
 
+  async fetchMetadata() {
+    const params = new URLSearchParams(window.location.search);
+    const year = params.get('year') || localStorage.getItem('quizYear') || '12';
+    const subject = params.get('subject') || localStorage.getItem('quizSubject') || 'Advanced English';
+    const area = params.get('area') || localStorage.getItem('quizArea') || 'vocab';
+    const response = await fetch(`${API_BASE}/metadata?year=${encodeURIComponent(year)}&subject=${encodeURIComponent(subject)}&area=${encodeURIComponent(area)}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    const data = await response.json();
+    this.title = data.title;
+    this.author = data.author;
+    this.poem = data.poem || '';
+  }
+
   renderQuiz(data) {
     const app = document.getElementById('app');
     app.innerHTML = '';
+
+    // Set header
+    const header = document.getElementById('header');
+    header.innerHTML = `
+      <h1 class="display-4 text-primary mb-3">${this.title}</h1>
+      <p class="lead text-muted">${this.author}</p>
+      ${this.poem ? `
+        <div class="poem-section mt-3">
+          <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#poemCollapse" aria-expanded="false" aria-controls="poemCollapse">
+            View Poem
+          </button>
+          <div class="collapse mt-2" id="poemCollapse">
+            <div class="card card-body">
+              <pre>${this.poem}</pre>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+    `;
 
     // Create quiz form
     const form = document.createElement('form');
@@ -206,7 +248,11 @@ class QuizApp {
     this.updateSubmitButton();
 
     try {
-      const response = await fetch(`${API_BASE}/submit`, {
+      const params = new URLSearchParams(window.location.search);
+      const year = params.get('year') || localStorage.getItem('quizYear') || '12';
+      const subject = params.get('subject') || localStorage.getItem('quizSubject') || 'Advanced English';
+      const area = params.get('area') || localStorage.getItem('quizArea') || 'vocab';
+      const response = await fetch(`${API_BASE}/submit?year=${encodeURIComponent(year)}&subject=${encodeURIComponent(subject)}&area=${encodeURIComponent(area)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -295,12 +341,24 @@ class QuizApp {
       const wordDiv = document.createElement('div');
       wordDiv.innerHTML = `<strong>${detail.word}</strong>`;
 
-      const answerDiv = document.createElement('span');
-      answerDiv.className = `badge ${
+      const answerDiv = document.createElement('div');
+      answerDiv.className = 'text-end';
+
+      // User's chosen answer
+      const chosenBadge = document.createElement('div');
+      chosenBadge.className = `badge mb-1 ${
         detail.is_correct ? 'bg-success' :
         detail.chosen === null ? 'bg-warning text-dark' : 'bg-danger'
       }`;
-      answerDiv.textContent = detail.chosen || 'No answer';
+      chosenBadge.textContent = `Your answer: ${detail.chosen || 'No answer'}`;
+
+      // Correct answer
+      const correctBadge = document.createElement('div');
+      correctBadge.className = 'badge bg-info';
+      correctBadge.textContent = `Correct: ${detail.correct_answer}`;
+
+      answerDiv.appendChild(chosenBadge);
+      answerDiv.appendChild(correctBadge);
 
       item.appendChild(wordDiv);
       item.appendChild(answerDiv);
