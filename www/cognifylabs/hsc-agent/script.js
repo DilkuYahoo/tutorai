@@ -1,4 +1,4 @@
-const API_BASE = "https://t2n4m8126c.execute-api.ap-southeast-2.amazonaws.com/dev"; // HSC Agent API Gateway endpoint
+const API_BASE = "https://hn3tnvdc0g.execute-api.ap-southeast-2.amazonaws.com/dev"; // HSC Agent API Gateway endpoint
 
 class QuizApp {
   constructor() {
@@ -8,7 +8,7 @@ class QuizApp {
     this.userId = this.getOrGenerateUserId();
     this.title = '';
     this.author = '';
-    this.poem = '';
+    this.text = '';
   }
 
   getOrGenerateUserId() {
@@ -78,7 +78,7 @@ class QuizApp {
     const data = await response.json();
     this.title = data.title;
     this.author = data.author;
-    this.poem = data.poem || '';
+    this.text = data.text || '';
   }
 
   renderQuiz(data) {
@@ -90,14 +90,14 @@ class QuizApp {
     header.innerHTML = `
       <h1 class="display-4 text-primary mb-3">${this.title}</h1>
       <p class="lead text-muted">${this.author}</p>
-      ${this.poem ? `
-        <div class="poem-section mt-3">
-          <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#poemCollapse" aria-expanded="false" aria-controls="poemCollapse">
-            View Poem
+      ${this.text ? `
+        <div class="text-section mt-3">
+          <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#textCollapse" aria-expanded="false" aria-controls="textCollapse">
+            View text
           </button>
-          <div class="collapse mt-2" id="poemCollapse">
+          <div class="collapse mt-2" id="textCollapse">
             <div class="card card-body">
-              <pre>${this.poem}</pre>
+              <pre>${this.text}</pre>
             </div>
           </div>
         </div>
@@ -148,10 +148,6 @@ class QuizApp {
     headerDiv.appendChild(questionNumber);
     headerDiv.appendChild(questionTitle);
 
-    const context = document.createElement('div');
-    context.className = 'alert alert-info py-2 mb-3';
-    context.innerHTML = `<strong>Context:</strong> ${question.context}`;
-
     const questionText = document.createElement('p');
     questionText.className = 'card-text text-dark mb-4';
     questionText.textContent = question.question;
@@ -165,7 +161,6 @@ class QuizApp {
     });
 
     cardBody.appendChild(headerDiv);
-    cardBody.appendChild(context);
     cardBody.appendChild(questionText);
     cardBody.appendChild(options);
     card.appendChild(cardBody);
@@ -352,13 +347,15 @@ class QuizApp {
       }`;
       chosenBadge.textContent = `Your answer: ${detail.chosen || 'No answer'}`;
 
-      // Correct answer
-      const correctBadge = document.createElement('div');
-      correctBadge.className = 'badge bg-info';
-      correctBadge.textContent = `Correct: ${detail.correct_answer}`;
-
       answerDiv.appendChild(chosenBadge);
-      answerDiv.appendChild(correctBadge);
+
+      // Correct answer (only if not null)
+      if (detail.correct_answer !== null && detail.correct_answer !== undefined) {
+        const correctBadge = document.createElement('div');
+        correctBadge.className = 'badge bg-info';
+        correctBadge.textContent = `Correct: ${detail.correct_answer}`;
+        answerDiv.appendChild(correctBadge);
+      }
 
       item.appendChild(wordDiv);
       item.appendChild(answerDiv);

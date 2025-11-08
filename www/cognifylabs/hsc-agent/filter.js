@@ -1,4 +1,4 @@
-const API_BASE = "https://t2n4m8126c.execute-api.ap-southeast-2.amazonaws.com/dev"; // HSC Agent API Gateway endpoint
+const API_BASE = "https://hn3tnvdc0g.execute-api.ap-southeast-2.amazonaws.com/dev"; // HSC Agent API Gateway endpoint
 
 class FilterApp {
   constructor() {

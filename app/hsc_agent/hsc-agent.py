@@ -27,11 +27,13 @@ def get_question_location_from_dynamodb(year, subject, area, stage):
     """Get question file location and id from DynamoDB"""
     try:
         print(f"LOG: Scanning DynamoDB for question location - year: {year}, subject: {subject}, area: {area}, stage: {stage}")
+        # Convert stage to integer for Number type comparison
+        stage_num = int(stage)
         response = questions_table.scan(
             FilterExpression=boto3.dynamodb.conditions.Attr('year').eq(year) &
-                           boto3.dynamodb.conditions.Attr('subject').eq(subject) &
-                           boto3.dynamodb.conditions.Attr('area').eq(area) &
-                           boto3.dynamodb.conditions.Attr('stage').eq(stage)
+                            boto3.dynamodb.conditions.Attr('subject').eq(subject) &
+                            boto3.dynamodb.conditions.Attr('area').eq(area) &
+                            boto3.dynamodb.conditions.Attr('stage').eq(stage_num)
         )
         items = response.get('Items', [])
         if items:
@@ -54,20 +56,20 @@ def get_question_location_from_dynamodb(year, subject, area, stage):
 def get_next_stage(year, subject, area, current_stage):
     """Get the next stage number for the given year, subject, area"""
     try:
-        next_stage = str(int(current_stage) + 1)
-        print(f"LOG: Checking for next stage: {next_stage}")
+        next_stage_num = int(current_stage) + 1
+        print(f"LOG: Checking for next stage: {next_stage_num}")
         response = questions_table.scan(
             FilterExpression=boto3.dynamodb.conditions.Attr('year').eq(year) &
-                           boto3.dynamodb.conditions.Attr('subject').eq(subject) &
-                           boto3.dynamodb.conditions.Attr('area').eq(area) &
-                           boto3.dynamodb.conditions.Attr('stage').eq(next_stage)
+                            boto3.dynamodb.conditions.Attr('subject').eq(subject) &
+                            boto3.dynamodb.conditions.Attr('area').eq(area) &
+                            boto3.dynamodb.conditions.Attr('stage').eq(next_stage_num)
         )
         items = response.get('Items', [])
         if items:
-            print(f"LOG: Next stage {next_stage} found")
-            return next_stage
+            print(f"LOG: Next stage {next_stage_num} found")
+            return str(next_stage_num)
         else:
-            print(f"LOG: No next stage found for {next_stage}")
+            print(f"LOG: No next stage found for {next_stage_num}")
             return None
     except ClientError as e:
         print(f"LOG: ERROR - Failed to scan for next stage: {str(e)}")
@@ -124,7 +126,9 @@ def get_stage_from_mapping_id(mapping_id):
         response = questions_table.get_item(Key={'id': mapping_id})
         item = response.get('Item')
         if item:
-            return item.get('stage', '1')
+            stage_value = item.get('stage', 1)
+            # Convert to string for consistency
+            return str(stage_value)
         return '1'
     except ClientError as e:
         print(f"LOG: ERROR - Failed to get stage from mapping_id: {str(e)}")
@@ -137,20 +141,34 @@ def load_questions_from_s3(stage='1', year='12', subject='Advanced English', are
     """Load questions from S3 bucket using location from DynamoDB for the given stage"""
     # Query DynamoDB for question location
     s3_key, mapping_id = get_question_location_from_dynamodb(year, subject, area, stage)
-    
+
     if not s3_key:
         # Fallback to environment variable
         print(f"LOG: DynamoDB query failed, falling back to environment variable")
         s3_key = S3_QUESTIONS_KEY
-    
+
     try:
         print(f"DEBUG: Attempting to load from bucket: {S3_BUCKET}, key: {s3_key}")
         print(f"DEBUG: S3 client region: {s3_client.meta.region_name}")
         response = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
         content = response['Body'].read().decode('utf-8')
         q_data = json.loads(content)
-        print(f"DEBUG: Successfully loaded {len(q_data.get('questions', []))} questions for stage {stage}")
-        return q_data.get("questions", []), q_data.get("title", "1984 Vocabulary Booster")
+
+        # Validate the expected JSON structure
+        if not isinstance(q_data, dict):
+            raise ValueError("JSON data must be a dictionary")
+
+        questions = q_data.get("questions", [])
+        if not isinstance(questions, list):
+            raise ValueError("Questions must be a list")
+
+        title = q_data.get("title", "Untitled Assessment")
+
+        print(f"DEBUG: Successfully loaded {len(questions)} questions for stage {stage}")
+        print(f"DEBUG: Assessment title: {title}")
+
+        return questions, title
+
     except NoCredentialsError:
         print("DEBUG: No AWS credentials configured")
         raise Exception("AWS credentials not configured")
@@ -162,6 +180,12 @@ def load_questions_from_s3(stage='1', year='12', subject='Advanced English', are
             raise Exception(f"S3 bucket not found: {S3_BUCKET}")
         else:
             raise Exception(f"S3 error: {str(e)}")
+    except json.JSONDecodeError as e:
+        print(f"DEBUG: JSON decode error: {str(e)}")
+        raise Exception(f"Invalid JSON format in S3 file: {str(e)}")
+    except ValueError as e:
+        print(f"DEBUG: Data validation error: {str(e)}")
+        raise Exception(f"Invalid data structure in S3 file: {str(e)}")
     except Exception as e:
         print(f"DEBUG: Unexpected error: {str(e)}")
         raise Exception(f"Error loading questions from S3: {str(e)}")
@@ -197,28 +221,47 @@ def get_filter_options():
         return {'years': [], 'subjects': [], 'areas': []}
 
 def serve_metadata(event):
-    """Serve metadata (title, author, and poem) from S3 JSON"""
+    """Serve metadata (title, author, and text) from S3 JSON"""
     try:
         query_params = event.get("queryStringParameters", {})
         year = query_params.get("year", '12')
         subject = query_params.get("subject", 'Advanced English')
         area = query_params.get("area", 'vocab')
-        stage = '1'  # Default to stage 1 for metadata
+        stage = query_params.get("stage", '1')  # Allow stage parameter for metadata
         s3_key, mapping_id = get_question_location_from_dynamodb(year, subject, area, stage)
         if not s3_key:
             s3_key = S3_QUESTIONS_KEY
-        
+
         response = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
         content = response['Body'].read().decode('utf-8')
         q_data = json.loads(content)
-        
-        title = q_data.get("title", "1984 Vocabulary Booster")
+
+        # Validate JSON structure
+        if not isinstance(q_data, dict):
+            raise ValueError("Assessment data must be a dictionary")
+
+        title = q_data.get("title", "Untitled Assessment")
         author = q_data.get("author", "Unknown Author")
-        poem = q_data.get("poem", "")
-        
-        payload = {"title": title, "author": author, "poem": poem}
-        print(f"LOG: Serving metadata - title: {title}, author: {author}, poem: {poem[:50]}...")
+        text = q_data.get("text", "")  # Changed from "poem" to "text" to match the format
+
+        payload = {
+            "title": title,
+            "author": author,
+            "text": text
+        }
+
+        print(f"LOG: Serving metadata - title: {title}, author: {author}, text length: {len(text)}")
         return build_response(200, payload)
+
+    except json.JSONDecodeError as e:
+        print(f"LOG: ERROR - Invalid JSON in metadata file: {str(e)}")
+        return build_response(500, {"error": "Invalid JSON format", "message": str(e)})
+    except ValueError as e:
+        print(f"LOG: ERROR - Invalid data structure in metadata: {str(e)}")
+        return build_response(500, {"error": "Invalid data structure", "message": str(e)})
+    except ClientError as e:
+        print(f"LOG: ERROR - S3 error loading metadata: {e.response['Error']['Code']} - {e.response['Error']['Message']}")
+        return build_response(500, {"error": "Failed to load metadata from S3", "message": str(e)})
     except Exception as e:
         print(f"LOG: ERROR - Failed to load metadata: {str(e)}")
         return build_response(500, {"error": "Failed to load metadata", "message": str(e)})
@@ -227,56 +270,7 @@ def serve_metadata(event):
 QUESTIONS = []
 TITLE = ""
 
-# Helper: load HTML from S3 static directory
-def load_index_html():
-    s3_key = "static/index.html"
-    try:
-        print(f"DEBUG: Attempting to load index.html from S3 bucket: {S3_BUCKET}, key: {s3_key}")
-        response = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
-        content = response['Body'].read().decode('utf-8')
-        print(f"DEBUG: Successfully loaded index.html from S3 ({len(content)} characters)")
-        return content
-    except ClientError as e:
-        print(f"DEBUG: S3 ClientError loading index.html - Code: {e.response['Error']['Code']}, Message: {e.response['Error']['Message']}")
-        if e.response['Error']['Code'] == 'NoSuchKey':
-            print(f"DEBUG: index.html not found in S3 at {s3_key}")
-        elif e.response['Error']['Code'] == 'NoSuchBucket':
-            print(f"DEBUG: S3 bucket not found: {S3_BUCKET}")
-        else:
-            print(f"DEBUG: S3 error loading index.html: {str(e)}")
-    except NoCredentialsError:
-        print("DEBUG: No AWS credentials configured for S3 index.html access")
-    except Exception as e:
-        print(f"DEBUG: Unexpected error loading index.html from S3: {str(e)}")
-    
-    # Fallback HTML if S3 loading fails
-    return "<html><body><h1>Index not found</h1></body></html>"
-
-def load_filter_html():
-    s3_key = "static/filter.html"
-    try:
-        print(f"DEBUG: Attempting to load filter.html from S3 bucket: {S3_BUCKET}, key: {s3_key}")
-        response = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
-        content = response['Body'].read().decode('utf-8')
-        print(f"DEBUG: Successfully loaded filter.html from S3 ({len(content)} characters)")
-        return content
-    except ClientError as e:
-        print(f"DEBUG: S3 ClientError loading filter.html - Code: {e.response['Error']['Code']}, Message: {e.response['Error']['Message']}")
-        if e.response['Error']['Code'] == 'NoSuchKey':
-            print(f"DEBUG: filter.html not found in S3 at {s3_key}")
-        elif e.response['Error']['Code'] == 'NoSuchBucket':
-            print(f"DEBUG: S3 bucket not found: {S3_BUCKET}")
-        else:
-            print(f"DEBUG: S3 error loading filter.html: {str(e)}")
-    except NoCredentialsError:
-        print("DEBUG: No AWS credentials configured for S3 filter.html access")
-    except Exception as e:
-        print(f"DEBUG: Unexpected error loading filter.html from S3: {str(e)}")
-    
-    # Fallback HTML if S3 loading fails
-    return "<html><body><h1>Filter page not found</h1></body></html>"
-
-INDEX_HTML = load_index_html()
+# Lambda is now API-only - HTML served from S3 frontend
 
 # Helpers to support both REST (proxy) and HTTP API event shapes
 def get_path(event):
@@ -515,30 +509,7 @@ def lambda_handler(event, context):
     print(f"LOG: Normalized path: '{p}'")
 
     try:
-        if method == "GET" and (p == "" or p == "/" or p == "/quiz" or p == "/index.html"):
-            print(f"LOG: Serving static HTML page (index.html)")
-            # serve static SPA
-            return {
-                "statusCode": 200,
-                "headers": {
-                    "Content-Type": "text/html; charset=utf-8",
-                    "Access-Control-Allow-Origin": "*",
-                },
-                "body": INDEX_HTML,
-            }
-
-        if method == "GET" and p == "/filter.html":
-            print(f"LOG: Serving static HTML page (filter.html)")
-            # Load filter.html from S3 or fallback
-            filter_html = load_filter_html()
-            return {
-                "statusCode": 200,
-                "headers": {
-                    "Content-Type": "text/html; charset=utf-8",
-                    "Access-Control-Allow-Origin": "*",
-                },
-                "body": filter_html,
-            }
+        # HTML routes removed - served from S3 frontend
 
         if method == "GET" and p == "/questions":
             print(f"LOG: Processing GET request for questions endpoint")
