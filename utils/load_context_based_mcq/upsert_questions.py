@@ -37,8 +37,8 @@ class TextAssessmentGenerator:
             logger.error(f"Failed to initialize AWS clients: {e}")
             raise
         
-    def get_text_input(self) -> Optional[Tuple[str, str, str]]:
-        """Get text input, year, and area from user via file or direct input"""
+    def get_text_input(self) -> Optional[Tuple[str, str, str, str]]:
+        """Get text input, year, subject, and area from user via file or direct input"""
         print("Choose input method:")
         print("1. Load from file")
         print("2. Enter text directly")
@@ -59,6 +59,12 @@ class TextAssessmentGenerator:
             year = "12"  # Default to Year 12
             logger.warning("No year provided, using default: 12")
 
+        # Prompt for subject
+        subject = input("Enter the subject (e.g., Advanced English): ").strip()
+        if not subject:
+            subject = "Advanced English"  # Default subject
+            logger.warning("No subject provided, using default: Advanced English")
+
         # Prompt for area
         area = input("Enter the area (e.g., unseen_text, prescribed_text): ").strip()
         if not area:
@@ -67,9 +73,10 @@ class TextAssessmentGenerator:
 
         # Sanitize inputs
         year = re.sub(r'[^\w\s\-]', '', year)[:10]  # Limit to 10 chars, allow basic chars
+        subject = re.sub(r'[^\w\s\-_]', '', subject)[:50]  # Limit to 50 chars, allow underscores
         area = re.sub(r'[^\w\s\-_]', '', area)[:50]  # Limit to 50 chars, allow underscores
 
-        return text, year, area
+        return text, year, subject, area
 
     def load_text_from_file(self) -> Optional[str]:
         """Load text from a file with validation"""
@@ -154,15 +161,21 @@ class TextAssessmentGenerator:
         wait=wait_exponential(multiplier=1, min=4, max=10),
         retry=retry_if_exception_type((ClientError, Exception))
     )
-    def generate_band6_questions(self, text: str, title: str, author: str, year: str) -> List[Dict[str, Any]]:
+    def generate_band6_questions(self, text: str, title: str, year: str, subject: str, area: str) -> List[Dict[str, Any]]:
         """Generate questions focused on human experiences with retry logic"""
 
         prompt = f"""
-        Based on the following text, generate 10 comprehension questions focused on human experiences. The questions should require analytical thinking and interpretation.
+        You are a question-generation assistant. Below is a summary of a chapter. Your task is to generate a set of questions that assess the learner’s understanding of the subject matter.
 
+=== OBJECTIVE ===
+Create 10 high-quality knowledge-testing questions. Begin with simple, foundational questions and progressively increase the difficulty level as you go.
+
+
+=== INPUT TEXT ===
         TEXT TITLE: {title}
-        AUTHOR: {author}
-        YEAR: {year}
+        TEXT YEAR: {year}
+        SUBJECT: {subject}
+        AREA: {area}
         TEXT:
         {text}
 
@@ -179,14 +192,21 @@ class TextAssessmentGenerator:
         }}
 
         Requirements:
-        - Focus on themes of human experiences: identity, relationships, growth, memory, loss, love, belonging, cultural perspectives, etc.
-        - Include literary devices analysis (if applicable)
-        - Include thematic interpretation
-        - Include tone and mood analysis
-        - Include structural analysis (if applicable)
-        - Make options plausible but distinct
-        - Ensure answers are accurate based on the provided text
-        """
+        - Generate EXACTLY 10 questions.
+        - Questions must require interpretation, not surface-level recall.
+        - All questions must be grounded in the provided text.
+        - Australian, NSW HSC level questions for {subject}, focusing on {area}.
+
+        === RETRY LOGIC RULES ===
+If the generated output:
+- is not valid JSON,
+- has fewer or more than 10 questions,
+- contains repeated questions,
+- contains answers not supported by the text,
+
+then regenerate the output until all conditions are satisfied.
+
+          """
 
         try:
             logger.info("Generating questions using Bedrock...")
@@ -276,13 +296,13 @@ class TextAssessmentGenerator:
         """Generate 8-character hash for filename using SHA-256"""
         return hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest()[:8]
 
-    def create_assessment_json(self, text: str, title: str, author: str, year: str) -> Tuple[str, Dict[str, Any]]:
+    def create_assessment_json(self, text: str, title: str, author: str, year: str, subject: str, area: str) -> Tuple[str, Dict[str, Any]]:
         """Create the complete assessment JSON file with progress indicators"""
 
         logger.info("Generating Band 6 questions...")
         print("⏳ Generating questions using AI...")
 
-        questions = self.generate_band6_questions(text, title, author, year)
+        questions = self.generate_band6_questions(text, title, year, subject, area)
 
         print("✅ Questions generated successfully!")
 
@@ -290,6 +310,9 @@ class TextAssessmentGenerator:
         assessment = {
             "title": f"{title} - Comprehension Questions (Band 6)",
             "author": author,
+            "year": year,
+            "subject": subject,
+            "area": area,
             "text": text,
             "questions": questions
         }
@@ -399,7 +422,7 @@ def setup_user_input(generator: TextAssessmentGenerator) -> Optional[Tuple[str, 
             logger.error("No text provided")
             return None
 
-        text, year, area = input_result
+        text, year, subject, area = input_result
 
         title, author = generator.get_text_metadata()
 
@@ -407,9 +430,10 @@ def setup_user_input(generator: TextAssessmentGenerator) -> Optional[Tuple[str, 
         print(f"📖 Title: {title}")
         print(f"👤 Author: {author}")
         print(f"📅 Year: {year}")
+        print(f"📚 Subject: {subject}")
         print(f"🏷️ Area: {area}")
 
-        return text, title, author, year, area
+        return text, title, author, year, subject, area
 
     except KeyboardInterrupt:
         print("\n⚠️  Process interrupted by user.")
@@ -418,11 +442,11 @@ def setup_user_input(generator: TextAssessmentGenerator) -> Optional[Tuple[str, 
         logger.error(f"Error during input collection: {e}")
         return None
 
-def process_assessment(generator: TextAssessmentGenerator, text: str, title: str, author: str, year: str, area: str) -> Optional[Tuple[str, Dict[str, Any]]]:
+def process_assessment(generator: TextAssessmentGenerator, text: str, title: str, author: str, year: str, subject: str, area: str) -> Optional[Tuple[str, Dict[str, Any]]]:
     """Process the assessment creation with progress indicators"""
     try:
         # Create assessment
-        filename, assessment = generator.create_assessment_json(text, title, author, year)
+        filename, assessment = generator.create_assessment_json(text, title, author, year, subject, area)
         print(f"📁 Created assessment file: {filename}")
 
         # Upload to S3
@@ -433,7 +457,7 @@ def process_assessment(generator: TextAssessmentGenerator, text: str, title: str
             return None
 
         # Update mapping table
-        success = generator.update_mapping_table(s3_location, area=area, year=year)
+        success = generator.update_mapping_table(s3_location, area=area, subject=subject, year=year)
 
         if not success:
             logger.warning("Mapping table update failed, but process continues")
@@ -481,10 +505,10 @@ def main() -> None:
         if not input_data:
             return
 
-        text, title, author, year, area = input_data
+        text, title, author, year, subject, area = input_data
 
         # Process assessment
-        result = process_assessment(generator, text, title, author, year, area)
+        result = process_assessment(generator, text, title, author, year, subject, area)
         if not result:
             print("❌ Process failed during assessment creation")
             return
