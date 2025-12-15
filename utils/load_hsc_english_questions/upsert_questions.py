@@ -22,7 +22,7 @@ class TextAssessmentGenerator:
         self.aws_region = os.getenv('AWS_REGION', 'ap-southeast-2')
         self.s3_bucket = os.getenv('S3_BUCKET', 'hsc-agent-bucket-2')
         self.dynamodb_table = os.getenv('DYNAMODB_TABLE', 'hsc_agent_questions_mapping')
-        self.bedrock_model = os.getenv('BEDROCK_MODEL', 'apac.anthropic.claude-sonnet-4-20250514-v1:0')
+        self.bedrock_model = os.getenv('BEDROCK_MODEL', 'au.anthropic.claude-sonnet-4-5-20250929-v1:0')
         self.max_text_length = int(os.getenv('MAX_TEXT_LENGTH', '50000'))
         self.max_tokens = int(os.getenv('MAX_TOKENS', '2000'))
 
@@ -329,29 +329,31 @@ class TextAssessmentGenerator:
             logger.error(f"Unexpected error uploading to S3: {e}")
             return None
 
-    def get_next_stage(self, area: str) -> int:
-        """Get the next stage number for a specific area from DynamoDB table"""
+    def get_next_stage(self, area: str, subject: str, year: str) -> int:
+        """Get the next stage number for a specific area, subject, and year from DynamoDB table"""
         try:
-            # Query items with the specific area
+            # Query items with the specific area, subject, and year
             response = self.mapping_table.scan(
-                FilterExpression=boto3.dynamodb.conditions.Attr('area').eq(area),
+                FilterExpression=boto3.dynamodb.conditions.Attr('area').eq(area) &
+                                 boto3.dynamodb.conditions.Attr('subject').eq(subject) &
+                                 boto3.dynamodb.conditions.Attr('year').eq(year),
                 ProjectionExpression='#s',
                 ExpressionAttributeNames={'#s': 'stage'}
             )
 
             if 'Items' in response and response['Items']:
-                # Find the maximum stage for this area
+                # Find the maximum stage for this combination of area, subject, and year
                 max_stage = max(int(item['stage']) for item in response['Items'])
                 return max_stage + 1
             else:
-                # No items found for this area, start with stage 1
+                # No items found for this combination, start with stage 1
                 return 1
 
         except ClientError as e:
-            logger.error(f"Error getting next stage for area '{area}': {e}")
+            logger.error(f"Error getting next stage for area '{area}', subject '{subject}', year '{year}': {e}")
             return 1
         except Exception as e:
-            logger.error(f"Unexpected error getting next stage for area '{area}': {e}")
+            logger.error(f"Unexpected error getting next stage for area '{area}', subject '{subject}', year '{year}': {e}")
             return 1
 
     @retry(
@@ -363,7 +365,7 @@ class TextAssessmentGenerator:
         """Update the DynamoDB mapping table with retry logic"""
         try:
             print("⏳ Updating mapping table...")
-            next_stage = self.get_next_stage(area)
+            next_stage = self.get_next_stage(area, subject, year)
             new_id = str(uuid.uuid4())
 
             item = {

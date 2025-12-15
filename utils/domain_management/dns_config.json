@@ -1,0 +1,6 @@
+{
+    "zone_id": "Z068691937SVYUSPTFYV",
+    "record_name": "hsc.ratescan.com.au",
+    "origin_domain": "ratescan.com.au.s3.ap-southeast-2.amazonaws.com",
+    "origin_type": "s3"
+}
