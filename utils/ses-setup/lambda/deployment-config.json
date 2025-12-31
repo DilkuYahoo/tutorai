@@ -1,0 +1,59 @@
+{
+  "aws_region": "us-east-1",
+  "lambda_function": {
+    "name": "email-forwarder",
+    "runtime": "python3.13",
+    "handler": "email-forwarder.lambda_handler",
+    "description": "Email forwarding lambda function",
+    "timeout": 180,
+    "memory_size": 128,
+    "role_name": "EmailForwarderLambdaRole",
+    "file_name": "email-forwarder.py",
+    "environment": {
+      "variables": {
+        "FORWARD_PREFIX": "FW:",
+        "MAIL_S3_BUCKET": "cognifylabs-emails",
+        "MAIL_S3_PREFIX": "cognifylabs.ai",
+        "MAIL_SENDER": "noreply@cognifylabs.ai",
+        "DEFAULT_FORWARD_TO": "dilkushank@outlook.com",
+        "ROUTE_TABLE_NAME": "SES-EmailRouting",
+        "ROUTE_PK_NAME": "domain",
+        "ROUTE_TARGET_ATTR": "forward_to",
+        "ROUTE_MAIL_SENDER_ATTR": "mail_sender",
+        "ROUTE_ENABLED_ATTR": "enabled",
+        "ROUTE_CACHE_TTL_SECONDS": "300"
+      }
+    },
+    "trust_policy": {
+        "Version": "2012-10-17",
+        "Statement": [{
+            "Effect": "Allow",
+            "Principal": {"Service": "lambda.amazonaws.com"},
+            "Action": "sts:AssumeRole"
+        }]
+    },
+    "policies": [
+        "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+        "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
+        "arn:aws:iam::aws:policy/AmazonSESFullAccess"
+    ],
+    "custom_policies": [
+      {
+        "PolicyName": "DynamoDBGetItemPolicy",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:GetItem"
+              ],
+              "Resource": "arn:aws:dynamodb:us-east-1:724772096157:table/SES-EmailRouting"
+            }
+          ]
+        }
+      }
+    ],
+    "layers": []
+  }
+}
