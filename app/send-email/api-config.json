@@ -1,0 +1,31 @@
+{
+  "api_name": "send-email-api",
+  "region": "ap-southeast-2",
+  "description": "API Gateway for Send Email Lambda function",
+  "endpoints": [
+    {
+      "path": "/send-email",
+      "method": "POST",
+      "lambda_integration": {
+        "function_name": "send-email-lambda-function",
+        "timeout": 10
+      }
+    }
+  ],
+  "cors": {
+    "enabled": true,
+    "origins": ["*"],
+    "headers": ["Content-Type"],
+    "methods": ["POST", "OPTIONS"]
+  },
+  "stages": [
+    {
+      "name": "dev",
+      "description": "Development stage"
+    },
+    {
+      "name": "prod",
+      "description": "Production stage"
+    }
+  ]
+}
