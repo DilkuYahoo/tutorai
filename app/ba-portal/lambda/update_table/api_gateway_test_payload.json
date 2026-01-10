@@ -1,0 +1,81 @@
+{
+  "table_name": "BA-PORTAL-BASETABLE",
+  "id": "B57153AB-B66E-4085-A4C1-929EC158FC3E",
+  "attributes": {
+    "investors": [
+      {
+        "name": "Bob",
+        "base_income": 120000,
+        "annual_growth_rate": 3,
+        "income_events": [
+          {
+            "year": 5,
+            "type": "increase",
+            "amount": 10000
+          },
+          {
+            "year": 10,
+            "type": "set",
+            "amount": 150000
+          }
+        ]
+      },
+      {
+        "name": "Alice",
+        "base_income": 100000,
+        "annual_growth_rate": 25,
+        "income_events": []
+      }
+    ],
+    "properties": [
+      {
+        "name": "Property A",
+        "purchase_year": 1,
+        "loan_amount": 600000,
+        "annual_principal_change": 0,
+        "rent": 30000,
+        "interest_rate": 5,
+        "other_expenses": 5000,
+        "property_value": 660000,
+        "initial_value": 600000,
+        "growth_rate": 3,
+        "investor_splits": [
+          {
+            "name": "Bob",
+            "percentage": 50
+          },
+          {
+            "name": "Alice",
+            "percentage": 50
+          }
+        ]
+      },
+      {
+        "name": "Property B",
+        "purchase_year": 3,
+        "loan_amount": 500000,
+        "annual_principal_change": 0,
+        "rent": 25000,
+        "interest_rate": 4,
+        "other_expenses": 4000,
+        "property_value": 550000,
+        "initial_value": 500000,
+        "growth_rate": 3,
+        "investor_splits": [
+          {
+            "name": "Bob",
+            "percentage": 50
+          },
+          {
+            "name": "Alice",
+            "percentage": 50
+          }
+        ]
+      }
+    ],
+    "status": "active",
+    "adviser_name": "John Smith"
+  },
+  "region": "ap-southeast-2",
+  "use_transaction": false
+}
