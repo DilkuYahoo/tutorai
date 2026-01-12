@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-AWS API Gateway Deployment Script for Send Email
+AWS API Gateway Deployment Script for BA Portal
+Handles multiple Lambda function endpoints with proper CORS configuration
 """
 
 import boto3
@@ -368,13 +369,17 @@ class APIGatewayDeployer:
 
     def deploy(self):
         """Main deployment function"""
-        function_name = self.config['endpoints'][0]['lambda_integration']['function_name']
-        if not self.lambda_exists(function_name):
-            raise Exception(f"Lambda function '{function_name}' does not exist. Please deploy the Lambda function first using: python deploy_lambda.py")
+        # Validate all Lambda functions exist
+        for endpoint in self.config['endpoints']:
+            function_name = endpoint['lambda_integration']['function_name']
+            if not self.lambda_exists(function_name):
+                raise Exception(f"Lambda function '{function_name}' does not exist. Please deploy the Lambda function first using: python deploy_lambda.py")
 
-        # Get Lambda ARN for validation
-        lambda_arn = self.get_lambda_arn(function_name)
-        print(f"Lambda function ARN: {lambda_arn}")
+        # Get Lambda ARNs for validation
+        for endpoint in self.config['endpoints']:
+            function_name = endpoint['lambda_integration']['function_name']
+            lambda_arn = self.get_lambda_arn(function_name)
+            print(f"Lambda function ARN: {lambda_arn}")
 
         api_id = self.create_or_update_api()
         self.add_resources_and_methods(api_id)
@@ -387,7 +392,7 @@ class APIGatewayDeployer:
         return api_id, api_url
 
 def main():
-    parser = argparse.ArgumentParser(description='Deploy API Gateway for Send Email')
+    parser = argparse.ArgumentParser(description='Deploy API Gateway for BA Portal Lambda functions')
     parser.add_argument('--config', default='api-config.json', help='Configuration file')
     parser.add_argument('--region', default='ap-southeast-2', help='AWS region')
 

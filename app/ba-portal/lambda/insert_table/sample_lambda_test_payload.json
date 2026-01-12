@@ -1,0 +1,11 @@
+{
+  "table_name": "ba-portal-table",
+  "item": {
+    "id": "user-123",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "status": "active",
+    "created_by": "system"
+  },
+  "region": "ap-southeast-2"
+}

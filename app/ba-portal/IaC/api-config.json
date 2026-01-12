@@ -1,0 +1,132 @@
+{
+  "api_name": "ba-portal-api-gateway",
+  "region": "ap-southeast-2",
+  "description": "API Gateway for BA Portal Lambda functions including read and update operations",
+  "endpoints": [
+    {
+      "path": "/update-table",
+      "method": "POST",
+      "lambda_integration": {
+        "function_name": "ba-portal-update-table-lambda-function",
+        "timeout": 10
+      }
+    },
+    {
+      "path": "/read-table",
+      "method": "POST",
+      "lambda_integration": {
+        "function_name": "ba-portal-read-table-lambda-function",
+        "timeout": 10
+      }
+    }
+  ],
+  "cors": {
+    "enabled": true,
+    "origins": ["*"],
+    "headers": ["Content-Type"],
+    "methods": ["POST", "OPTIONS"]
+  },
+  "stages": [
+    {
+      "name": "dev",
+      "description": "Development stage"
+    },
+    {
+      "name": "prod",
+      "description": "Production stage"
+    }
+  ],
+  "documentation": {
+    "read_table_endpoint": {
+      "description": "Read items from DynamoDB table with filtering",
+      "request_schema": {
+        "required": ["table_name", "id"],
+        "properties": {
+          "table_name": {
+            "type": "string",
+            "description": "Name of the DynamoDB table to query"
+          },
+          "id": {
+            "type": "string",
+            "description": "ID of the item to retrieve"
+          },
+          "region": {
+            "type": "string",
+            "description": "AWS region (default: ap-southeast-2)",
+            "default": "ap-southeast-2"
+          }
+        }
+      },
+      "response_schema": {
+        "200": {
+          "description": "Successful retrieval of active item",
+          "properties": {
+            "status": {"type": "string", "enum": ["success"]},
+            "message": {"type": "string"},
+            "item_id": {"type": "string"},
+            "table_name": {"type": "string"},
+            "timestamp": {"type": "string", "format": "date-time"},
+            "result": {
+              "type": "object",
+              "properties": {
+                "id": {"type": "string"},
+                "chart1": {"type": "object"},
+                "investors": {"type": "array"},
+                "properties": {"type": "array"}
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad request or validation error",
+          "properties": {
+            "status": {"type": "string", "enum": ["error"]},
+            "message": {"type": "string"},
+            "error_code": {"type": "string"},
+            "timestamp": {"type": "string", "format": "date-time"}
+          }
+        },
+        "404": {
+          "description": "Item not found",
+          "properties": {
+            "status": {"type": "string", "enum": ["error"]},
+            "message": {"type": "string"},
+            "error_code": {"type": "string", "enum": ["DYNAMODB_READ_ERROR"]},
+            "timestamp": {"type": "string", "format": "date-time"}
+          }
+        },
+        "500": {
+          "description": "Internal server error",
+          "properties": {
+            "status": {"type": "string", "enum": ["error"]},
+            "message": {"type": "string"},
+            "error_code": {"type": "string", "enum": ["INTERNAL_SERVER_ERROR"]},
+            "traceback": {"type": "string"},
+            "timestamp": {"type": "string", "format": "date-time"}
+          }
+        }
+      },
+      "authentication": {
+        "type": "NONE",
+        "description": "No authentication required for read operations"
+      },
+      "logging": {
+        "enabled": true,
+        "level": "INFO",
+        "cloudwatch_logs": true
+      },
+      "monitoring": {
+        "cloudwatch_metrics": true,
+        "cloudwatch_alarms": [
+          {
+            "alarm_name": "ReadTableErrors",
+            "metric_name": "5XXError",
+            "threshold": 5,
+            "period": 300,
+            "evaluation_periods": 1
+          }
+        ]
+      }
+    }
+  }
+}

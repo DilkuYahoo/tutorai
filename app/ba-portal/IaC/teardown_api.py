@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AWS API Gateway Teardown Script for Send Email
+AWS API Gateway Teardown Script for BA Portal
 """
 
 import boto3
@@ -110,7 +110,7 @@ class APIGatewayTeardown:
         print("Teardown completed")
 
 def main():
-    parser = argparse.ArgumentParser(description='Teardown API Gateway for Send Email')
+    parser = argparse.ArgumentParser(description='Teardown API Gateway for BA Portal')
     parser.add_argument('--config', default='api-config.json', help='Configuration file')
     parser.add_argument('--region', default='ap-southeast-2', help='AWS region')
 

@@ -1,13 +1,13 @@
 {
-  "api_name": "ba-portal-update-table-lambda-function",
+  "api_name": "ba-portal-insert-table-lambda-function",
   "region": "ap-southeast-2",
-  "description": "API Gateway for Send Email Lambda function",
+  "description": "API Gateway for Insert Table Lambda function",
   "endpoints": [
     {
-      "path": "/update-table",
+      "path": "/insert-table",
       "method": "POST",
       "lambda_integration": {
-        "function_name": "ba-portal-update-table-lambda-function",
+        "function_name": "ba-portal-insert-table-lambda-function",
         "timeout": 10
       }
     }

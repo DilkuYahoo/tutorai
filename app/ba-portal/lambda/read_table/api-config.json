@@ -1,0 +1,31 @@
+{
+  "api_name": "ba-portal-read-table-lambda-function",
+  "region": "ap-southeast-2",
+  "description": "API Gateway for Read Table Lambda function",
+  "endpoints": [
+    {
+      "path": "/read-table",
+      "method": "POST",
+      "lambda_integration": {
+        "function_name": "ba-portal-read-table-lambda-function",
+        "timeout": 10
+      }
+    }
+  ],
+  "cors": {
+    "enabled": true,
+    "origins": ["*"],
+    "headers": ["Content-Type"],
+    "methods": ["POST", "OPTIONS"]
+  },
+  "stages": [
+    {
+      "name": "dev",
+      "description": "Development stage"
+    },
+    {
+      "name": "prod",
+      "description": "Production stage"
+    }
+  ]
+}

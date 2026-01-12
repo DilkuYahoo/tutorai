@@ -1,0 +1,3 @@
+{
+  "body": "{\n    \"table_name\": \"ba-portal-table\",\n    \"item\": {\n      \"id\": \"user-123\",\n      \"name\": \"John Doe\",\n      \"email\": \"john@example.com\",\n      \"status\": \"active\",\n      \"created_by\": \"system\"\n    },\n    \"region\": \"ap-southeast-2\"\n  }"
+}
