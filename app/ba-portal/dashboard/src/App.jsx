@@ -7,80 +7,12 @@ function App() {
     id: 'B57153AB-B66E-4085-A4C1-929EC158FC3E',
     region: 'ap-southeast-2',
     use_transaction: false,
+    apiResponse: null,
     attributes: {
       status: 'active',
-      adviser_name: 'John Smith',
-      investors: [
-        {
-          name: 'Bob',
-          base_income: 120000,
-          annual_growth_rate: 3,
-          income_events: [
-            {
-              year: 5,
-              type: 'increase',
-              amount: 10000
-            },
-            {
-              year: 10,
-              type: 'set',
-              amount: 150000
-            }
-          ]
-        },
-        {
-          name: 'Alice',
-          base_income: 100000,
-          annual_growth_rate: 25,
-          income_events: []
-        }
-      ],
-      properties: [
-        {
-          name: 'Property A',
-          purchase_year: 1,
-          loan_amount: 600000,
-          annual_principal_change: 0,
-          rent: 30000,
-          interest_rate: 5,
-          other_expenses: 5000,
-          property_value: 660000,
-          initial_value: 600000,
-          growth_rate: 3,
-          investor_splits: [
-            {
-              name: 'Bob',
-              percentage: 50
-            },
-            {
-              name: 'Alice',
-              percentage: 50
-            }
-          ]
-        },
-        {
-          name: 'Property B',
-          purchase_year: 3,
-          loan_amount: 500000,
-          annual_principal_change: 0,
-          rent: 25000,
-          interest_rate: 4,
-          other_expenses: 4000,
-          property_value: 550000,
-          initial_value: 500000,
-          growth_rate: 3,
-          investor_splits: [
-            {
-              name: 'Bob',
-              percentage: 50
-            },
-            {
-              name: 'Alice',
-              percentage: 50
-            }
-          ]
-        }
-      ]
+      adviser_name: '',
+      investors: [],
+      properties: []
     },
     loading: false,
     error: null,
@@ -89,19 +21,17 @@ function App() {
 
   // Fetch data from API Gateway using read_table endpoint
   const fetchPortfolioData = async () => {
-    setFormData(prev => ({ ...prev, loading: true, error: null }))
+    setFormData(prev => ({ ...prev, loading: true, error: null, apiResponse: null }))
     
     try {
       // Construct the API Gateway URL for read-table endpoint
       const endpointUrl = `${formData.apiUrl}/read-table`
       
-      // Create payload matching the API Gateway test payload structure
+      // Create payload with the required parameters
       const payload = {
-        body: JSON.stringify({
-          table_name: formData.table_name,
-          id: formData.id,
-          region: formData.region
-        })
+        table_name: formData.table_name,
+        id: formData.id,
+        region: formData.region
       }
       
       console.log('Fetching portfolio data from API Gateway:', endpointUrl)
@@ -121,28 +51,66 @@ function App() {
       
       const responseData = await response.json()
       console.log('API Gateway response:', responseData)
-      
+
+      // Store response data for display
+      setFormData(prev => ({ ...prev, apiResponse: responseData }))
+
       if (responseData.status === 'success' && responseData.result) {
-        // Merge the fetched data with existing form data
         const fetchedResult = responseData.result
-        
-        setFormData(prev => ({
-          ...prev,
-          loading: false,
-          attributes: {
-            ...prev.attributes,
-            // Merge investors data
-            investors: fetchedResult.investors || prev.attributes.investors,
-            // Merge properties data
-            properties: fetchedResult.properties || prev.attributes.properties,
-            // Update chart data if available
+
+        setFormData(prev => {
+          // Map API response to form structure with best-guess mapping
+          const mappedAttributes = {
+            // Keep existing values for fields not provided by API
+            status: prev.attributes.status,
+            adviser_name: prev.attributes.adviser_name,
+            // Map investors data with proper structure
+            investors: (fetchedResult.investors || []).map(investor => ({
+              name: investor.name || '',
+              base_income: Number(investor.base_income) || 0,
+              annual_growth_rate: Number(investor.annual_growth_rate) || 0,
+              income_events: (investor.income_events || []).map(event => ({
+                year: Number(event.year) || 0,
+                type: event.type || 'increase',
+                amount: Number(event.amount) || 0
+              }))
+            })),
+            // Map properties data with proper structure
+            properties: (fetchedResult.properties || []).map(property => ({
+              name: property.name || '',
+              purchase_year: Number(property.purchase_year) || 0,
+              loan_amount: Number(property.loan_amount) || 0,
+              annual_principal_change: Number(property.annual_principal_change) || 0,
+              rent: Number(property.rent) || 0,
+              interest_rate: Number(property.interest_rate) || 0,
+              other_expenses: Number(property.other_expenses) || 0,
+              property_value: Number(property.property_value) || 0,
+              initial_value: Number(property.initial_value) || Number(property.loan_amount) || 0,
+              growth_rate: Number(property.growth_rate) || 0,
+              investor_splits: (property.investor_splits || []).map(split => ({
+                name: split.name || '',
+                percentage: Number(split.percentage) || 0
+              }))
+            })),
+            // Store chart data if available
             ...(fetchedResult.chart1 && { chart1: fetchedResult.chart1 })
           }
-        }))
-        
-        alert('Portfolio data loaded successfully from API Gateway!')
+
+          // Show success message with data counts
+          setTimeout(() => {
+            alert(`Portfolio data loaded successfully!\nItem ID: ${responseData.item_id}\nInvestors: ${mappedAttributes.investors.length}\nProperties: ${mappedAttributes.properties.length}`)
+          }, 100)
+
+          return {
+            ...prev,
+            loading: false,
+            attributes: mappedAttributes
+          }
+        })
+      } else if (responseData.status === 'error') {
+        throw new Error(responseData.message || 'API returned an error')
       } else {
-        throw new Error(responseData.message || 'Failed to load portfolio data')
+        throw new Error('Unexpected API response format')
       }
       
     } catch (error) {
@@ -150,7 +118,8 @@ function App() {
       setFormData(prev => ({
         ...prev,
         loading: false,
-        error: error.message || 'Failed to load portfolio data'
+        error: error.message || 'Failed to load portfolio data',
+        apiResponse: null
       }))
       alert(`Error loading portfolio data: ${error.message}`)
     }
@@ -158,8 +127,8 @@ function App() {
 
   // Load data on component mount
   useEffect(() => {
-    // Commented out auto-load to avoid API calls on every render
-    // fetchPortfolioData()
+    // Load data on component mount
+      fetchPortfolioData()
   }, [])
 
   const handleInputChange = (e) => {
@@ -323,6 +292,18 @@ function App() {
             required
           />
         </div>
+
+        <div className="form-group">
+          <label htmlFor="region">AWS Region</label>
+          <input
+            type="text"
+            id="region"
+            value={formData.region}
+            onChange={(e) => setFormData(prev => ({ ...prev, region: e.target.value }))}
+            className="form-control"
+            required
+          />
+        </div>
         
         <button
           type="button"
@@ -338,6 +319,7 @@ function App() {
             Error: {formData.error}
           </div>
         )}
+
       </div>
 
       <form onSubmit={handleSubmit} className="investment-form">
@@ -373,6 +355,8 @@ function App() {
 
         <div className="form-section">
           <h2>Investors</h2>
+          {formData.loading && <div className="loading-message">Loading investors...</div>}
+          {!formData.loading && !formData.error && formData.attributes.investors.length === 0 && <div className="empty-message">No investors found.</div>}
           {formData.attributes.investors.map((investor, investorIndex) => (
             <div key={investorIndex} className="investor-card">
               <h3>Investor {investorIndex + 1}</h3>

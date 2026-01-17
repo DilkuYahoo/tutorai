@@ -1,0 +1,69 @@
+{
+  "banks": {
+    "CBA": {
+      "base_url": "https://api.commbank.com.au/public/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "ANZ": {
+      "base_url": "https://api.anz/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "ING": {
+      "base_url": "https://id.ob.ing.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "NAB": {
+      "base_url": "https://openbank.api.nab.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Westpac": {
+      "base_url": "https://digital-api.westpac.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    }
+  }
+}
