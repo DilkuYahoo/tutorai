@@ -1,0 +1,160 @@
+{
+  "banks": {
+    "AFG_Home_Loans_Alpha": {
+      "base_url": "https://api.afg.app.bendigobank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Aussie_Elevate": {
+      "base_url": "https://api.aussie.app.bendigobank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Aussie_Home_Loans": {
+      "base_url": "https://aussie.openportal.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "NAB": {
+      "base_url": "https://openbank.api.nab.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Connective_Select": {
+      "base_url": "https://api.connective.app.bendigobank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Firefighters_Mutual_Bank": {
+      "base_url": "https://ob.tmbl.com.au/fmbank/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Health_Professionals_Bank": {
+      "base_url": "https://ob.tmbl.com.au/hpbank/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "NRMA_Home_Loans": {
+      "base_url": "https://api.nrma.app.bendigobank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Rabobank": {
+      "base_url": "https://openbanking.api.rabobank.com.au/public/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Teachers_Mutual_Bank": {
+      "base_url": "https://ob.tmbl.com.au/tmbank/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Tiimely_Home": {
+      "base_url": "https://api.tiimely.app.bendigobank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "UniBank": {
+      "base_url": "https://ob.tmbl.com.au/unibank/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    }
+  }
+}

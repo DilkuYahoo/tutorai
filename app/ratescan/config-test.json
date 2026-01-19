@@ -1,0 +1,1577 @@
+{
+  "banks": {
+    "AFG_Home_Loans_Alpha": {
+      "base_url": "https://api.afg.app.bendigobank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "AMP_-_My_AMP": {
+      "base_url": "https://api.cdr-api.amp.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "AMP_Bank_GO": {
+      "base_url": "https://pub.cdr-sme.amp.com.au/api/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "ANZ": {
+      "base_url": "https://api.anz/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "ANZ_Plus": {
+      "base_url": "https://cdr.apix.anz/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Alex.Bank": {
+      "base_url": "https://public.cdr.alex.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Arab_Bank_Australia_Limited": {
+      "base_url": "https://public.cdr.arabbank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Aussie_Elevate": {
+      "base_url": "https://api.aussie.app.bendigobank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Aussie_Home_Loans": {
+      "base_url": "https://aussie.openportal.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Australian_Military_Bank": {
+      "base_url": "https://public.open.australianmilitarybank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Australian_Mutual_Bank_LTD": {
+      "base_url": "https://internetbanking.australianmutual.bank/openbanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Auswide_Bank_Ltd": {
+      "base_url": "https://api.auswidebank.com.au/openbanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "BCU_Bank": {
+      "base_url": "https://public.cdr-api.bcu.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "BNK_Bank_(Goldfields_Money/BCHL)": {
+      "base_url": "https://public.cdr.bnk.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "BOQ_Specialist": {
+      "base_url": "https://api.cds.boqspecialist.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Bank_Australia": {
+      "base_url": "https://public.cdr.bankaust.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Bank_First": {
+      "base_url": "https://public.cdr.bankfirst.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Bank_of_China": {
+      "base_url": "https://api-gateway.bankofchina.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Bank_of_Melbourne": {
+      "base_url": "https://digital-api.bankofmelbourne.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Bank_of_Queensland_Limited": {
+      "base_url": "https://api.cds.boq.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Bank_of_Sydney": {
+      "base_url": "https://openbank.api.banksyd.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Bank_of_us": {
+      "base_url": "https://api.bankofus.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "BankSA": {
+      "base_url": "https://digital-api.banksa.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "BankVic": {
+      "base_url": "https://ib.bankvic.com.au/openbanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Bankwest": {
+      "base_url": "https://open-api.bankwest.com.au/bwpublic/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Bendigo_Bank": {
+      "base_url": "https://api.cdr.bendigobank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Beyond_Bank_Australia": {
+      "base_url": "https://public.cdr.api.beyondbank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Border_Bank": {
+      "base_url": "https://public.cdr.prd.borderbank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Broken_Hill_Bank": {
+      "base_url": "https://public.cdr-api.bhccu.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "CBA_-_CommBiz": {
+      "base_url": "https://cdr.commbiz.api.commbank.com.au/cbzpublic/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Cairns_bank": {
+      "base_url": "https://openbanking.cairnsbank.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Central_Murray_Bank": {
+      "base_url": "https://secure.cmcu.com.au/openbanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Central_West_CUL": {
+      "base_url": "https://ib.cwcu.com.au/openbanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Coastline_Bank": {
+      "base_url": "https://public.cdr-api.coastline.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Coles_Credit_Cards": {
+      "base_url": "https://api.openbanking.secure.coles.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "CommBank": {
+      "base_url": "https://api.commbank.com.au/public/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "CommFCU": {
+      "base_url": "https://netbank.communityfirst.com.au/cf-OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Connective_Select": {
+      "base_url": "https://api.connective.app.bendigobank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Credit_Union_SA": {
+      "base_url": "https://openbanking.api.creditunionsa.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "DDH_Graham": {
+      "base_url": "https://api.cds.ddhgraham.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Darling_Downs_Bank": {
+      "base_url": "https://openbanking.ddbank.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Defence_Bank": {
+      "base_url": "https://product.defencebank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Dnister": {
+      "base_url": "https://public.cdr-api.dnister.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Easy_Street": {
+      "base_url": "https://ebranch.easystreet.com.au/es-OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Family_First": {
+      "base_url": "https://public.cdr.familyfirst.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Fire_Service_Credit_Union": {
+      "base_url": "https://public.cdr-api.fscu.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Firefighters_Mutual_Bank": {
+      "base_url": "https://ob.tmbl.com.au/fmbank/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "First_Option_Bank": {
+      "base_url": "https://internetbanking.firstoption.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "G&C_Mutual_Bank": {
+      "base_url": "https://ibank.gcmutualbank.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Gateway_Bank": {
+      "base_url": "https://public.cdr-api.gatewaybank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Geelong_Bank": {
+      "base_url": "https://online.geelongbank.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Great_Southern_Bank": {
+      "base_url": "https://api.open-banking.greatsouthernbank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Great_Southern_Bank_Business+": {
+      "base_url": "https://od1.open-banking.business.greatsouthernbank.com.au/api/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Greater_Bank_Limited": {
+      "base_url": "https://public.cdr.greater.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "HSBC": {
+      "base_url": "https://public.ob.hsbc.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "HSBC_Bank_Australia_Limited_–_Wholesale_Banking": {
+      "base_url": "https://public.ob.business.hsbc.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Health_Professionals_Bank": {
+      "base_url": "https://ob.tmbl.com.au/hpbank/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Heartland": {
+      "base_url": "https://api.cdr.heartlandbank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Horizon_Bank": {
+      "base_url": "https://onlinebanking.horizonbank.com.au/openbanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Hume_Bank": {
+      "base_url": "https://ibankob.humebank.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "IMB_Bank": {
+      "base_url": "https://openbank.openbanking.imb.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "ING_BANK_(Australia)_Ltd": {
+      "base_url": "https://id.ob.ing.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Judo_Bank": {
+      "base_url": "https://public.open.judo.bank/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Kogan_Money_Credit_Cards": {
+      "base_url": "https://api.openbanking.cards.koganmoney.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Laboratories_Credit_Union": {
+      "base_url": "https://internetbanking.lcu.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Liberty_Financial": {
+      "base_url": "https://services.liberty.com.au/api/data-holder-public/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "ME_Bank": {
+      "base_url": "https://public.openbank.mebank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "ME_Bank_-_ME_Go": {
+      "base_url": "https://api.cds.mebank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "MOVE_Bank": {
+      "base_url": "https://openbanking.movebank.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Macquarie_Bank_Limited": {
+      "base_url": "https://api.macquariebank.io/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Maitland_Mutual_Limited": {
+      "base_url": "https://openbanking.themutual.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "MyCard": {
+      "base_url": "https://api-openbanking.secure.mycard.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "MyState_Bank": {
+      "base_url": "https://public.cdr.mystate.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "NATIONAL_AUSTRALIA_BANK": {
+      "base_url": "https://openbank.api.nab.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "NRMA_Home_Loans": {
+      "base_url": "https://api.nrma.app.bendigobank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Newcastle_Permanent_Building_Society": {
+      "base_url": "https://openbank.newcastlepermanent.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Northern_Inland_Credit_Union_Limited": {
+      "base_url": "https://secure.nicu.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "ORANGE_CREDIT_UNION_LTD": {
+      "base_url": "https://online.orangecu.com.au/openbanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "P&N_Bank": {
+      "base_url": "https://public.cdr-api.pnbank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "PayPal_Australia": {
+      "base_url": "https://api.paypal.com/v1/identity/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "People's_Choice_and_Heritage": {
+      "base_url": "https://ob-public.peopleschoice.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Police_Bank": {
+      "base_url": "https://public.cdr.prd.policebank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Police_Credit_Union_Ltd": {
+      "base_url": "https://api.policecu.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "QBANK": {
+      "base_url": "https://banking.qbank.com.au/openbanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Qantas_Money_Credit_Cards": {
+      "base_url": "https://api.openbanking.qantasmoney.com/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Qantas_Money_Home_Loans": {
+      "base_url": "https://api.qantas.app.bendigobank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Qudos_Bank": {
+      "base_url": "https://public.cdr.qudosbank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Queensland_Country_Bank": {
+      "base_url": "https://public.cdr-api.queenslandcountry.bank/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "RACQ_Bank": {
+      "base_url": "https://cdrbank.racq.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "RAMS_Financial_Group_Pty_Ltd": {
+      "base_url": "https://digital-api.westpac.com.au/rams/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "RSL_Money": {
+      "base_url": "https://public.open.rslmoney.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Rabobank": {
+      "base_url": "https://openbanking.api.rabobank.com.au/public/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Regional_Australia_Bank": {
+      "base_url": "https://public-data.cdr.regaustbank.io/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Reliance_Bank": {
+      "base_url": "https://ibanking.reliancebank.com.au/rel-openbanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "SWSbank": {
+      "base_url": "https://online.swsbank.com.au/openbanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Solo_by_MYOB": {
+      "base_url": "https://od1.open-banking.myob.greatsouthernbank.com.au/api/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Southern_Cross_Credit_Union": {
+      "base_url": "https://cdr.sccu.com.au/openbanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "St.George_Bank": {
+      "base_url": "https://digital-api.stgeorge.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Summerland_Bank": {
+      "base_url": "https://public.cdr-api.summerland.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Suncorp_Bank": {
+      "base_url": "https://id-ob.suncorpbank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "TMCU": {
+      "base_url": "https://banking.transportmutual.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Teachers_Mutual_Bank": {
+      "base_url": "https://ob.tmbl.com.au/tmbank/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "The_Capricornian": {
+      "base_url": "https://public.cdr.onlinebanking.capricornian.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "The_Mac": {
+      "base_url": "https://onlinebanking.themaccu.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Thriday": {
+      "base_url": "https://public.cdr.thriday.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Tiimely_Home": {
+      "base_url": "https://api.tiimely.app.bendigobank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Traditional_Credit_Union": {
+      "base_url": "https://prd.tcu.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Tyro_Banking": {
+      "base_url": "https://od1.cdr.banking.tyro.com/api/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Tyro_Payments": {
+      "base_url": "https://public.cdr.tyro.com/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "UBank": {
+      "base_url": "https://public.cdr-api.86400.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "UniBank": {
+      "base_url": "https://ob.tmbl.com.au/unibank/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Unity_Bank": {
+      "base_url": "https://ibanking.unitybank.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Unloan": {
+      "base_url": "https://public.api.cdr.unloan.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Up": {
+      "base_url": "https://api.up.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Virgin_Money": {
+      "base_url": "https://api.cds.virginmoney.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Westpac": {
+      "base_url": "https://digital-api.westpac.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Wise": {
+      "base_url": "https://au-cdrbanking-pub.wise.com/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "Woolworths_Team_Bank": {
+      "base_url": "https://online.woolworthsteambank.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "bankWAW": {
+      "base_url": "https://onlinebanking.wawcu.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "gmcu": {
+      "base_url": "https://secure.gmcu.com.au/OpenBanking/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    },
+    "in1bank_ltd.": {
+      "base_url": "https://cdr.in1bank.com.au/cds-au/v1/banking/products",
+      "headers_products": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      },
+      "headers_prd_details": {
+        "Accept": "application/json",
+        "x-v": "5",
+        "x-min-v": "3"
+      }
+    }
+  }
+}
