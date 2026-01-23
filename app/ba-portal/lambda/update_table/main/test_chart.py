@@ -25,7 +25,7 @@ properties = [
     {
         "name": "Property A",
         "purchase_year": 1,
-        "loan_amount": 600000,
+        "loan_amount": 60000,
         "annual_principal_change": 0,  # Interest-only
         "rent": 30000,
         "interest_rate": 0.05,
@@ -38,7 +38,7 @@ properties = [
     {
         "name": "Property B",
         "purchase_year": 3,
-        "loan_amount": 500000,
+        "loan_amount": 50000,
         "annual_principal_change":  0,  # Interest-only
         "rent": 25000,
         "interest_rate": 0.04,

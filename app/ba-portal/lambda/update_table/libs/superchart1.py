@@ -110,7 +110,7 @@ def borrowing_capacity_forecast_investor_blocks(
             name = prop["name"]
             if name in property_balances:
                 loan = property_balances[name]
-                value = prop["property_value"]
+                value = property_values[name]
                 lvr = (loan / value) * 100 if value > 0 else 0
                 property_lvrs[name] = round(lvr, 2)
 
