@@ -104,13 +104,17 @@ def borrowing_capacity_forecast_investor_blocks(
 
         total_debt = sum(property_balances.values())
 
+        # update property values for this year
+        for prop in properties:
+            property_values[prop["name"]] *= (1 + prop["growth_rate"])
+
         # ---- property LVRs ----
         property_lvrs = {}
         for prop in properties:
             name = prop["name"]
             if name in property_balances:
                 loan = property_balances[name]
-                value = prop["property_value"]
+                value = property_values[name]
                 lvr = (loan / value) * 100 if value > 0 else 0
                 property_lvrs[name] = round(lvr, 2)
 
@@ -174,10 +178,6 @@ def borrowing_capacity_forecast_investor_blocks(
             "property_lvrs": property_lvrs,
             "property_values": {name: round(val, 2) for name, val in property_values.items()}
         })
-
-        # update property values for next year
-        for prop in properties:
-            property_values[prop["name"]] *= (1 + prop["growth_rate"])
 
     # Return just the yearly_forecast
     return results["yearly_forecast"]

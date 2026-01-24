@@ -30,7 +30,7 @@ properties = [
         "rent": 30000,
         "interest_rate": 0.05,
         "other_expenses": 5000,
-        "property_value": 660000,  # loan * 1.1
+        "property_value": 600000,  # Use initial_value directly
         "initial_value": 600000,
         "growth_rate": 0.03,
         "investor_splits": [{"name": "Bob", "percentage": 50}, {"name": "Alice", "percentage": 50}]
@@ -43,7 +43,7 @@ properties = [
         "rent": 25000,
         "interest_rate": 0.04,
         "other_expenses": 4000,
-        "property_value": 550000,  # loan * 1.1
+        "property_value": 500000,  # Use initial_value directly
         "initial_value": 500000,
         "growth_rate": 0.03,
         "investor_splits": [{"name": "Bob", "percentage": 50}, {"name": "Alice", "percentage": 50}]
