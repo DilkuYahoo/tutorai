@@ -183,12 +183,83 @@ This script:
 
 ## Chart1 Calculation
 
-When `investors` and `properties` arrays are provided in the attributes, the function automatically calculates a borrowing capacity forecast using the superchart1 library:
+When `investors` and `properties` arrays are provided in the attributes, the function automatically calculates a borrowing capacity forecast using the superchart1 library. This generates a 30-year projection of income, borrowing capacity, debt, and cashflow based on investor and property data.
 
-- **Investors**: Array of investor objects with income, growth rates, and events
-- **Properties**: Array of property objects with loan details, rent, and growth rates
-- **Forecast**: 30-year borrowing capacity projection
-- **Storage**: Results stored as `chart1` attribute in DynamoDB
+### Investor Attributes
+
+Each investor object must include:
+
+| Attribute | Type | Required | Description | Calculation Involvement |
+|-----------|------|----------|-------------|-------------------------|
+| `name` | string | Yes | Unique investor identifier | Used as key for tracking incomes, debts, and borrowing capacities |
+| `base_income` | float | Yes | Starting annual income | Initial income value, compounded annually |
+| `annual_growth_rate` | float | Yes | Annual income growth rate (decimal) | Applied to income each year after year 1 (e.g., 0.05 = 5% growth) |
+| `income_events` | array | No | List of income changes | Applied at specified years; each event has `year`, `type` ("increase" or "set"), and `amount` |
+
+### Property Attributes
+
+Each property object must include:
+
+| Attribute | Type | Required | Description | Calculation Involvement |
+|-----------|------|----------|-------------|-------------------------|
+| `name` | string | Yes | Unique property identifier | Used as key for tracking balances, values, and LVRs |
+| `purchase_year` | int | Yes | Year property was acquired | Determines when property enters calculations |
+| `loan_amount` | float | Yes | Initial loan principal | Starting balance for debt calculations |
+| `annual_principal_change` | float | Yes | Annual change to loan balance | Added to balance each year (negative for repayments) |
+| `rent` | float | Yes | Annual rental income | Added as income to proportional investors; summed for total cashflow |
+| `interest_rate` | float | Yes | Annual loan interest rate (decimal) | Multiplied by balance to calculate annual interest cost |
+| `other_expenses` | float | Yes | Annual expenses excluding interest | Subtracted proportionally from investor incomes |
+| `initial_value` | float | No | Starting property value (defaults to `loan_amount`) | Base value for growth calculations |
+| `growth_rate` | float | Yes | Annual property value growth rate (decimal) | Applied to value each year for appreciation |
+| `investor_splits` | array | Yes | Ownership percentages | List of objects with `name` (investor) and `percentage` (decimal); used to allocate costs/incomes |
+
+**Note**: The `property_value` attribute is listed in documentation but not used in calculations. Use `initial_value` instead.
+
+### Calculation Details
+
+The forecast calculates the following for each year:
+
+1. **Investor Incomes**: Start with `base_income`, apply any `income_events` for the year, then apply `annual_growth_rate` (after year 1).
+
+2. **Property Balances**: Initialize with `loan_amount` at `purchase_year`, then add `annual_principal_change` each subsequent year.
+
+3. **Interest Costs**: Calculated as `balance * interest_rate` for each property, allocated proportionally to investors via `investor_splits`.
+
+4. **Investor Net Incomes**: `gross_income + proportional_rent - proportional_interest - proportional_other_expenses`.
+
+5. **Borrowing Capacity**: `net_income * 6 - current_debt` (6x multiple commonly used for lending).
+
+6. **Cashflow**: `total_gross_incomes + total_rent - total_interest - total_other_expenses`.
+
+7. **Property LVRs**: `loan_balance / property_value * 100` (Loan-to-Value Ratio).
+
+8. **Property Values**: Start with `initial_value`, grow annually by `(1 + growth_rate)`.
+
+### Output Structure
+
+Results are stored as `chart1` in DynamoDB with this structure:
+
+```json
+{
+  "yearly_forecast": [
+    {
+      "year": 1,
+      "investor_net_incomes": {"investor1": 75000.0},
+      "combined_income": 75000.0,
+      "investor_borrowing_capacities": {"investor1": 450000.0},
+      "investor_debts": {"investor1": 0.0},
+      "total_debt": 0.0,
+      "total_rent": 0.0,
+      "total_interest_cost": 0.0,
+      "total_other_expenses": 0.0,
+      "cashflow": 75000.0,
+      "property_loan_balances": {},
+      "property_lvrs": {},
+      "property_values": {}
+    }
+  ]
+}
+```
 
 ## Testing
 
