@@ -1,55 +1,61 @@
-# Table Update Lambda Function
+# BA Portal Update Table Lambda Function
 
-A serverless solution for dynamically updating DynamoDB table attributes with comprehensive error handling, transactional integrity, and optional audit logging.
+A serverless AWS Lambda function for dynamically updating DynamoDB table attributes with advanced features including automatic chart1 calculation, transactional integrity, and comprehensive error handling.
+
+## Overview
+
+This Lambda function provides a robust API for updating attributes in a DynamoDB table. It features automatic calculation of borrowing capacity forecasts (chart1) when investor and property data are provided, supports both regular and transactional updates, and includes comprehensive error handling and logging.
 
 ## Features
 
-- **Secure Parameterized Queries**: Prevents SQL injection and ensures data integrity
-- **Transactional Updates**: Atomic operations with rollback on failure
-- **Comprehensive Error Handling**: Graceful handling of database errors, validation errors, and edge cases
-- **Audit Logging**: Optional logging for tracking changes and debugging
-- **Flexible Configuration**: Environment variables for easy deployment across environments
+- **Dynamic Attribute Updates**: Update any combination of DynamoDB item attributes
+- **Automatic Chart1 Calculation**: Calculates borrowing capacity forecasts using the superchart1 library when investors and properties are provided
+- **Transactional Integrity**: Optional DynamoDB transactions for atomic operations
+- **Comprehensive Error Handling**: Detailed error responses with proper HTTP status codes
+- **API Gateway Integration**: Designed for REST API integration with proper response formatting
+- **Flexible Deployment**: Multiple deployment options including full deployment and code-only updates
+- **Input Validation**: Thorough validation of all input parameters
+- **Audit Trail**: Automatic tracking of update counts and timestamps
 
 ## Architecture
 
 ```
-┌───────────────────────────────────────────────────────────────┐
-│                        API Gateway / CLI                        │
-└───────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌───────────────────────────────────────────────────────────────┐
-│                     Lambda Function (Python)                    │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │ 1. Input Validation & Sanitization                       │  │
-│  └─────────────────────────────────────────────────────────┘  │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │ 2. Database Connection Management                        │  │
-│  └─────────────────────────────────────────────────────────┘  │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │ 3. Transaction Management                                │  │
-│  └─────────────────────────────────────────────────────────┘  │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │ 4. Parameterized Query Execution                         │  │
-│  └─────────────────────────────────────────────────────────┘  │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │ 5. Error Handling & Rollback                             │  │
-│  └─────────────────────────────────────────────────────────┘  │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │ 6. Audit Logging (Optional)                              │  │
-│  └─────────────────────────────────────────────────────────┘  │
-└───────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌───────────────────────────────────────────────────────────────┐
-│                         DynamoDB Table                         │
-└───────────────────────────────────────────────────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   API Gateway   │────│   Lambda Func   │────│   DynamoDB      │
+│                 │    │  (Python 3.13)  │    │   Table         │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                              │
+                              ▼
+                       ┌─────────────────┐
+                       │  SuperChart1    │
+                       │  Library        │
+                       └─────────────────┘
+```
+
+## Project Structure
+
+```
+update_table/
+├── README.md                           # This file
+├── DYNAMIC_UPDATER_LAMBDA_README.md    # Legacy documentation
+├── update_table.py                     # Main Lambda function handler
+├── deploy_lambda.py                    # Full Lambda deployment script
+├── deploy_lamdba_code_only.py          # Code-only deployment script
+├── deploy.config                       # Deployment configuration
+├── requirements.txt                    # Python dependencies
+├── test_update_table.py                # Unit tests
+├── api_gateway_test_payload.json       # API Gateway test payload
+├── sample_lambda_test_payload.json     # Sample test payload
+├── libs/
+│   └── superchart1.py                  # Chart calculation library
+└── main/
+    ├── create_dynamodb.sh              # DynamoDB table creation script
+    ├── dynamic_update_script.py        # Legacy update script
+    ├── test_chart.py                   # Chart testing script
+    ├── test_dynamic_update.py          # Dynamic update tests
+    ├── DYNAMIC_UPDATER_README.md       # Legacy documentation
+    └── libs/
+        └── superchart1.py              # Chart library (duplicate)
 ```
 
 ## Deployment
@@ -57,214 +63,232 @@ A serverless solution for dynamically updating DynamoDB table attributes with co
 ### Prerequisites
 
 - AWS CLI configured with appropriate permissions
-- Python 3.12+
+- Python 3.13+
 - AWS Lambda execution role with DynamoDB permissions
+- API Gateway (for HTTP access)
 
-### Deployment Steps
+### Configuration
 
-1. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+The deployment is configured via `deploy.config`:
 
-2. **Configure environment variables**:
-   - `TABLE_NAME`: Name of your DynamoDB table
-   - `LOG_LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR)
-   - `ENABLE_AUDIT_LOG`: Set to "true" to enable audit logging
-
-3. **Deploy the Lambda function**:
-   ```bash
-   python deploy_lambda.py
-   ```
-
-4. **Set up API Gateway (optional)**:
-   - Create a REST API with a POST method
-   - Connect to the Lambda function
-   - Set up appropriate authentication
-
-### Configuration Options
-
-| Environment Variable | Description | Default | Required |
-|---------------------|-------------|---------|----------|
-| `TABLE_NAME` | Name of the DynamoDB table | N/A | Yes |
-| `LOG_LEVEL` | Logging verbosity level | INFO | No |
-| `ENABLE_AUDIT_LOG` | Enable audit logging | false | No |
-| `AUDIT_LOG_TABLE` | Table for audit logs | audit_logs | No |
-
-## Usage
-
-### Lambda Invocation
-
-```python
-import boto3
-import json
-
-lambda_client = boto3.client('lambda')
-
-response = lambda_client.invoke(
-    FunctionName='table-update-function',
-    InvocationType='RequestResponse',
-    Payload=json.dumps({
-        'id': 'user-123',
-        'attributes': {
-            'name': 'John Doe',
-            'email': 'john@example.com',
-            'status': 'active'
-        },
-        'enable_logging': True
-    })
-)
-
-result = json.loads(response['Payload'].read())
-print(result)
+```ini
+[DEFAULT]
+function_name = ba-portal-update-table-lambda-function
+region = ap-southeast-2
+runtime = python3.13
+handler = update_table.lambda_handler
+memory = 128
+timeout = 10
+role_name = ba-portal-update-table-lambda-role
+s3_bucket = ba-portal-lambda-bucket
+script_path = update_table.py
+requirements_file = requirements.txt
 ```
 
-### Expected Input Format
+### Deployment Options
 
+#### 1. Full Deployment (Creates/Updates Function)
+
+```bash
+python deploy_lambda.py
+```
+
+This script:
+- Creates IAM role with DynamoDB permissions
+- Creates deployment package with all dependencies
+- Deploys or updates the Lambda function
+- Supports optional destruction of existing function
+
+#### 2. Code-Only Deployment (Updates Existing Function)
+
+```bash
+python deploy_lamdba_code_only.py deploy.config
+```
+
+This script:
+- Updates only the code of an existing Lambda function
+- Preserves function configuration
+- Includes libs directory in deployment package
+- Requires the function to already exist
+
+### Environment Variables
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `TABLE_NAME` | DynamoDB table name | N/A | Yes |
+| `LOG_LEVEL` | Logging verbosity | INFO | No |
+| `ENABLE_AUDIT_LOG` | Enable audit logging | false | No |
+
+## API Usage
+
+### Request Format
+
+**HTTP Method**: `POST`
+
+**Content-Type**: `application/json`
+
+**Body**:
 ```json
 {
-  "id": "string",              // Required: Primary key/ID of the record
-  "attributes": {                // Required: Dictionary of attributes to update
-    "attribute_name": "value",
-    "another_attribute": 123
+  "table_name": "BA-PORTAL-BASETABLE",
+  "id": "item-uuid-here",
+  "attributes": {
+    "status": "active",
+    "adviser_name": "John Doe",
+    "investors": [...],
+    "properties": [...]
   },
-  "enable_logging": true,        // Optional: Enable audit logging
-  "condition_expression": "attribute_not_exists(email)"  // Optional: Conditional update
+  "region": "ap-southeast-2",
+  "use_transaction": false
 }
 ```
 
 ### Response Format
 
-**Success Response:**
+**Success (200)**:
 ```json
 {
-  "success": true,
-  "message": "Record updated successfully",
-  "updated_id": "user-123",
-  "updated_attributes": ["name", "email", "status"],
-  "timestamp": "2024-01-08T01:34:32.343Z"
+  "status": "success",
+  "message": "Update successful",
+  "item_id": "item-uuid-here",
+  "updated_attributes": ["status", "adviser_name"],
+  "result": {
+    "id": "item-uuid-here",
+    "status": "active",
+    "adviser_name": "John Doe",
+    "chart1": {...},
+    "number_of_updates": 1,
+    "last_updated_date": "2024-01-25T21:27:12.990Z"
+  }
 }
 ```
 
-**Error Response:**
+**Error (400/404/500)**:
 ```json
 {
-  "success": false,
-  "error": "InvalidInputError",
-  "message": "ID and attributes are required",
-  "details": {
-    "missing_fields": ["id", "attributes"]
-  },
-  "timestamp": "2024-01-08T01:34:32.343Z"
+  "status": "error",
+  "message": "Error description"
 }
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `table_name` | string | Yes | DynamoDB table name |
+| `id` | string | Yes | Item ID to update |
+| `attributes` | object | Yes | Key-value pairs to update |
+| `region` | string | No | AWS region (default: ap-southeast-2) |
+| `use_transaction` | boolean | No | Use DynamoDB transaction (default: false) |
+
+## Chart1 Calculation
+
+When `investors` and `properties` arrays are provided in the attributes, the function automatically calculates a borrowing capacity forecast using the superchart1 library:
+
+- **Investors**: Array of investor objects with income, growth rates, and events
+- **Properties**: Array of property objects with loan details, rent, and growth rates
+- **Forecast**: 30-year borrowing capacity projection
+- **Storage**: Results stored as `chart1` attribute in DynamoDB
+
+## Testing
+
+### Unit Tests
+
+Run the test suite:
+
+```bash
+python test_update_table.py
+```
+
+Tests cover:
+- Input validation
+- Error handling
+- Chart1 calculation
+- API response formatting
+
+### Manual Testing
+
+Use the provided test payloads:
+
+```bash
+# API Gateway format
+cat api_gateway_test_payload.json
+
+# Direct Lambda format
+cat sample_lambda_test_payload.json
+```
+
+### Local Testing
+
+The Lambda function can be tested locally by calling `lambda_handler()` directly:
+
+```python
+from update_table import lambda_handler
+
+event = {
+    "body": json.dumps({
+        "table_name": "test-table",
+        "id": "test-id",
+        "attributes": {"status": "active"}
+    })
+}
+
+response = lambda_handler(event, None)
+print(response)
 ```
 
 ## Error Handling
 
 The function handles various error scenarios:
 
-| Error Type | HTTP Status | Description |
-|------------|-------------|-------------|
-| `InvalidInputError` | 400 | Missing or invalid input parameters |
-| `DatabaseError` | 500 | Database connection or query failures |
-| `RecordNotFoundError` | 404 | Record with specified ID not found |
-| `ValidationError` | 400 | Data validation failures |
-| `ConditionalCheckFailed` | 412 | Conditional update failed |
-
-## Audit Logging
-
-When enabled, the function logs all update operations to a separate DynamoDB table:
-
-```json
-{
-  "log_id": "unique-id",
-  "timestamp": "2024-01-08T01:34:32.343Z",
-  "table_name": "your-table",
-  "record_id": "user-123",
-  "updated_attributes": {
-    "name": "John Doe",
-    "email": "john@example.com"
-  },
-  "user_agent": "lambda-function",
-  "status": "success"
-}
-```
+| HTTP Status | Error Type | Description |
+|-------------|------------|-------------|
+| 400 | Bad Request | Missing/invalid parameters |
+| 404 | Not Found | Item doesn't exist |
+| 500 | Internal Error | Database or processing errors |
 
 ## Security Considerations
 
-- **Parameterized Queries**: All database queries use parameterized inputs
-- **Input Validation**: Comprehensive validation of all input data
-- **Least Privilege**: IAM role has minimal required permissions
-- **Error Sanitization**: Error messages don't expose sensitive information
-- **Audit Trail**: Complete history of all update operations
-
-## Performance Optimization
-
-- **Batch Processing**: Multiple attributes updated in single operation
-- **Connection Pooling**: Reused database connections
-- **Minimal Logging**: Only essential information logged
-- **Efficient Queries**: Optimized DynamoDB operations
-
-## Testing
-
-The function includes comprehensive unit tests covering:
-
-- Input validation scenarios
-- Database error conditions
-- Transaction rollback scenarios
-- Audit logging verification
-- Performance benchmarks
+- **Input Validation**: All inputs validated before processing
+- **Parameterized Queries**: Uses boto3's built-in parameterization
+- **IAM Permissions**: Least privilege access to DynamoDB
+- **Error Sanitization**: Sensitive information not exposed in errors
+- **Transaction Safety**: Optional atomic operations for critical updates
 
 ## Monitoring
 
-Recommended CloudWatch alarms:
+### CloudWatch Metrics
 
-- Error rate > 1%
-- Duration > 1s
-- Throttles > 0
-- Concurrent executions > 100
+- **Invocations**: Function call count
+- **Duration**: Execution time
+- **Errors**: Error count and types
+- **Throttles**: Rate limiting events
+
+### Logging
+
+- **Console Logging**: All logs written to stdout/stderr
+- **Structured Logs**: JSON-formatted log entries
+- **Error Tracking**: Detailed error information with stack traces
 
 ## Maintenance
 
 ### Updating the Function
 
-1. Make changes to `update_table_attributes.py`
-2. Update `requirements.txt` if dependencies change
-3. Run `python deploy_lambda.py`
+1. Modify `update_table.py`
+2. Update `requirements.txt` if needed
+3. Run code-only deployment: `python deploy_lamdba_code_only.py deploy.config`
 
-### Rolling Back
+### Version Management
 
-```bash
-# List versions
-aws lambda list-versions-by-function --function-name table-update-function
+- Use `deploy_lambda.py --destroy` to recreate function
+- Lambda maintains version history automatically
+- Rollback to previous versions via AWS Console or CLI
 
-# Publish new version
-aws lambda publish-version --function-name table-update-function
+## Dependencies
 
-# Rollback to specific version
-aws lambda update-function-configuration --function-name table-update-function \
-  --version VERSION_NUMBER
-```
-
-## Troubleshooting
-
-**Common Issues:**
-
-- **Permission Errors**: Verify IAM role has DynamoDB permissions
-- **Timeout Errors**: Increase Lambda timeout or optimize queries
-- **Throttling**: Check DynamoDB capacity and adjust provisioning
-- **Cold Starts**: Consider provisioned concurrency for critical functions
-
-**Debugging:**
-
-```bash
-# View CloudWatch logs
-aws logs get-log-events --log-group-name /aws/lambda/table-update-function \
-  --log-stream-name $(aws logs describe-log-streams --log-group-name /aws/lambda/table-update-function \
-    --query 'logStreams[0].logStreamName' --output text) \
-  --query 'events[].message' --output text
-```
+- `boto3`: AWS SDK for Python
+- `superchart1`: Custom chart calculation library
 
 ## License
 
-MIT License - See LICENSE file for details.
+This project is part of the BA Portal system. See main project license for details.

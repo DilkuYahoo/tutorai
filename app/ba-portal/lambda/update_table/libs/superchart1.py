@@ -41,6 +41,10 @@ def borrowing_capacity_forecast_investor_blocks(
     years : int
         Number of forecast years
     """
+    # Validate that all properties have purchase_year to handle missing data gracefully
+    for prop in properties:
+        if "purchase_year" not in prop:
+            raise ValueError(f"Property {prop.get('name', 'unknown')} is missing 'purchase_year'")
 
     results = {"yearly_forecast": []}
 
@@ -59,6 +63,9 @@ def borrowing_capacity_forecast_investor_blocks(
 
     # property values
     property_values = {prop["name"]: prop.get("initial_value", prop["loan_amount"]) for prop in properties}
+
+    # Create a dict for quick lookup of purchase years
+    purchase_years = {prop["name"]: prop["purchase_year"] for prop in properties}
 
     # investor debts
     investor_debt = {inv["name"]: 0 for inv in investors}
@@ -176,7 +183,8 @@ def borrowing_capacity_forecast_investor_blocks(
                 for name, balance in property_balances.items()
             },
             "property_lvrs": property_lvrs,
-            "property_values": {name: round(val, 2) for name, val in property_values.items()}
+            # Modified: Only include property values for properties purchased by or before the current year
+            "property_values": {name: round(val, 2) for name, val in property_values.items() if year >= purchase_years[name]}
         })
 
     # Return just the yearly_forecast
