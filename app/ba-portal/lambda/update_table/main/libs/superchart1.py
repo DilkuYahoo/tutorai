@@ -146,17 +146,17 @@ def borrowing_capacity_forecast_investor_blocks(
         for inv in investors:
             name = inv["name"]
             gross = investor_current_income[name]
-            net = gross - investor_interest_cost[name] - investor_rent[name] - investor_other_expenses[name]
+            net = gross + investor_rent[name] - investor_interest_cost[name] - investor_other_expenses[name]
             investor_net_income[name] = round(net, 2)
 
-        combined_income = sum(investor_net_income.values())
+        # combined_income remains as sum of gross incomes
         investor_income_snapshot = investor_net_income
 
         # ---- cashflow components ----
         total_rent = sum(prop["rent"] for prop in properties if year >= prop["purchase_year"])
         total_interest_cost = sum(property_balances.get(prop["name"], 0) * prop["interest_rate"] for prop in properties if prop["name"] in property_balances)
         total_other_expenses = sum(prop["other_expenses"] for prop in properties if year >= prop["purchase_year"])
-        cashflow = combined_income - total_interest_cost - total_rent - total_other_expenses
+        cashflow = combined_income + total_rent - total_interest_cost - total_other_expenses
 
         # ---- borrowing capacity ----
         investor_borrowing_capacities = {}
