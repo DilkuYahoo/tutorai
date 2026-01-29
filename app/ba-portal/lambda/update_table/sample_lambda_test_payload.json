@@ -8,6 +8,8 @@
           "name": "Bob",
           "base_income": 120000,
           "annual_growth_rate": 3,
+          "essential_expenditure" : 50000,
+          "nonessential_expenditure" : 3000,
           "income_events": [
             {
               "year": 5,
@@ -25,6 +27,8 @@
           "name": "Alice",
           "base_income": 100000,
           "annual_growth_rate": 25,
+          "essential_expenditure" : 50000,
+          "nonessential_expenditure" : 3000,
           "income_events": []
         }
       ],
