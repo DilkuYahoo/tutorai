@@ -194,6 +194,8 @@ Each investor object must include:
 | `name` | string | Yes | Unique investor identifier | Used as key for tracking incomes, debts, and borrowing capacities |
 | `base_income` | float | Yes | Starting annual income | Initial income value, compounded annually |
 | `annual_growth_rate` | float | Yes | Annual income growth rate (decimal) | Applied to income each year after year 1 (e.g., 0.05 = 5% growth) |
+| `essential_expenditure` | float | Yes | Annual essential living expenses | Deducted from net income each year, grows with CPI (3% annually) |
+| `nonessential_expenditure` | float | Yes | Annual nonessential living expenses | Deducted from net income each year, grows with CPI (3% annually) |
 | `income_events` | array | No | List of income changes | Applied at specified years; each event has `year`, `type` ("increase" or "set"), and `amount` |
 
 ### Property Attributes
@@ -229,7 +231,8 @@ The forecast calculates the following for each year:
 
 5. **Borrowing Capacity**: `net_income * 6 - current_debt` (6x multiple commonly used for lending).
 
-6. **Cashflow**: `total_gross_incomes + total_rent - total_interest - total_other_expenses`.
+6. **Property Cashflow**: `total_rent - total_interest - total_other_expenses`.
+7. **Household Surplus**: `total_net_incomes - total_essential_expenses - total_nonessential_expenses + property_cashflow`.
 
 7. **Property LVRs**: `loan_balance / property_value * 100` (Loan-to-Value Ratio).
 
@@ -252,6 +255,8 @@ Results are stored as `chart1` in DynamoDB with this structure:
       "total_rent": 0.0,
       "total_interest_cost": 0.0,
       "total_other_expenses": 0.0,
+      "property_cashflow": 0.0,
+      "household_surplus": 75000.0,
       "cashflow": 75000.0,
       "property_loan_balances": {},
       "property_lvrs": {},

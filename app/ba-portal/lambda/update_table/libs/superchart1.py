@@ -2,6 +2,58 @@ import json
 from typing import List, Dict
 
 
+
+# --- Tax configuration (Australia - simplified) ---
+TAX_BRACKETS = [
+    (18200, 0.00),
+    (45000, 0.19),
+    (120000, 0.325),
+    (180000, 0.37),
+    (float('inf'), 0.45)
+]
+
+MEDICARE_RATE = 0.02
+CPI_RATE = 0.03
+
+
+def calculate_net_income(gross_income):
+    """
+    Calculate net income after deducting tax and Medicare levy based on Australian tax brackets.
+
+    Parameters
+    ----------
+    gross_income : float
+        The gross annual income.
+
+    Returns
+    -------
+    float
+        The net income rounded to 2 decimal places.
+    """
+    tax = 0
+    lower_limit = 0
+
+    for upper_limit, rate in TAX_BRACKETS:
+        if gross_income > upper_limit:
+            taxable_amount = upper_limit - lower_limit
+        else:
+            taxable_amount = gross_income - lower_limit
+
+        if taxable_amount > 0:
+            tax += taxable_amount * rate
+
+        if gross_income <= upper_limit:
+            break
+
+        lower_limit = upper_limit
+
+    medicare = gross_income * MEDICARE_RATE
+    net_income = gross_income - tax - medicare
+
+    return round(net_income, 2)
+
+
+
 def borrowing_capacity_forecast_investor_blocks(
     investors: List[Dict],
     properties: List[Dict],
@@ -17,6 +69,8 @@ def borrowing_capacity_forecast_investor_blocks(
             - name : str
             - base_income : float
             - annual_growth_rate : float
+            - essential_expenditure : float
+            - nonessential_expenditure : float
             - income_events : list of dict with
                 - year : int
                 - type : "increase" or "set"
@@ -51,6 +105,14 @@ def borrowing_capacity_forecast_investor_blocks(
     # track current investor incomes
     investor_current_income = {
         inv["name"]: inv["base_income"] for inv in investors
+    }
+
+    # track current essential and nonessential expenditures (grow with CPI)
+    investor_essential_current = {
+        inv["name"]: inv["essential_expenditure"] for inv in investors
+    }
+    investor_nonessential_current = {
+        inv["name"]: inv["nonessential_expenditure"] for inv in investors
     }
 
     # map events per investor
@@ -90,6 +152,8 @@ def borrowing_capacity_forecast_investor_blocks(
             # apply annual growth (after year 1)
             if year > 1:
                 investor_current_income[name] *= (1 + inv["annual_growth_rate"])
+                investor_essential_current[name] *= (1 + CPI_RATE)
+                investor_nonessential_current[name] *= (1 + CPI_RATE)
 
             income_val = investor_current_income[name]
             combined_income += income_val
@@ -143,20 +207,27 @@ def borrowing_capacity_forecast_investor_blocks(
 
         # ---- investor net incomes ----
         investor_net_income = {}
+        combined_income = 0
         for inv in investors:
             name = inv["name"]
-            gross = investor_current_income[name]
-            net = gross + investor_rent[name] - investor_interest_cost[name] - investor_other_expenses[name]
+            gross = investor_income_snapshot[name]
+            net_after_tax = calculate_net_income(gross)
+            net = net_after_tax - investor_essential_current[name] - investor_nonessential_current[name] + investor_rent[name] - investor_interest_cost[name] - investor_other_expenses[name]
             investor_net_income[name] = round(net, 2)
+            combined_income += net_after_tax
 
-        # combined_income remains as sum of gross incomes
+        # combined_income is sum of net incomes after tax
         investor_income_snapshot = investor_net_income
 
-        # ---- cashflow components ----
+        # ---- property cashflow components ----
         total_rent = sum(prop["rent"] for prop in properties if year >= prop["purchase_year"])
         total_interest_cost = sum(property_balances.get(prop["name"], 0) * prop["interest_rate"] for prop in properties if prop["name"] in property_balances)
         total_other_expenses = sum(prop["other_expenses"] for prop in properties if year >= prop["purchase_year"])
-        cashflow = combined_income + total_rent - total_interest_cost - total_other_expenses
+        total_essential_expenses = sum(investor_essential_current[inv["name"]] for inv in investors)
+        total_nonessential_expenses = sum(investor_nonessential_current[inv["name"]] for inv in investors)
+        property_cashflow = total_rent - total_interest_cost - total_other_expenses
+        household_surplus = combined_income - total_essential_expenses - total_nonessential_expenses + property_cashflow
+        cashflow = household_surplus
 
         # ---- borrowing capacity ----
         investor_borrowing_capacities = {}
@@ -164,6 +235,7 @@ def borrowing_capacity_forecast_investor_blocks(
             name = inv["name"]
             net_income = investor_net_income[name]
             debt = investor_debt[name]
+            # Use net income after tax and expenditures
             investor_borrowing_capacities[name] = round(net_income * 6 - debt, 2)
 
         # ---- write results for year ----
@@ -177,6 +249,10 @@ def borrowing_capacity_forecast_investor_blocks(
             "total_rent": round(total_rent, 2),
             "total_interest_cost": round(total_interest_cost, 2),
             "total_other_expenses": round(total_other_expenses, 2),
+            "total_essential_expenses": round(total_essential_expenses, 2),
+            "total_nonessential_expenses": round(total_nonessential_expenses, 2),
+            "property_cashflow": round(property_cashflow, 2),
+            "household_surplus": round(household_surplus, 2),
             "cashflow": round(cashflow, 2),
             "property_loan_balances": {
                 name: round(balance, 2)
