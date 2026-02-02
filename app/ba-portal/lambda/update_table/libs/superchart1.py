@@ -5,18 +5,18 @@ from typing import List, Dict
 
 # --- Tax configuration (Australia - simplified) ---
 TAX_BRACKETS = [
-    (18200, 0.00),
-    (45000, 0.19),
-    (120000, 0.325),
-    (180000, 0.37),
-    (float('inf'), 0.45)
+    (0, 18_200, 0.00),
+    (18_200, 45_000, 0.16),
+    (45_000, 135_000, 0.30),
+    (135_000, 190_000, 0.37),
+    (190_000, float("inf"), 0.45),
 ]
 
-MEDICARE_RATE = 0.02
+MEDICARE_LEVY_RATE = 0.02
 CPI_RATE = 0.03
 
 
-def calculate_net_income(gross_income):
+def calculate_net_income(gross_income: float) -> dict:
     """
     Calculate net income after deducting tax and Medicare levy based on Australian tax brackets.
 
@@ -27,30 +27,34 @@ def calculate_net_income(gross_income):
 
     Returns
     -------
-    float
-        The net income rounded to 2 decimal places.
+    dict
+        A dictionary containing:
+        - gross_income: The original gross income
+        - income_tax: The income tax amount
+        - medicare_levy: The Medicare levy amount
+        - total_tax: Total tax (income tax + medicare levy)
+        - net_income: Net income after all deductions
     """
-    tax = 0
-    lower_limit = 0
+    tax = 0.0
 
-    for upper_limit, rate in TAX_BRACKETS:
-        if gross_income > upper_limit:
-            taxable_amount = upper_limit - lower_limit
-        else:
-            taxable_amount = gross_income - lower_limit
-
-        if taxable_amount > 0:
+    for lower, upper, rate in TAX_BRACKETS:
+        if gross_income > lower:
+            taxable_amount = min(gross_income, upper) - lower
             tax += taxable_amount * rate
-
-        if gross_income <= upper_limit:
+        else:
             break
 
-        lower_limit = upper_limit
+    medicare_levy = gross_income * MEDICARE_LEVY_RATE
+    total_tax = tax + medicare_levy
+    net_income = gross_income - total_tax
 
-    medicare = gross_income * MEDICARE_RATE
-    net_income = gross_income - tax - medicare
-
-    return round(net_income, 2)
+    return {
+        "gross_income": round(gross_income, 2),
+        "income_tax": round(tax, 2),
+        "medicare_levy": round(medicare_levy, 2),
+        "total_tax": round(total_tax, 2),
+        "net_income": round(net_income, 2),
+    }
 
 
 
@@ -211,7 +215,8 @@ def borrowing_capacity_forecast_investor_blocks(
         for inv in investors:
             name = inv["name"]
             gross = investor_income_snapshot[name]
-            net_after_tax = calculate_net_income(gross)
+            result = calculate_net_income(gross)
+            net_after_tax = result["net_income"]
             net = net_after_tax - investor_essential_current[name] - investor_nonessential_current[name] + investor_rent[name] - investor_interest_cost[name] - investor_other_expenses[name]
             investor_net_income[name] = round(net, 2)
             combined_income += net_after_tax

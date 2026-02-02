@@ -64,21 +64,24 @@ print (results)
 
 # Test calculate_net_income function
 def test_calculate_net_income():
-    # Test cases based on Australian tax brackets (including Medicare levy)
+    # Test cases based on new Australian tax brackets (including Medicare levy)
     test_cases = [
         # (gross_income, expected_net_income)
-        (18000, 17640.0),  # Below tax threshold, Medicare deducted
-        (30000, 27158.0),  # In first bracket
-        (60000, 48833.0),  # In second bracket
-        (150000, 106433.0),  # In third bracket
-        (200000, 135333.0),  # In fourth bracket
-        (250000, 161833.0),  # In top bracket
+        # Brackets: 0-18200@0%, 18200-45000@16%, 45000-135000@30%, 135000-190000@37%, 190000+@45%
+        # Medicare levy: 2%
+        (18000, 17640.0),   # Below tax threshold (0 tax + 360 medicare)
+        (30000, 27512.0),   # In first bracket (1888 tax + 600 medicare)
+        (60000, 50012.0),   # In second bracket (8688 tax + 1200 medicare)
+        (150000, 110162.0), # In third bracket (36838 tax + 3000 medicare)
+        (200000, 139862.0), # In fourth bracket (56138 tax + 4000 medicare)
+        (250000, 166362.0), # In top bracket (78638 tax + 5000 medicare)
     ]
 
     for gross, expected in test_cases:
         result = calculate_net_income(gross)
-        print(f"Gross: ${gross}, Net: ${result}, Expected: ${expected}")
-        assert abs(result - expected) < 0.01, f"Failed for gross {gross}: got {result}, expected {expected}"
+        net_income = result["net_income"]
+        print(f"Gross: ${gross}, Net: ${net_income}, Expected: ${expected}")
+        assert abs(net_income - expected) < 0.01, f"Failed for gross {gross}: got {net_income}, expected {expected}"
 
     print("All calculate_net_income tests passed!")
 
