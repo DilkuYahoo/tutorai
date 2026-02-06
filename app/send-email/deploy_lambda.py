@@ -193,6 +193,7 @@ class LambdaDeployer:
                 {
                     "Effect": "Allow",
                     "Action": [
+                        "ses:SendRawEmail",
                         "ses:SendEmail"
                     ],
                     "Resource": "*"

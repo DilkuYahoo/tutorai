@@ -130,6 +130,10 @@ def borrowing_capacity_forecast_investor_blocks(
     # property values
     property_values = {prop["name"]: prop.get("initial_value", prop["loan_amount"]) for prop in properties}
 
+    # track current property rent and other_expenses (grow with CPI)
+    property_rent_current = {prop["name"]: prop["rent"] for prop in properties}
+    property_other_expenses_current = {prop["name"]: prop["other_expenses"] for prop in properties}
+
     # Create a dict for quick lookup of purchase years
     purchase_years = {prop["name"]: prop["purchase_year"] for prop in properties}
 
@@ -183,6 +187,12 @@ def borrowing_capacity_forecast_investor_blocks(
         for prop in properties:
             property_values[prop["name"]] *= (1 + prop["growth_rate"])
 
+        # apply annual CPI growth to property rent and other expenses (after year 1)
+        if year > 1:
+            for prop in properties:
+                property_rent_current[prop["name"]] *= (1 + CPI_RATE)
+                property_other_expenses_current[prop["name"]] *= (1 + CPI_RATE)
+
         # ---- property LVRs ----
         property_lvrs = {}
         for prop in properties:
@@ -201,8 +211,8 @@ def borrowing_capacity_forecast_investor_blocks(
         for prop in properties:
             if year >= prop["purchase_year"]:
                 interest = property_balances.get(prop["name"], 0) * prop["interest_rate"]
-                rent = prop["rent"]
-                other = prop["other_expenses"]
+                rent = property_rent_current[prop["name"]]
+                other = property_other_expenses_current[prop["name"]]
                 for split in prop.get("investor_splits", []):
                     pct = split["percentage"] / 100
                     investor_interest_cost[split["name"]] += interest * pct
@@ -225,14 +235,14 @@ def borrowing_capacity_forecast_investor_blocks(
         investor_income_snapshot = investor_net_income
 
         # ---- property cashflow components ----
-        total_rent = sum(prop["rent"] for prop in properties if year >= prop["purchase_year"])
+        total_rent = sum(property_rent_current[prop["name"]] for prop in properties if year >= prop["purchase_year"])
         total_interest_cost = sum(property_balances.get(prop["name"], 0) * prop["interest_rate"] for prop in properties if prop["name"] in property_balances)
-        total_other_expenses = sum(prop["other_expenses"] for prop in properties if year >= prop["purchase_year"])
+        total_other_expenses = sum(property_other_expenses_current[prop["name"]] for prop in properties if year >= prop["purchase_year"])
         total_essential_expenses = sum(investor_essential_current[inv["name"]] for inv in investors)
         total_nonessential_expenses = sum(investor_nonessential_current[inv["name"]] for inv in investors)
         property_cashflow = total_rent - total_interest_cost - total_other_expenses
         household_surplus = combined_income - total_essential_expenses - total_nonessential_expenses + property_cashflow
-        cashflow = household_surplus
+
 
         # ---- borrowing capacity ----
         investor_borrowing_capacities = {}
@@ -258,7 +268,6 @@ def borrowing_capacity_forecast_investor_blocks(
             "total_nonessential_expenses": round(total_nonessential_expenses, 2),
             "property_cashflow": round(property_cashflow, 2),
             "household_surplus": round(household_surplus, 2),
-            "cashflow": round(cashflow, 2),
             "property_loan_balances": {
                 name: round(balance, 2)
                 for name, balance in property_balances.items()
