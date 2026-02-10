@@ -1,0 +1,259 @@
+{
+  "HostedZone": {
+    "Name": "advicelab.com.au.",
+    "CallerReference": "zone-import-advicelab.com.au.-1770641700",
+    "Comment": "Imported from BIND zone file: advicelab.com.au."
+  },
+  "RecordSets": [
+    {
+      "Name": "advicelab.com.au.",
+      "Type": "A",
+      "TTL": 600,
+      "ResourceRecords": [
+        {
+          "Value": "3.107.146.48"
+        }
+      ]
+    },
+    {
+      "Name": "www.advicelab.com.au.",
+      "Type": "A",
+      "TTL": 600,
+      "ResourceRecords": [
+        {
+          "Value": "3.107.146.48"
+        }
+      ]
+    },
+    {
+      "Name": "advicelab.com.au.",
+      "Type": "TXT",
+      "TTL": 600,
+      "ResourceRecords": [
+        {
+          "Value": "\"brevo-code:c23036869e85f84ebea283f52d875315\""
+        }
+      ]
+    },
+    {
+      "Name": "advicelab.com.au.",
+      "Type": "TXT",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "\"v=spf1 include:spf.protection.outlook.com include:zcsend.net include:emsd1.com -all\""
+        }
+      ]
+    },
+    {
+      "Name": "23234._domainkey.advicelab.com.au.",
+      "Type": "TXT",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "\"k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCa2f7rDTdFZoI1Z1aX5uqOcMCsLW89EBc/RXmEDsH1lg7/n9rvsX9A0nnI9IyjC1+A6BIaHgoQeVNWLk8UX/bENGA0srNu9hbLVTZUmpD+tSPkZ7BFulkGkx1SzoKcMjSgxQwYs2GAyt/+ni7tRliXA+CJQUZawir0SzsYk17LZQIDAQAB\""
+        }
+      ]
+    },
+    {
+      "Name": "_dmarc.advicelab.com.au.",
+      "Type": "TXT",
+      "TTL": 600,
+      "ResourceRecords": [
+        {
+          "Value": "\"v=DMARC1; p=quarantine; adkim=s; aspf=s; rua=mailto:dmarc-reports@advicelab.com.au,mailto:rua@dmarc.brevo.com\""
+        }
+      ]
+    },
+    {
+      "Name": "acdkim1._domainkey.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "dkim.acdkim1.acems1.com."
+        }
+      ]
+    },
+    {
+      "Name": "acdkim2._domainkey.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "dkim.acdkim2.acems1.com."
+        }
+      ]
+    },
+    {
+      "Name": "autodiscover.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "autodiscover.outlook.com."
+        }
+      ]
+    },
+    {
+      "Name": "brevo1._domainkey.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 600,
+      "ResourceRecords": [
+        {
+          "Value": "b1.advicelab-com-au.dkim.brevo.com."
+        }
+      ]
+    },
+    {
+      "Name": "brevo2._domainkey.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 600,
+      "ResourceRecords": [
+        {
+          "Value": "b2.advicelab-com-au.dkim.brevo.com."
+        }
+      ]
+    },
+    {
+      "Name": "em-4042120.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "cmd.emsend1.com."
+        }
+      ]
+    },
+    {
+      "Name": "enterpriseenrollment.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "enterpriseenrollment-s.manage.microsoft.com."
+        }
+      ]
+    },
+    {
+      "Name": "enterpriseregistration.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "enterpriseregistration.windows.net."
+        }
+      ]
+    },
+    {
+      "Name": "lyncdiscover.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "webdir.online.lync.com."
+        }
+      ]
+    },
+    {
+      "Name": "selector1._domainkey.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "selector1-advicelab-com-au._domainkey.advicelabcomau.onmicrosoft.com."
+        }
+      ]
+    },
+    {
+      "Name": "selector2._domainkey.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "selector2-advicelab-com-au._domainkey.advicelabcomau.onmicrosoft.com."
+        }
+      ]
+    },
+    {
+      "Name": "sip.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "sipdir.online.lync.com."
+        }
+      ]
+    },
+    {
+      "Name": "track.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "prox.itrackly.com."
+        }
+      ]
+    },
+    {
+      "Name": "_domainconnect.advicelab.com.au.",
+      "Type": "CNAME",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "_domainconnect.gd.domaincontrol.com."
+        }
+      ]
+    },
+    {
+      "Name": "_sip._tls.advicelab.com.au.",
+      "Type": "SRV",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "1 443 100 sipdir.online.lync.com."
+        }
+      ]
+    },
+    {
+      "Name": "_sipfederationtls._tcp.advicelab.com.au.",
+      "Type": "SRV",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "1 5061 100 sipfed.online.lync.com."
+        }
+      ]
+    },
+    {
+      "Name": "advicelab.com.au.",
+      "Type": "NS",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "ns03.domaincontrol.com."
+        }
+      ]
+    },
+    {
+      "Name": "advicelab.com.au.",
+      "Type": "NS",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "ns04.domaincontrol.com."
+        }
+      ]
+    },
+    {
+      "Name": "advicelab.com.au.",
+      "Type": "MX",
+      "TTL": 3600,
+      "ResourceRecords": [
+        {
+          "Value": "0 advicelab-com-au.mail.protection.outlook.com."
+        }
+      ]
+    }
+  ]
+}

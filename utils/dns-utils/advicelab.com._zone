@@ -1,0 +1,76 @@
+; Domain: advicelab.com.au
+; Exported (y-m-d hh:mm:ss): 2026-02-09 05:39:34
+;
+; This file is intended for use for informational and archival
+; purposes ONLY and MUST be edited before use on a production
+; DNS server.
+;
+; In particular, you must update the SOA record with the correct
+; authoritative name server and contact e-mail address information,
+; and add the correct NS records for the name servers which will
+; be authoritative for this domain.
+;
+; For further information, please consult the BIND documentation
+; located on the following website:
+;
+; http://www.isc.org/
+;
+; And RFC 1035:
+;
+; http://www.ietf.org/rfc/rfc1035.txt
+;
+; Please note that we do NOT offer technical support for any use
+; of this zone data, the BIND name server, or any other third-
+; party DNS software.
+;
+; Use at your own risk.
+
+
+$ORIGIN advicelab.com.au.
+
+; SOA Record
+@	3600	 IN 	SOA	ns03.domaincontrol.com.	dns.jomax.net. (
+					2026012802
+					28800
+					7200
+					604800
+					3600
+					) 
+
+; A Record
+@	600	 IN 	A	3.107.146.48
+www	600	 IN 	A	3.107.146.48
+
+; TXT Record
+@	600	 IN 	TXT	"brevo-code:c23036869e85f84ebea283f52d875315"
+@	3600	 IN 	TXT	"v=spf1 include:spf.protection.outlook.com include:zcsend.net include:emsd1.com -all"
+23234._domainkey	3600	 IN 	TXT	"k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCa2f7rDTdFZoI1Z1aX5uqOcMCsLW89EBc/RXmEDsH1lg7/n9rvsX9A0nnI9IyjC1+A6BIaHgoQeVNWLk8UX/bENGA0srNu9hbLVTZUmpD+tSPkZ7BFulkGkx1SzoKcMjSgxQwYs2GAyt/+ni7tRliXA+CJQUZawir0SzsYk17LZQIDAQAB"
+_dmarc	600	 IN 	TXT	"v=DMARC1; p=quarantine; adkim=s; aspf=s; rua=mailto:dmarc-reports@advicelab.com.au,mailto:rua@dmarc.brevo.com"
+
+; CNAME Record
+acdkim1._domainkey	3600	 IN 	CNAME	dkim.acdkim1.acems1.com.
+acdkim2._domainkey	3600	 IN 	CNAME	dkim.acdkim2.acems1.com.
+autodiscover	3600	 IN 	CNAME	autodiscover.outlook.com.
+brevo1._domainkey	600	 IN 	CNAME	b1.advicelab-com-au.dkim.brevo.com.
+brevo2._domainkey	600	 IN 	CNAME	b2.advicelab-com-au.dkim.brevo.com.
+em-4042120	3600	 IN 	CNAME	cmd.emsend1.com.
+enterpriseenrollment	3600	 IN 	CNAME	enterpriseenrollment-s.manage.microsoft.com.
+enterpriseregistration	3600	 IN 	CNAME	enterpriseregistration.windows.net.
+lyncdiscover	3600	 IN 	CNAME	webdir.online.lync.com.
+selector1._domainkey	3600	 IN 	CNAME	selector1-advicelab-com-au._domainkey.advicelabcomau.onmicrosoft.com.
+selector2._domainkey	3600	 IN 	CNAME	selector2-advicelab-com-au._domainkey.advicelabcomau.onmicrosoft.com.
+sip	3600	 IN 	CNAME	sipdir.online.lync.com.
+track	3600	 IN 	CNAME	prox.itrackly.com.
+_domainconnect	3600	 IN 	CNAME	_domainconnect.gd.domaincontrol.com.
+
+; SRV Record
+_sip._tls.@	3600	 IN 	SRV	100	1	443	sipdir.online.lync.com.
+_sipfederationtls._tcp.@	3600	 IN 	SRV	100	1	5061	sipfed.online.lync.com.
+
+; NS Record
+@	3600	 IN 	NS	ns03.domaincontrol.com.
+@	3600	 IN 	NS	ns04.domaincontrol.com.
+
+; MX Record
+@	3600	 IN 	MX	0	advicelab-com-au.mail.protection.outlook.com.
+
