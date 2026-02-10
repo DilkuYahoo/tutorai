@@ -186,7 +186,7 @@ def lambda_handler(event, context):
     """
 
     # Hardcoded AWS region
-    aws_region = "ap-southeast-2"
+    aws_region = "us-east-1"
 
     # Parse JSON body from API Gateway
     params = json.loads(event['body'])
