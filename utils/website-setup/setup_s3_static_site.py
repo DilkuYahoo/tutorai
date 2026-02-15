@@ -6,16 +6,17 @@ S3 Bucket Static Website Setup with CloudFront Distribution
 This script creates an S3 bucket configured for static website hosting
 and sets up a CloudFront distribution to serve it.
 
-Parameters (fill these in before running):
+Note: AWS credentials are obtained from the default boto3 credentials chain:
+  - Environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+  - ~/.aws/credentials file
+  - IAM roles (EC2, Lambda, ECS, etc.)
 """
 
 # =============================================================================
 # CONFIGURATION PARAMETERS - Fill these in before running the script
 # =============================================================================
 
-# AWS Credentials (leave empty to use default credential chain or environment variables)
-AWS_ACCESS_KEY_ID = ""  # Optional: "AKIAIOSFODNN7EXAMPLE"
-AWS_SECRET_ACCESS_KEY = ""  # Optional: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+# AWS Region for resources
 AWS_REGION = "ap-southeast-2"  # AWS region for resources
 
 # S3 Bucket Configuration
@@ -26,10 +27,17 @@ ERROR_DOCUMENT = "error.html"  # Error document name
 
 # CloudFront Configuration
 CLOUDFRONT_ENABLED = True  # Set to False to skip CloudFront setup
-CLOUDFRONT_DOMAIN_NAME = ""  # Optional: Custom domain name for CloudFront (e.g., "www.example.com")
+CLOUDFRONT_DOMAIN_NAME = ""  # Primary custom domain name (e.g., "example.com")
+CLOUDFRONT_ALT_DOMAINS = []  # List of alternative domain names (CNAMEs), e.g., ["www.example.com", "app.example.com"]
 CLOUDFRONT_CERTIFICATE_ARN = "arn:aws:acm:us-east-1:724772096157:certificate/779f833d-9f09-4dbd-8898-99e4a245209f"  # Optional: ACM certificate ARN for custom domain
 # If using custom domain, certificate will be auto-created if not specified
 # Note: Certificates for CloudFront must be in us-east-1 region
+# Note: All domains in CLOUDFRONT_ALT_DOMAINS must be covered by the SSL certificate
+
+# SPA Routing Configuration - Enable for Single Page Applications (React, Vue, Angular, etc.)
+CLOUDFRONT_SPA_ROUTING_ENABLED = True  # Enable SPA routing (404/403 -> index.html)
+CLOUDFRONT_ERROR_CODES = [403, 404]  # HTTP error codes to redirect to index.html
+CLOUDFRONT_ERROR_RESPONSE_TIMEOUT = 10  # Error response TTL in seconds
 
 # S3 Origin Access Identity (OAI) - leave as empty string for auto-creation
 CLOUDFRONT_OAI_ID = ""  # Optional: Existing OAI ID if you have one
@@ -79,7 +87,6 @@ import boto3
 import json
 import time
 import hashlib
-import os
 from datetime import datetime, timezone
 from botocore.exceptions import ClientError
 
@@ -120,48 +127,28 @@ def log_section(title):
 # =============================================================================
 
 def get_s3_client():
-    """Create S3 client with optional credentials."""
-    config = {"region_name": AWS_REGION}
-    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
-        config["aws_access_key_id"] = AWS_ACCESS_KEY_ID
-        config["aws_secret_access_key"] = AWS_SECRET_ACCESS_KEY
-    return boto3.client("s3", **config)
+    """Create S3 client using default AWS credentials chain."""
+    return boto3.client("s3", region_name=AWS_REGION)
 
 
 def get_s3_client_us_east_1():
     """Create S3 client for us-east-1 (required for some operations)."""
-    config = {"region_name": "us-east-1"}
-    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
-        config["aws_access_key_id"] = AWS_ACCESS_KEY_ID
-        config["aws_secret_access_key"] = AWS_SECRET_ACCESS_KEY
-    return boto3.client("s3", **config)
+    return boto3.client("s3", region_name="us-east-1")
 
 
 def get_cloudfront_client():
     """Create CloudFront client (must use us-east-1 for certificates)."""
-    config = {"region_name": "us-east-1"}
-    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
-        config["aws_access_key_id"] = AWS_ACCESS_KEY_ID
-        config["aws_secret_access_key"] = AWS_SECRET_ACCESS_KEY
-    return boto3.client("cloudfront", **config)
+    return boto3.client("cloudfront", region_name="us-east-1")
 
 
 def get_acm_client():
     """Create ACM client for certificate management (must be us-east-1 for CloudFront)."""
-    config = {"region_name": ACM_REGION}
-    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
-        config["aws_access_key_id"] = AWS_ACCESS_KEY_ID
-        config["aws_secret_access_key"] = AWS_SECRET_ACCESS_KEY
-    return boto3.client("acm", **config)
+    return boto3.client("acm", region_name=ACM_REGION)
 
 
 def get_route53_client():
     """Create Route 53 client for DNS validation."""
-    config = {"region_name": "us-east-1"}
-    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
-        config["aws_access_key_id"] = AWS_ACCESS_KEY_ID
-        config["aws_secret_access_key"] = AWS_SECRET_ACCESS_KEY
-    return boto3.client("route53", **config)
+    return boto3.client("route53", region_name="us-east-1")
 
 
 # =============================================================================
@@ -346,7 +333,7 @@ def configure_bucket_policy(bucket_name, site_prefix):
             cf = get_cloudfront_client()
             response = cf.get_cloud_front_origin_access_identity(Id=CLOUDFRONT_OAI_ID)
             oai_canonical_user = response["CloudFrontOriginAccessIdentity"]["S3CanonicalUserId"]
-            log_info(f"Found OAI canonical user ID: {oai_canonical_user[:20]}...")
+            log_step("CF", f"Found OAI canonical user ID: {oai_canonical_user[:20]}...")
         except ClientError as e:
             log_warning("CF", f"Could not get OAI details: {e}")
     
@@ -450,14 +437,17 @@ def request_certificate(domain_name):
     acm = get_acm_client()
     log_step("ACM", f"Requesting new certificate for domain: {domain_name}")
     
+    # Build list of all domains to include in the certificate
+    sans = [f"*.{domain_name}", domain_name]
+    if CLOUDFRONT_ALT_DOMAINS:
+        sans.extend(CLOUDFRONT_ALT_DOMAINS)
+        log_step("ACM", f"Including {len(CLOUDFRONT_ALT_DOMAINS)} alternative domains in certificate")
+    
     try:
         response = acm.request_certificate(
             DomainName=domain_name,
             ValidationMethod="DNS",
-            SubjectAlternativeNames=[
-                f"*.{domain_name}",
-                domain_name,
-            ],
+            SubjectAlternativeNames=sans,
             Options={
                 "CertificateTransparencyLoggingPreference": "ENABLED",
             },
@@ -630,6 +620,85 @@ def find_existing_distribution(bucket_name, site_prefix):
         raise
 
 
+def build_custom_error_responses():
+    """Build custom error response configuration for SPA routing.
+    
+    Returns custom error responses that redirect 403/404 errors to index.html,
+    enabling client-side routing for Single Page Applications.
+    """
+    if not CLOUDFRONT_SPA_ROUTING_ENABLED:
+        log_step("CF", "SPA routing disabled - not adding custom error responses")
+        return {"Quantity": 0, "Items": []}
+    
+    error_responses = []
+    for error_code in CLOUDFRONT_ERROR_CODES:
+        error_response = {
+            "ErrorCode": error_code,
+            "ResponsePagePath": f"/{INDEX_DOCUMENT}",
+            "ResponseCode": "200",
+            "ErrorCachingMinTTL": CLOUDFRONT_ERROR_RESPONSE_TIMEOUT,
+        }
+        error_responses.append(error_response)
+        log_step("CF", f"SPA routing: Error {error_code} -> {INDEX_DOCUMENT} (200 OK)")
+    
+    log_success("CF", f"Configured {len(error_responses)} custom error responses for SPA routing")
+    
+    return {
+        "Quantity": len(error_responses),
+        "Items": error_responses,
+    }
+
+
+def configure_cloudfront_spa_routing(distribution_id):
+    """Configure custom error responses for SPA routing on an existing CloudFront distribution."""
+    if not CLOUDFRONT_SPA_ROUTING_ENABLED:
+        log_step("CF", "SPA routing configuration disabled.")
+        return True
+    
+    if not distribution_id:
+        log_step("CF", "No distribution ID provided. Skipping SPA routing configuration.")
+        return True
+    
+    cf = get_cloudfront_client()
+    log_step("CF", f"Configuring SPA routing for distribution: {distribution_id}")
+    
+    try:
+        # Get current distribution config
+        response = cf.get_distribution_config(Id=distribution_id)
+        config = response["DistributionConfig"]
+        etag = response["ETag"]
+        
+        # Build custom error responses
+        error_responses = build_custom_error_responses()
+        
+        # Check if error responses are already configured correctly
+        current_errors = config.get("CustomErrorResponses", {"Quantity": 0, "Items": []})
+        current_error_codes = [e.get("ErrorCode") for e in current_errors.get("Items", [])]
+        
+        if set(CLOUDFRONT_ERROR_CODES) == set(current_error_codes):
+            log_success("CF", "Custom error responses already correctly configured for SPA routing")
+            return True
+        
+        # Update custom error responses
+        config["CustomErrorResponses"] = error_responses
+        
+        # Update distribution
+        cf.update_distribution(
+            DistributionConfig=config,
+            Id=distribution_id,
+            IfMatch=etag
+        )
+        
+        log_success("CF", "Custom error responses configured for SPA routing")
+        log_warning("CF", "Distribution update may take 5-10 minutes to propagate globally.")
+        
+        return True
+        
+    except ClientError as e:
+        log_error("CF", f"Failed to configure SPA routing: {e}")
+        return False
+
+
 def create_cloudfront_distribution(bucket_name, site_prefix, oai_id, cert_arn):
     """Create a CloudFront distribution pointing to the S3 bucket."""
     cf = get_cloudfront_client()
@@ -695,14 +764,25 @@ def create_cloudfront_distribution(bucket_name, site_prefix, oai_id, cert_arn):
         }
     ]
     
-    # Configure aliases for custom domain
-    aliases = {"Quantity": 0}
+    # Configure aliases for custom domain (primary + alternative domains)
+    all_aliases = []
     if CLOUDFRONT_DOMAIN_NAME:
+        all_aliases.append(CLOUDFRONT_DOMAIN_NAME)
+    if CLOUDFRONT_ALT_DOMAINS:
+        all_aliases.extend(CLOUDFRONT_ALT_DOMAINS)
+    
+    aliases = {"Quantity": 0}
+    if all_aliases:
+        # Remove duplicates while preserving order
+        unique_aliases = []
+        for domain in all_aliases:
+            if domain not in unique_aliases:
+                unique_aliases.append(domain)
         aliases = {
-            "Quantity": 1,
-            "Items": [CLOUDFRONT_DOMAIN_NAME],
+            "Quantity": len(unique_aliases),
+            "Items": unique_aliases,
         }
-        log_step("CF", f"Using custom domain: {CLOUDFRONT_DOMAIN_NAME}")
+        log_step("CF", f"Using custom domains: {unique_aliases}")
     
     # Configure certificate
     viewer_certificate = {"CloudFrontDefaultCertificate": True}
@@ -713,10 +793,13 @@ def create_cloudfront_distribution(bucket_name, site_prefix, oai_id, cert_arn):
             "MinimumProtocolVersion": "TLSv1.2_2021",
         }
         log_step("CF", f"Using ACM certificate: {cert_arn}")
-    elif CLOUDFRONT_DOMAIN_NAME:
-        log_warning("CF", "Custom domain specified but no certificate. Using default certificate.")
+    elif CLOUDFRONT_DOMAIN_NAME or CLOUDFRONT_ALT_DOMAINS:
+        log_warning("CF", "Custom domains specified but no certificate. Using default certificate.")
     
     try:
+        # Build custom error responses for SPA routing
+        custom_error_responses = build_custom_error_responses()
+        
         response = cf.create_distribution(
             DistributionConfig={
                 "CallerReference": f"dist-{bucket_name}-{int(time.time())}",
@@ -726,6 +809,7 @@ def create_cloudfront_distribution(bucket_name, site_prefix, oai_id, cert_arn):
                 "DefaultRootObject": INDEX_DOCUMENT,
                 "Origins": {"Quantity": 1, "Items": origins},
                 "DefaultCacheBehavior": cache_behaviors[0],
+                "CustomErrorResponses": custom_error_responses,
                 "ViewerCertificate": viewer_certificate,
                 "HttpVersion": "http2and3",
                 "IsIPV6Enabled": True,
@@ -972,8 +1056,16 @@ def print_deployment_info(bucket_name, site_prefix, cf_info):
         print(f"CloudFront URL: https://{cf_info['domain_name']}")
         if "status" in cf_info:
             print(f"Status: {cf_info['status']}")
+        
+        # Show all custom domains
+        all_domains = []
         if CLOUDFRONT_DOMAIN_NAME:
-            print(f"Custom Domain: https://{CLOUDFRONT_DOMAIN_NAME}")
+            all_domains.append(CLOUDFRONT_DOMAIN_NAME)
+        if CLOUDFRONT_ALT_DOMAINS:
+            all_domains.extend(CLOUDFRONT_ALT_DOMAINS)
+        
+        if all_domains:
+            print(f"Custom Domains: {', '.join(all_domains)}")
     
     print("\n" + "-" * 60)
     print("NEXT STEPS:")
@@ -982,8 +1074,8 @@ def print_deployment_info(bucket_name, site_prefix, cf_info):
     print("2. Ensure index.html is in the site prefix directory")
     print("3. For custom domain:")
     if cf_info:
-        print(f"   - Create a CNAME record pointing to: {cf_info['domain_name']}")
-        print(f"   - If using {CLOUDFRONT_DOMAIN_NAME}, ensure certificate is valid")
+        print(f"   - Create CNAME records pointing to: {cf_info['domain_name']}")
+        print(f"   - Ensure SSL certificate covers all domains")
     print("-" * 60)
 
 
@@ -996,6 +1088,8 @@ def main():
     print(f"Region: {AWS_REGION}")
     print(f"Site Prefix: {SITE_PREFIX}")
     print(f"CloudFront: {'Enabled' if CLOUDFRONT_ENABLED else 'Disabled'}")
+    print(f"Custom Domain: {CLOUDFRONT_DOMAIN_NAME or 'None'}")
+    print(f"Alt Domains: {CLOUDFRONT_ALT_DOMAINS or 'None'}")
     print(f"Dummy Site: {'Enabled' if DEPLOY_DUMMY_SITE else 'Disabled'}")
     print(f"Cache Invalidation: {'Enabled' if CLOUDFRONT_INVALIDATE_CACHE else 'Disabled'}")
     print()
@@ -1024,29 +1118,49 @@ def main():
     # Step 7: Create CloudFront distribution
     cf_info = create_cloudfront_distribution(S3_BUCKET_NAME, SITE_PREFIX, oai_id, cert_arn)
     
-    # Step 7b: Update DefaultRootObject if needed
+    # Step 7b: Configure CloudFront (DefaultRootObject and SPA routing)
     log_section("STEP 4: CONFIGURE CLOUDFRONT")
     if cf_info and cf_info.get("id"):
+        # Update DefaultRootObject if needed
         log_step("CF", f"Configuring DefaultRootObject for distribution: {cf_info['id']}")
         try:
             cf = get_cloudfront_client()
             # Get current config
             response = cf.get_distribution_config(Id=cf_info["id"])
             config = response["DistributionConfig"]
+            etag = response["ETag"]
             
+            needs_update = False
+            
+            # Check DefaultRootObject
             if config.get("DefaultRootObject") != INDEX_DOCUMENT:
                 log_step("CF", f"Updating DefaultRootObject from '{config.get('DefaultRootObject', '')}' to '{INDEX_DOCUMENT}'")
                 config["DefaultRootObject"] = INDEX_DOCUMENT
+                needs_update = True
+            
+            # Check custom error responses for SPA routing
+            current_errors = config.get("CustomErrorResponses", {"Quantity": 0, "Items": []})
+            current_error_codes = [e.get("ErrorCode") for e in current_errors.get("Items", [])]
+            
+            if set(CLOUDFRONT_ERROR_CODES) != set(current_error_codes):
+                log_step("CF", "Updating custom error responses for SPA routing")
+                error_responses = build_custom_error_responses()
+                config["CustomErrorResponses"] = error_responses
+                needs_update = True
+            
+            # Update distribution if needed
+            if needs_update:
                 cf.update_distribution(
                     DistributionConfig=config,
                     Id=cf_info["id"],
-                    IfMatch=response["ETag"]
+                    IfMatch=etag
                 )
-                log_success("CF", "DefaultRootObject updated successfully")
+                log_success("CF", "Distribution configuration updated successfully")
             else:
-                log_success("CF", "DefaultRootObject already correctly configured")
+                log_success("CF", "Distribution configuration already correct")
+                
         except ClientError as e:
-            log_error("CF", f"Failed to update DefaultRootObject: {e}")
+            log_error("CF", f"Failed to update distribution: {e}")
     
     # Step 8: Deploy dummy site
     if DEPLOY_DUMMY_SITE:
