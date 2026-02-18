@@ -4,3 +4,4 @@ __pycache__
 analyze_data.log
 advicegenie.log
 arch\
+app/auth-login/frontend/node_modules
