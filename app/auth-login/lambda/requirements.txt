@@ -1,0 +1,7 @@
+# Requirements for auth-login Lambda function
+# Note: Python 3.13 runtime includes boto3 by default
+
+# For production JWT verification (optional - included in standard library for basic use)
+# PyJWT>=2.8.0
+# cryptography>=41.0.0
+# requests>=2.31.0

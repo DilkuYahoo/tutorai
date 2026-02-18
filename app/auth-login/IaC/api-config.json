@@ -1,0 +1,83 @@
+{
+  "api_name": "auth-login-api-gateway",
+  "region": "ap-southeast-2",
+  "description": "API Gateway for Cognito Login Test - User Info Endpoint",
+  "endpoints": [
+    {
+      "path": "/user-info",
+      "method": "GET",
+      "lambda_integration": {
+        "function_name": "auth-login-user-info-lambda",
+        "timeout": 30
+      }
+    }
+  ],
+  "cors": {
+    "enabled": true,
+    "origins": ["*"],
+    "headers": ["Content-Type", "Authorization", "X-Amz-Date", "X-Api-Key", "X-Amz-Security-Token"],
+    "methods": ["GET", "OPTIONS"]
+  },
+  "stages": [
+    {
+      "name": "dev",
+      "description": "Development stage"
+    },
+    {
+      "name": "prod",
+      "description": "Production stage"
+    }
+  ],
+  "documentation": {
+    "user_info_endpoint": {
+      "description": "Get authenticated user information from Cognito ID Token",
+      "request": {
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer <id_token>"
+        }
+      },
+      "response_schema": {
+        "200": {
+          "description": "User information retrieved successfully",
+          "properties": {
+            "status": {"type": "string", "enum": ["success"]},
+            "message": {"type": "string"},
+            "timestamp": {"type": "string", "format": "date-time"},
+            "user": {
+              "type": "object",
+              "properties": {
+                "sub": {"type": "string"},
+                "email": {"type": "string"},
+                "emailVerified": {"type": "boolean"},
+                "name": {"type": "string"},
+                "givenName": {"type": "string"},
+                "familyName": {"type": "string"},
+                "username": {"type": "string"},
+                "groups": {"type": "array", "items": {"type": "string"}}
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Unauthorized - Invalid or missing token",
+          "properties": {
+            "status": {"type": "string", "enum": ["error"]},
+            "message": {"type": "string"},
+            "error_code": {"type": "string"},
+            "timestamp": {"type": "string", "format": "date-time"}
+          }
+        },
+        "500": {
+          "description": "Internal server error",
+          "properties": {
+            "status": {"type": "string", "enum": ["error"]},
+            "message": {"type": "string"},
+            "error_code": {"type": "string"},
+            "timestamp": {"type": "string", "format": "date-time"}
+          }
+        }
+      }
+    }
+  }
+}
