@@ -22,6 +22,7 @@ Features:
 import json
 import logging
 import os
+import sys
 import traceback
 from datetime import datetime
 from typing import Dict, Any, Optional
@@ -321,11 +322,14 @@ class DynamoDBUpdater:
                     if 'growth_rate' in property_data:
                         property_data['growth_rate'] = property_data['growth_rate'] / 100.0
 
-                # Calculate the chart using 30 years forecast
+                # Get investment_years from attributes, default to 30 if not provided
+                investment_years = attributes.get('investment_years', 30)
+                
+                # Calculate the chart using user-specified years forecast
                 chart1_value = borrowing_capacity_forecast_investor_blocks(
                     investors=investors,
                     properties=properties,
-                    years=30
+                    years=investment_years
                 )
 
                 # Convert all float values to integers for DynamoDB compatibility

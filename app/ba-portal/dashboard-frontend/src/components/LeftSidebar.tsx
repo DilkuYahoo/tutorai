@@ -7,10 +7,9 @@ import {
   User,
   ChevronsLeft,
   ChevronsRight,
-  Edit,
-  Save,
   Plus,
   Trash2,
+  Upload,
 } from "lucide-react";
 
 interface LeftSidebarProps {
@@ -39,7 +38,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   const [expandedInvestor, setExpandedInvestor] = useState<string | null>(null);
   const [localInvestors, setLocalInvestors] = useState<any[]>([]);
   const [originalInvestors, setOriginalInvestors] = useState<any[]>([]);
-  const [editingInvestorIndex, setEditingInvestorIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setLocalInvestors(investors);
@@ -104,7 +102,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     const updated = [...localInvestors];
     updated.splice(index, 1);
     setLocalInvestors(updated);
-    setEditingInvestorIndex(null);
   };
 
   const addInvestor = () => {
@@ -176,48 +173,25 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                   <div className="flex items-center gap-3 flex-1">
                     <div className="text-4xl">{getInvestorIcon()}</div>
                     <div className="flex-1">
-                      {editingInvestorIndex === index ? (
-                        <input
-                          type="text"
-                          value={investor?.name || ""}
-                          onChange={(e) =>
-                            updateInvestor(index, "name", e.target.value)
-                          }
-                          className="bg-slate-600 text-white rounded px-2 py-1 w-full"
-                          style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                        />
-                      ) : (
-                        <h3 className="font-semibold text-lg" style={{ color: 'var(--text-primary)' }}>
-                          {investor?.name || "Unknown"}
-                        </h3>
-                      )}
+                      <input
+                        type="text"
+                        value={investor?.name || ""}
+                        onChange={(e) =>
+                          updateInvestor(index, "name", e.target.value)
+                        }
+                        className="bg-slate-600 text-white rounded px-2 py-1 w-full"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                      />
                       <p className="text-xs text-gray-300">Investor</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {editingInvestorIndex === index && (
-                      <button
-                        onClick={() => deleteInvestor(index)}
-                        className="text-red-400 hover:text-red-300"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
                     <button
-                      onClick={() => {
-                        if (editingInvestorIndex === index) {
-                          setEditingInvestorIndex(null);
-                        } else {
-                          setEditingInvestorIndex(index);
-                        }
-                      }}
-                      className="text-cyan-400 hover:text-cyan-300"
+                      onClick={() => deleteInvestor(index)}
+                      className="text-red-400 hover:text-red-300"
+                      title="Delete Investor"
                     >
-                      {editingInvestorIndex === index ? (
-                        <Save size={16} />
-                      ) : (
-                        <Edit size={16} />
-                      )}
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>
@@ -225,87 +199,63 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                 <div className="space-y-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
                   <div className="flex justify-between">
                     <span>Base Income:</span>
-                    {editingInvestorIndex === index ? (
-                      <input
-                        type="number"
-                        value={investor?.base_income || 0}
-                        onChange={(e) =>
-                          updateInvestor(
-                            index,
-                            "base_income",
-                            parseFloat(e.target.value),
-                          )
-                        }
-                        className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
-                      />
-                    ) : (
-                      <span className="font-semibold text-cyan-400">
-                        ${(investor?.base_income || 0).toLocaleString()}
-                      </span>
-                    )}
+                    <input
+                      type="number"
+                      value={investor?.base_income || 0}
+                      onChange={(e) =>
+                        updateInvestor(
+                          index,
+                          "base_income",
+                          parseFloat(e.target.value),
+                        )
+                      }
+                      className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
+                    />
                   </div>
                   <div className="flex justify-between">
                     <span>Growth Rate:</span>
-                    {editingInvestorIndex === index ? (
-                      <input
-                        type="number"
-                        value={investor?.annual_growth_rate || 0}
-                        onChange={(e) =>
-                          updateInvestor(
-                            index,
-                            "annual_growth_rate",
-                            parseFloat(e.target.value),
-                          )
-                        }
-                        className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
-                      />
-                    ) : (
-                      <span className="font-semibold text-green-400">
-                        {Math.round(investor?.annual_growth_rate || 0)}%
-                      </span>
-                    )}
+                    <input
+                      type="number"
+                      value={investor?.annual_growth_rate || 0}
+                      onChange={(e) =>
+                        updateInvestor(
+                          index,
+                          "annual_growth_rate",
+                          parseFloat(e.target.value),
+                        )
+                      }
+                      className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
+                    />
                   </div>
                   <div className="flex justify-between">
                     <span>Essential Expenditure:</span>
-                    {editingInvestorIndex === index ? (
-                      <input
-                        type="number"
-                        value={investor?.essential_expenditure || 0}
-                        onChange={(e) =>
-                          updateInvestor(
-                            index,
-                            "essential_expenditure",
-                            parseFloat(e.target.value),
-                          )
-                        }
-                        className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
-                      />
-                    ) : (
-                      <span className="font-semibold text-orange-400">
-                        ${(investor?.essential_expenditure || 0).toLocaleString()}
-                      </span>
-                    )}
+                    <input
+                      type="number"
+                      value={investor?.essential_expenditure || 0}
+                      onChange={(e) =>
+                        updateInvestor(
+                          index,
+                          "essential_expenditure",
+                          parseFloat(e.target.value),
+                        )
+                      }
+                      className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
+                    />
                   </div>
                   <div className="flex justify-between">
                     <span>Nonessential Expenditure:</span>
-                    {editingInvestorIndex === index ? (
-                      <input
-                        type="number"
-                        value={investor?.nonessential_expenditure || 0}
-                        onChange={(e) =>
-                          updateInvestor(
-                            index,
-                            "nonessential_expenditure",
-                            parseFloat(e.target.value),
-                          )
-                        }
-                        className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
-                      />
-                    ) : (
-                      <span className="font-semibold text-red-400">
-                        ${(investor?.nonessential_expenditure || 0).toLocaleString()}
-                      </span>
-                    )}
+                    <input
+                      type="number"
+                      value={investor?.nonessential_expenditure || 0}
+                      onChange={(e) =>
+                        updateInvestor(
+                          index,
+                          "nonessential_expenditure",
+                          parseFloat(e.target.value),
+                        )
+                      }
+                      className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
+                    />
                   </div>
                 </div>
 
@@ -329,14 +279,13 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                             )}
                           </span>
                         </button>
-                        {editingInvestorIndex === index && (
-                          <button
-                            onClick={() => addIncomeEvent(index)}
-                            className="text-green-400 hover:text-green-300 ml-2"
-                          >
-                            <Plus size={16} />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => addIncomeEvent(index)}
+                          className="text-green-400 hover:text-green-300 ml-2"
+                          title="Add Income Event"
+                        >
+                          <Plus size={16} />
+                        </button>
                       </div>
                       {expandedInvestor === investor?.name && (
                         <div className="space-y-1">
@@ -348,7 +297,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                style={{ backgroundColor: 'var(--bg-secondary)' }}
                               >
                                 <div className="flex-1">
-                                  {editingInvestorIndex === index ? (
                                     <div className="space-y-1">
                                       <div className="flex gap-2">
                                         <label className="text-gray-300">
@@ -411,34 +359,16 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                         </select>
                                       </div>
                                     </div>
-                                  ) : (
-                                    <>
-                                      <div className="flex justify-between">
-                                        <span className="text-gray-300">
-                                          Year {event.year}:
-                                        </span>
-                                        <span className="text-cyan-400 font-semibold">
-                                          {event.type === "increase" ? ((event.amount || 0) > 0 ? "+" : (event.amount || 0) < 0 ? "-" : "") : ""}
-                                          $
-                                          {Math.abs(event.amount || 0).toLocaleString()}
-                                        </span>
-                                      </div>
-                                      <p className="text-gray-400 capitalize text-xs mt-1">
-                                        {event.type}
-                                      </p>
-                                    </>
-                                  )}
                                 </div>
-                                {editingInvestorIndex === index && (
-                                  <button
-                                    onClick={() =>
-                                      deleteIncomeEvent(index, eIdx)
-                                    }
-                                    className="text-red-400 hover:text-red-300 ml-2"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                )}
+                                <button
+                                  onClick={() =>
+                                    deleteIncomeEvent(index, eIdx)
+                                  }
+                                  className="text-red-400 hover:text-red-300 ml-2"
+                                  title="Delete Income Event"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
                               </div>
                             ),
                           )}
@@ -446,8 +376,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                       )}
                     </div>
                   )}
-                {!investor?.income_events || investor.income_events.length === 0
-                  ? editingInvestorIndex === index && (
+                {!investor?.income_events || investor.income_events.length === 0 && (
                       <div className="mt-4 pt-4 border-t border-slate-500">
                         <button
                           onClick={() => addIncomeEvent(index)}
@@ -456,8 +385,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                           <Plus size={14} /> Add Income Event
                         </button>
                       </div>
-                    )
-                  : null}
+                    )}
               </div>
             ))}
           </div>
@@ -468,46 +396,33 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
             <Plus size={14} />
             Add Investor
           </button>
-          {editingInvestorIndex !== null && (
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => {
-                  // Revert to original data and cancel editing
-                  setLocalInvestors([...originalInvestors]);
-                  setEditingInvestorIndex(null);
-                }}
-                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-2 rounded transition-colors"
-              >
-                <Trash2 size={14} />
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (onUpdate) {
-                    onUpdate(
-                      localInvestors,
-                      properties,
-                      () => {
-                        // Success callback
-                        setOriginalInvestors([...localInvestors]);
-                        saveToCache();
-                        setEditingInvestorIndex(null);
-                      },
-                      () => {
-                        // Error callback - revert to original data
-                        setLocalInvestors([...originalInvestors]);
-                        setEditingInvestorIndex(null);
-                      },
-                    );
-                  }
-                }}
-                className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white text-xs px-3 py-2 rounded transition-colors"
-              >
-                <Save size={14} />
-                Update
-              </button>
-            </div>
-          )}
+
+          {/* Update Button - Always Visible */}
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => {
+                if (onUpdate) {
+                  onUpdate(
+                    localInvestors,
+                    properties,
+                    () => {
+                      // Success callback - show success message
+                      setOriginalInvestors([...localInvestors]);
+                      saveToCache();
+                    },
+                    () => {
+                      // Error callback - revert to original data
+                      setLocalInvestors([...originalInvestors]);
+                    },
+                  );
+                }
+              }}
+              className="flex-1 flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white text-sm px-4 py-2 rounded transition-colors font-medium"
+            >
+              <Upload size={16} />
+              Update Data
+            </button>
+          </div>
         </div>
       )}
     </aside>

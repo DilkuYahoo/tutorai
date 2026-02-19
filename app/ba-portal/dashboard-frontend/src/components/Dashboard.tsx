@@ -17,6 +17,7 @@ interface DashboardData {
   chartData: any[];
   investors: any[];
   properties: any[];
+  investmentYears?: number;
   loading: boolean;
   error: string | null;
 }
@@ -28,17 +29,19 @@ const Dashboard: React.FC = () => {
     chartData: [],
     investors: [],
     properties: [],
+    investmentYears: 30,
     loading: true,
     error: null,
   });
 
-  const [investorsVisible, setInvestorsVisible] = useState(true);
-  const [propertiesVisible, setPropertiesVisible] = useState(true);
+  const [investorsVisible, setInvestorsVisible] = useState(false);
+  const [propertiesVisible, setPropertiesVisible] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
   const [progress, setProgress] = useState(100);
+  const [investmentYears, setInvestmentYears] = useState(30);
 
   // Handle OAuth callback on mount
   useEffect(() => {
@@ -69,14 +72,21 @@ const Dashboard: React.FC = () => {
 
         setData({
           ...result,
+          investmentYears: result.investmentYears || 30,
           loading: false,
           error: null,
         });
+
+        // Update local state if investmentYears exists in response
+        if (result.investmentYears !== undefined) {
+          setInvestmentYears(result.investmentYears);
+        }
       } catch (err) {
         setData({
           chartData: [],
           investors: [],
           properties: [],
+          investmentYears: 30,
           loading: false,
           error: err instanceof Error ? err.message : "Unknown error occurred",
         });
@@ -147,7 +157,7 @@ const Dashboard: React.FC = () => {
       setUpdating(true);
       setUpdateError(null);
       setUpdateSuccess(null);
-      await updateDashboardData(investors, properties, data.chartData);
+      await updateDashboardData(investors, properties, data.chartData, investmentYears);
 
       const result = await fetchDashboardData();
       setData({
@@ -182,7 +192,12 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen transition-colors duration-300 overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-      <Header isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
+      <Header 
+        isDarkMode={isDarkMode} 
+        onToggleDarkMode={toggleDarkMode}
+        investmentYears={investmentYears}
+        onInvestmentYearsChange={setInvestmentYears}
+      />
       <div className="flex flex-1 overflow-hidden">
       {/* Main Error Toast */}
       {data.error && (

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Settings, Sun, Moon, LogIn, LogOut, User } from "lucide-react";
+import { Settings, Sun, Moon, LogIn, LogOut, User, Settings2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 interface HeaderProps {
   isDarkMode?: boolean;
   onToggleDarkMode?: () => void;
+  investmentYears?: number;
+  onInvestmentYearsChange?: (years: number) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isDarkMode: propIsDarkMode, onToggleDarkMode }) => {
+const Header: React.FC<HeaderProps> = ({ isDarkMode: propIsDarkMode, onToggleDarkMode, investmentYears, onInvestmentYearsChange }) => {
   const { isAuthenticated, user, login, logout } = useAuth();
   const [localIsDarkMode, setLocalIsDarkMode] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -84,6 +86,23 @@ const Header: React.FC<HeaderProps> = ({ isDarkMode: propIsDarkMode, onToggleDar
       </div>
       
       <div className="flex items-center gap-3">
+        {/* Investment Period - Now in Header */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
+          <label className="text-xs font-semibold text-cyan-400">
+            Period
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="50"
+            value={investmentYears || 30}
+            onChange={(e) => onInvestmentYearsChange?.(parseInt(e.target.value) || 30)}
+            className="w-16 px-2 py-1 rounded text-sm"
+            style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor }}
+          />
+          <span className="text-xs" style={{ color: textSecondary }}>yrs</span>
+        </div>
+
         {/* Auth Button - Login or User Menu */}
         {isAuthenticated ? (
           <div className="relative user-menu-container">
@@ -155,6 +174,17 @@ const Header: React.FC<HeaderProps> = ({ isDarkMode: propIsDarkMode, onToggleDar
           aria-label="Settings"
         >
           <Settings size={20} />
+        </button>
+
+        {/* Config Button */}
+        <button 
+          className="p-2 rounded-lg transition-colors"
+          style={{ color: textSecondary }}
+          onMouseEnter={(e) => e.currentTarget.style.color = textColor}
+          onMouseLeave={(e) => e.currentTarget.style.color = textSecondary}
+          aria-label="Config"
+        >
+          <Settings2 size={20} />
         </button>
 
         {/* Dark/Light Mode Toggle */}

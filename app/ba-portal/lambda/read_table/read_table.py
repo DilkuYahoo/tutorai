@@ -119,7 +119,8 @@ class DynamoDBReader:
                 'id': item_id,
                 'chart1': item.get('chart1'),
                 'investors': item.get('investors', []),
-                'properties': item.get('properties', [])
+                'properties': item.get('properties', []),
+                'investment_years': item.get('investment_years', 30)
             }
             
             # Log successful retrieval

@@ -11,6 +11,7 @@ export interface DashboardApiResponse {
   chartData: any[];
   investors: any[];
   properties: any[];
+  investmentYears?: number;
 }
 
 export async function fetchDashboardData(): Promise<DashboardApiResponse> {
@@ -38,6 +39,7 @@ export async function fetchDashboardData(): Promise<DashboardApiResponse> {
     chartData: result.result.chart1 || [],
     investors: result.result.investors || [],
     properties: result.result.properties || [],
+    investmentYears: result.result.investment_years || 30,
   };
 }
 
@@ -45,12 +47,18 @@ export async function updateDashboardData(
   investors: any[],
   properties: any[],
   chart1?: any[],
+  investmentYears?: number,
 ): Promise<void> {
   const attributes: any = { investors, properties };
 
   // Include chart1 if provided
   if (chart1) {
     attributes.chart1 = chart1;
+  }
+
+  // Include investment_years if provided
+  if (investmentYears !== undefined && investmentYears !== null) {
+    attributes.investment_years = investmentYears;
   }
 
   const response = await fetch(`${FINANCE_URL}/update-table`, {
