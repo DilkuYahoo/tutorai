@@ -45,6 +45,15 @@ SUPPORTED_CONTENT_TYPES = {
     'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 }
 
+# Allowed domains for sending emails
+ALLOWED_DOMAINS = [
+    'cognifylabs.com.au',
+    'advicegenie.com.au',
+    'cognifylabs.ai',
+    'ratescan.com.au',
+    'advicelab.com.au'
+]
+
 
 def validate_attachments(attachments):
     """
@@ -92,6 +101,27 @@ def validate_attachments(attachments):
     # Check total attachment size
     if total_size > MAX_ATTACHMENT_SIZE_BYTES:
         return False, f"Combined attachment size exceeds {MAX_ATTACHMENT_SIZE_MB}MB limit"
+    
+    return True, None
+
+
+def validate_email_domain(email):
+    """
+    Validate that the email domain is in the allowed list.
+    
+    Args:
+        email (str): Email address to validate
+        
+    Returns:
+        tuple: (is_valid, error_message)
+    """
+    if not email or '@' not in email:
+        return False, "Invalid email format"
+    
+    domain = email.split('@')[-1].lower()
+    
+    if domain not in ALLOWED_DOMAINS:
+        return False, f"Email domain '{domain}' is not allowed. Allowed domains: {', '.join(ALLOWED_DOMAINS)}"
     
     return True, None
 
@@ -198,6 +228,34 @@ def lambda_handler(event, context):
     body = params['body']
     is_html = params.get('is_html', False)
     attachments = params.get('attachments', None)
+
+    # Validate sender domain
+    is_valid, error_message = validate_email_domain(sender)
+    if not is_valid:
+        return {
+            "statusCode": 400,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Content-Type": "application/json"
+            },
+            "body": json.dumps({
+                "error": f"Sender {error_message}"
+            })
+        }
+
+    # Validate recipient domain
+    is_valid, error_message = validate_email_domain(recipient)
+    if not is_valid:
+        return {
+            "statusCode": 400,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Content-Type": "application/json"
+            },
+            "body": json.dumps({
+                "error": f"Recipient {error_message}"
+            })
+        }
 
     # Validate attachments if provided
     if attachments:

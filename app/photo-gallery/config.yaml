@@ -1,0 +1,40 @@
+# Photo Gallery Configuration
+# Update these values with your S3 bucket details
+
+s3:
+  # Your S3 bucket name containing photos/videos
+  bucket_name: "ruhouse-backup"
+  
+  # Region where bucket is located
+  region: "ap-southeast-2"
+  
+  # Folder prefix if photos are in a subfolder (optional)
+  # prefix: "photos/"
+
+# Album settings
+albums:
+  # Supported file extensions
+  photo_extensions:
+    - ".jpg"
+    - ".jpeg"
+    - ".cr2"
+  
+  video_extensions:
+    - ".mov"
+    - ".mp4"
+
+# Thumbnail settings
+thumbnails:
+  # Max width/height for thumbnails
+  max_size: 400
+  # Quality (1-100)
+  quality: 80
+  # Folder to store generated thumbnails (relative to album)
+  folder: "_thumbnails"
+
+# API Gateway settings
+api:
+  # CORS allowed origins (comma-separated)
+  cors_origins: "*"
+  # API stage name
+  stage: "prod"

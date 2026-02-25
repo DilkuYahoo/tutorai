@@ -1,0 +1,32 @@
+{
+  "apiName": "photo-gallery-api",
+  "description": "Photo Gallery API for listing albums and media",
+  "version": "1.0.0",
+  "stageName": "prod",
+  "lambdaFunctionName": "photo-gallery-api",
+  "endpoints": [
+    {
+      "path": "/albums",
+      "httpMethod": "GET",
+      "lambdaFunction": "photo-gallery-api",
+      "enableCors": true
+    },
+    {
+      "path": "/albums/{album_name}",
+      "httpMethod": "GET",
+      "lambdaFunction": "photo-gallery-api",
+      "enableCors": true
+    },
+    {
+      "path": "/media/{album_name}/{file_name}/url",
+      "httpMethod": "GET",
+      "lambdaFunction": "photo-gallery-api",
+      "enableCors": true
+    }
+  ],
+  "cors": {
+    "allowOrigin": "*",
+    "allowMethods": "GET,OPTIONS",
+    "allowHeaders": "Content-Type,Authorization"
+  }
+}

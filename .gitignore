@@ -5,3 +5,4 @@ analyze_data.log
 advicegenie.log
 arch\
 app/auth-login/frontend/node_modules
+app/photo-gallery/frontend/node_modules

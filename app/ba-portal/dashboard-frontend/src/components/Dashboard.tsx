@@ -308,6 +308,7 @@ const Dashboard: React.FC = () => {
       <RightSidebar
         investors={data.investors}
         properties={data.properties}
+        chartData={data.chartData}
         loading={data.loading}
         isVisible={propertiesVisible}
         onToggleVisibility={setPropertiesVisible}

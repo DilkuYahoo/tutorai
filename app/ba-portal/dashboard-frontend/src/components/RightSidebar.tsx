@@ -14,6 +14,7 @@ import {
 interface RightSidebarProps {
   investors: any[];
   properties: any[];
+  chartData?: any[];
   loading: boolean;
   isVisible?: boolean;
   onToggleVisibility?: (visible: boolean) => void;
@@ -28,6 +29,7 @@ interface RightSidebarProps {
 const RightSidebar: React.FC<RightSidebarProps> = ({
   investors,
   properties,
+  chartData,
   loading,
   isVisible = true,
   onToggleVisibility,
@@ -37,6 +39,13 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   const [expandedProperty, setExpandedProperty] = useState<string | null>(null);
   const [localProperties, setLocalProperties] = useState<any[]>([]);
   const [originalProperties, setOriginalProperties] = useState<any[]>([]);
+
+  // Get latest property values from chartData (end of investment period)
+  const latestPropertyValues = React.useMemo(() => {
+    if (!chartData || chartData.length === 0) return {};
+    const latestData = chartData[chartData.length - 1];
+    return latestData?.property_values || {};
+  }, [chartData]);
 
   useEffect(() => {
     setLocalProperties(properties);
@@ -177,19 +186,12 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
                       style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                       placeholder="Property Name"
                     />
-                    <input
-                      type="number"
-                      value={prop?.property_value || 0}
-                      onChange={(e) =>
-                        updateProperty(
-                          index,
-                          "property_value",
-                          parseFloat(e.target.value),
-                        )
-                      }
-                      className="rounded px-2 py-1 w-full text-2xl font-bold"
+                    <span
+                      className="rounded px-2 py-1 w-full text-2xl font-bold block"
                       style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                    />
+                    >
+                      ${(latestPropertyValues[prop?.name] ?? prop?.property_value ?? 0).toLocaleString()}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
