@@ -25,6 +25,7 @@ import os
 import sys
 import traceback
 from datetime import datetime
+from decimal import Decimal
 from typing import Dict, Any, Optional
 
 import boto3
@@ -266,11 +267,9 @@ class DynamoDBUpdater:
             return {'S': value}
         elif isinstance(value, bool):
             return {'BOOL': value}
-        elif isinstance(value, int):
+        elif isinstance(value, (int, float, Decimal)):
+            # Convert numbers to strings for DynamoDB N type (supports decimals)
             return {'N': str(value)}
-        elif isinstance(value, float):
-            # Convert float to integer for DynamoDB compatibility
-            return {'N': str(round(value))}
         elif isinstance(value, list):
             return {'L': [self._convert_to_dynamodb_type(item) for item in value]}
         elif isinstance(value, dict):
@@ -345,9 +344,12 @@ class DynamoDBUpdater:
             return None
 
     def _ensure_integer_values(self, data: Any) -> Any:
-        """Recursively ensure all numeric values are integers for DynamoDB compatibility."""
+        """Recursively convert float values to Decimal for DynamoDB compatibility.
+        
+        DynamoDB boto3 client requires Decimal types for numbers, not Python floats.
+        """
         if isinstance(data, float):
-            return round(data)
+            return Decimal(str(data))
         elif isinstance(data, dict):
             return {key: self._ensure_integer_values(value) for key, value in data.items()}
         elif isinstance(data, list):

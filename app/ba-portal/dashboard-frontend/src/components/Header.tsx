@@ -1,15 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Settings, Sun, Moon, LogIn, LogOut, User, Settings2, X, Save } from "lucide-react";
+import { Settings, Sun, Moon, LogIn, LogOut, User, Settings2, X, Save, Loader2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-
-interface ConfigParams {
-  medicareLevyRate: number;
-  cpiRate: number;
-  accessibleEquityRate: number;
-  borrowingPowerMultiplierMin: number;
-  borrowingPowerMultiplierBase: number;
-  borrowingPowerMultiplierDependantReduction: number;
-}
+import { fetchConfigParams, saveConfigParams } from "../services/dashboardService";
+import type { ConfigParams } from "../services/dashboardService";
 
 interface HeaderProps {
   isDarkMode?: boolean;
@@ -32,6 +25,10 @@ const Header: React.FC<HeaderProps> = ({
   const [localIsDarkMode, setLocalIsDarkMode] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showConfigPanel, setShowConfigPanel] = useState(false);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [configError, setConfigError] = useState<string | null>(null);
+  const [configSuccess, setConfigSuccess] = useState<string | null>(null);
 
   // Default config params
   const defaultConfigParams: ConfigParams = {
@@ -44,6 +41,13 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const [configParams, setConfigParams] = useState<ConfigParams>(propConfigParams || defaultConfigParams);
+
+  // Sync propConfigParams to local state when it changes
+  useEffect(() => {
+    if (propConfigParams) {
+      setConfigParams(propConfigParams);
+    }
+  }, [propConfigParams]);
 
   useEffect(() => {
     const checkDarkMode = () => {
@@ -83,6 +87,31 @@ const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserMenu]);
 
+  // Load config when opening the config panel
+  const loadConfigFromBackend = async () => {
+    setIsLoadingConfig(true);
+    setConfigError(null);
+    try {
+      const configData = await fetchConfigParams();
+      setConfigParams(configData.configParams);
+      // Also update the investment years if provided
+      if (configData.investmentYears && onInvestmentYearsChange) {
+        onInvestmentYearsChange(configData.investmentYears);
+      }
+    } catch (error) {
+      console.error("Failed to load config:", error);
+      setConfigError("Failed to load configuration from server");
+    } finally {
+      setIsLoadingConfig(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showConfigPanel) {
+      loadConfigFromBackend();
+    }
+  }, [showConfigPanel]);
+
   // Close config panel when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -104,9 +133,24 @@ const Header: React.FC<HeaderProps> = ({
     onConfigParamsChange?.(updated);
   };
 
-  const handleConfigSave = () => {
-    onConfigParamsChange?.(configParams);
-    setShowConfigPanel(false);
+  const handleConfigSave = async () => {
+    setIsSavingConfig(true);
+    setConfigError(null);
+    setConfigSuccess(null);
+    try {
+      await saveConfigParams(configParams, investmentYears);
+      onConfigParamsChange?.(configParams);
+      setConfigSuccess("Configuration saved successfully!");
+      setTimeout(() => {
+        setShowConfigPanel(false);
+        setConfigSuccess(null);
+      }, 1000);
+    } catch (error) {
+      console.error("Failed to save config:", error);
+      setConfigError("Failed to save configuration to server");
+    } finally {
+      setIsSavingConfig(false);
+    }
   };
 
   const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : localIsDarkMode;
@@ -143,24 +187,6 @@ const Header: React.FC<HeaderProps> = ({
       </div>
       
       <div className="flex items-center gap-3">
-        {/* Investment Period - Now in Header */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
-          <label className="text-xs font-semibold text-cyan-400">
-            Period
-          </label>
-          <input
-            type="number"
-            min="1"
-            max="50"
-            value={investmentYears || 30}
-            onChange={(e) => onInvestmentYearsChange?.(parseInt(e.target.value) || 30)}
-            className="w-16 px-2 py-1 rounded text-sm"
-            style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor }}
-          />
-          <span className="text-xs" style={{ color: textSecondary }}>yrs</span>
-        </div>
-
-        {/* Auth Button - Login or User Menu */}
         {isAuthenticated ? (
           <div className="relative user-menu-container">
             <button 
@@ -270,6 +296,41 @@ const Header: React.FC<HeaderProps> = ({
             </div>
             
             <div className="p-4 space-y-3">
+              {/* Loading/Error/Success Messages */}
+              {isLoadingConfig && (
+                <div className="flex items-center gap-2 text-sm" style={{ color: textSecondary }}>
+                  <Loader2 size={16} className="animate-spin" />
+                  Loading configuration...
+                </div>
+              )}
+              {configError && (
+                <div className="text-sm px-3 py-2 rounded" style={{ backgroundColor: '#fef2f2', color: '#dc2626' }}>
+                  {configError}
+                </div>
+              )}
+              {configSuccess && (
+                <div className="text-sm px-3 py-2 rounded" style={{ backgroundColor: '#f0fdf4', color: '#16a34a' }}>
+                  {configSuccess}
+                </div>
+              )}
+
+              {/* Investment Years - Now in Config Panel */}
+              <div>
+                <label className="text-xs text-cyan-400 block mb-1">Years to Invest</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={investmentYears || 30}
+                    onChange={(e) => onInvestmentYearsChange?.(parseInt(e.target.value) || 30)}
+                    className="w-full px-3 py-2 rounded text-sm"
+                    style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
+                  />
+                  <span className="text-xs" style={{ color: textSecondary }}>yrs</span>
+                </div>
+              </div>
+
               <div>
                 <label className="text-xs text-cyan-400 block mb-1">Medicare Levy Rate</label>
                 <input
@@ -353,10 +414,20 @@ const Header: React.FC<HeaderProps> = ({
 
               <button
                 onClick={handleConfigSave}
-                className="w-full flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white text-sm px-4 py-2 rounded transition-colors"
+                disabled={isSavingConfig || isLoadingConfig}
+                className="w-full flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-300 text-white text-sm px-4 py-2 rounded transition-colors"
               >
-                <Save size={16} />
-                Save Configuration
+                {isSavingConfig ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} />
+                    Save Configuration
+                  </>
+                )}
               </button>
             </div>
           </div>

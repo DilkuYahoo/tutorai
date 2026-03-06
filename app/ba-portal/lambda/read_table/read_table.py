@@ -114,14 +114,16 @@ class DynamoDBReader:
                 logger.warning(error_msg)
                 raise DynamoDBReadError(error_msg, 403)
             
-            # Extract only the required attributes
-            result = {
-                'id': item_id,
-                'chart1': item.get('chart1'),
-                'investors': item.get('investors', []),
-                'properties': item.get('properties', []),
-                'investment_years': item.get('investment_years', 30)
-            }
+            # Extract all attributes from the item (for config params)
+            # This ensures we return all stored attributes including config params
+            result = {}
+            for key, value in item.items():
+                result[key] = value
+            
+            # Ensure defaults for required fields
+            result.setdefault('investment_years', 30)
+            result.setdefault('investors', [])
+            result.setdefault('properties', [])
             
             # Log successful retrieval
             logger.info(f"Successfully retrieved active item {item_id}")

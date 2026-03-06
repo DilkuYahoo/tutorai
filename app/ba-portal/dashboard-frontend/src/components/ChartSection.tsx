@@ -95,6 +95,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
             household_surplus: householdSurplus,
             borrowing_capacity: borrowingCapacity,
             investor_borrowing_capacities: item.investor_borrowing_capacities,
+            max_purchase_price: item.max_purchase_price || 0,
             // Buy score fields
             buy_score: item.buy_score || 0,
             buy_score_equity_ratio: item.buy_score_equity_ratio || 0,
@@ -123,17 +124,10 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
       formatter: (params: any) => {
         let result = `<div style="font-weight: 600; margin-bottom: 8px;">${params[0].name}</div>`;
         params.forEach((param: any) => {
-          if (param.seriesName === 'LVR (%)') {
-            result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
-              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${param.color};"></span>
-              ${param.seriesName}: ${param.value.toFixed(1)}%
-            </div>`;
-          } else {
-            result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
-              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${param.color};"></span>
-              ${param.seriesName}: $${param.value.toLocaleString()}
-            </div>`;
-          }
+          result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${param.color};"></span>
+            ${param.seriesName}: ${param.value.toLocaleString()}
+          </div>`;
         });
         return result;
       }
@@ -142,7 +136,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
       textStyle: { color: chartColors.legend },
       top: 0
     },
-    grid: { left: 60, right: 60 },
+    grid: { left: 60, right: 40 },
     xAxis: {
       type: 'category',
       data: transformedData.map((d: any) => d.year),
@@ -158,15 +152,8 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
         type: 'value',
         name: 'Value ($)',
         nameTextStyle: { color: chartColors.text },
-        axisLabel: { formatter: (value: number) => `$${(value / 1000).toFixed(0)}k`, color: chartColors.axisLabel, fontSize: 12 },
+        axisLabel: { formatter: (value: number) => `${(value / 1000).toFixed(0)}k`, color: chartColors.axisLabel, fontSize: 12 },
         splitLine: { lineStyle: { color: isDarkMode ? '#334155' : '#e5e7eb', type: 'dashed' } }
-      },
-      {
-        type: 'value',
-        name: 'LVR (%)',
-        nameTextStyle: { color: chartColors.text },
-        axisLabel: { formatter: '{value}%', color: chartColors.axisLabel, fontSize: 12 },
-        splitLine: { show: false }
       }
     ],
     series: [
@@ -193,15 +180,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
         areaStyle: { color: '#10b981', opacity: 0.3 },
         lineStyle: { color: '#10b981', width: 3 },
         itemStyle: { color: '#10b981' },
-        smooth: true
-      },
-      {
-        name: 'LVR (%)',
-        type: 'line',
-        data: transformedData.map((d: any) => d.lvr),
-        yAxisIndex: 1,
-        lineStyle: { color: '#ef4444', width: 3 },
-        itemStyle: { color: '#ef4444' },
         smooth: true
       }
     ]
@@ -312,7 +290,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
 
   const cashflowData = getCashflowData();
 
-  // Cashflow & Serviceability Chart
+  // Cashflow Chart
   const cashflowOption = {
     tooltip: {
       trigger: 'axis',
@@ -324,12 +302,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
         let result = `<div style="font-weight: 600; margin-bottom: 8px;">${params[0].name}</div><div style="margin-top: 8px; space-y: 4px;">`;
         params.forEach((param: any) => {
           const value = param.value;
-          let formattedValue: string;
-          if (param.seriesName === 'LVR') {
-            formattedValue = `${value.toFixed(1)}%`;
-          } else {
-            formattedValue = value < 0 ? `-$${Math.abs(value).toLocaleString()}` : `$${value.toLocaleString()}`;
-          }
+          const formattedValue = value < 0 ? `-$${Math.abs(value).toLocaleString()}` : `$${value.toLocaleString()}`;
           result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
             <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${param.color};"></span>
             <span>${param.seriesName}:</span>
@@ -362,13 +335,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
         nameTextStyle: { color: chartColors.text },
         axisLabel: { formatter: (value: number) => `${(value / 1000).toFixed(0)}k`, color: chartColors.axisLabel, fontSize: 12 },
         splitLine: { lineStyle: { color: isDarkMode ? '#334155' : '#e5e7eb', type: 'dashed' } }
-      },
-      {
-        type: 'value',
-        name: 'LVR (%)',
-        nameTextStyle: { color: chartColors.text },
-        axisLabel: { formatter: '{value}%', color: chartColors.axisLabel, fontSize: 12 },
-        splitLine: { show: false }
       }
     ],
     series: [
@@ -401,16 +367,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
         itemStyle: { color: '#8b5cf6' }
       },
       {
-        name: 'LVR',
-        type: 'line',
-        yAxisIndex: 1,
-        data: cashflowData.map((d: any) => d.lvr),
-        lineStyle: { color: '#06b6d4', width: 3 },
-        itemStyle: { color: '#06b6d4' },
-        symbol: 'circle',
-        symbolSize: 8
-      },
-      {
         name: 'Household Surplus',
         type: 'line',
         data: cashflowData.map((d: any) => d.householdSurplus),
@@ -419,15 +375,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
         symbol: 'circle',
         symbolSize: 8,
         areaStyle: { color: '#22c55e', opacity: 0.2 }
-      },
-      {
-        name: 'Borrowing Capacity',
-        type: 'line',
-        data: cashflowData.map((d: any) => d.borrowingCapacity),
-        lineStyle: { color: '#ec4899', type: 'dashed' },
-        itemStyle: { color: '#ec4899' },
-        symbol: 'diamond',
-        symbolSize: 6
       }
     ]
   };
@@ -442,10 +389,17 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
       formatter: (params: any) => {
         let result = `<div style="font-weight: 600; margin-bottom: 8px;">${params[0].name}</div>`;
         params.forEach((param: any) => {
-          result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
-            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${param.color};"></span>
-            ${param.seriesName}: <strong>${param.value.toFixed(2)}</strong>
-          </div>`;
+          if (param.seriesName === 'Total Borrowing Capacity' || param.seriesName === 'Max Purchase Price') {
+            result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${param.color};"></span>
+              ${param.seriesName}: <strong>${param.value.toLocaleString()}</strong>
+            </div>`;
+          } else {
+            result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${param.color};"></span>
+              ${param.seriesName}: <strong>${param.value.toFixed(2)}</strong>
+            </div>`;
+          }
         });
         return result;
       }
@@ -454,7 +408,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
       textStyle: { color: chartColors.legend },
       top: 0
     },
-    grid: { left: 60, right: 60, top: 40 },
+    grid: { left: 60, right: 80, top: 40 },
     xAxis: {
       type: 'category',
       boundaryGap: false,
@@ -462,14 +416,23 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
       axisLabel: { color: chartColors.axisLabel, fontSize: 12 },
       axisLine: { lineStyle: { color: isDarkMode ? '#475569' : '#d1d5db' } }
     },
-    yAxis: {
-      type: 'value',
-      name: 'DTI Ratio',
-      nameTextStyle: { color: chartColors.text },
-      axisLabel: { formatter: (value: number) => value.toFixed(2), color: chartColors.axisLabel, fontSize: 12 },
-      splitLine: { lineStyle: { color: isDarkMode ? '#334155' : '#e5e7eb', type: 'dashed' } },
-      min: 0
-    },
+    yAxis: [
+      {
+        type: 'value',
+        name: 'DTI Ratio',
+        nameTextStyle: { color: chartColors.text },
+        axisLabel: { formatter: (value: number) => value.toFixed(2), color: chartColors.axisLabel, fontSize: 12 },
+        splitLine: { lineStyle: { color: isDarkMode ? '#334155' : '#e5e7eb', type: 'dashed' } },
+        min: 0
+      },
+      {
+        type: 'value',
+        name: 'Borrowing Capacity ($)',
+        nameTextStyle: { color: chartColors.text },
+        axisLabel: { formatter: (value: number) => `${(value / 1000).toFixed(0)}k`, color: chartColors.axisLabel, fontSize: 12 },
+        splitLine: { show: false }
+      }
+    ],
     series: [
       {
         name: 'DTI Ratio',
@@ -488,6 +451,30 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
           ],
           label: { color: chartColors.markLineLabel, fontSize: 10 }
         }
+      },
+      {
+        name: 'Total Borrowing Capacity',
+        type: 'line',
+        smooth: true,
+        symbol: 'diamond',
+        symbolSize: 10,
+        yAxisIndex: 1,
+        data: transformedData.map((d: any) => d.borrowing_capacity || 0),
+        lineStyle: { color: '#06b6d4', width: 3, type: 'dashed' },
+        itemStyle: { color: '#06b6d4' },
+        areaStyle: { color: '#06b6d4', opacity: 0.1 }
+      },
+      {
+        name: 'Max Purchase Price',
+        type: 'line',
+        smooth: true,
+        symbol: 'triangle',
+        symbolSize: 10,
+        yAxisIndex: 1,
+        data: transformedData.map((d: any) => d.max_purchase_price || 0),
+        lineStyle: { color: '#8b5cf6', width: 3 },
+        itemStyle: { color: '#8b5cf6' },
+        areaStyle: { color: '#8b5cf6', opacity: 0.1 }
       }
     ]
   };
@@ -649,19 +636,18 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
               </div>
               {expandedSection === 'portfolio' && (
                 <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}>
-                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Tracks your portfolio's property values, loan balances, equity position, and Loan-to-Value Ratio (LVR) over time.</p>
+                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Tracks your portfolio's property values, loan balances, and equity position over time.</p>
                   <p className="mb-2"><strong style={{ color: cardText }}>Data sources:</strong></p>
                   <ul className="list-disc list-inside ml-2 space-y-1">
                     <li><span style={{ color: '#06b6d4' }}>Total Property Value</span> - Sum of all property market values</li>
                     <li><span style={{ color: '#f59e0b' }}>Total Loan Balance</span> - Outstanding loan amounts across properties</li>
                     <li><span style={{ color: '#10b981' }}>Total Equity</span> - Property value minus loan balance</li>
-                    <li><span style={{ color: '#ef4444' }}>LVR (%)</span> - Loan-to-Value Ratio (secondary axis)</li>
                   </ul>
-                  <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: Rising equity with stable or declining LVR indicates portfolio growth and risk reduction.</p>
+                  <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: Rising equity indicates portfolio growth and risk reduction.</p>
                 </div>
               )}
               <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
-                Shows portfolio growth with property values, equity, loan balances, and LVR over time.
+                Shows portfolio growth with property values, equity, and loan balances over time.
               </p>
               <ReactECharts option={portfolioOption} style={{ height: '300px' }} />
             </div>
@@ -701,11 +687,11 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
               <ReactECharts option={lvrOption} style={{ height: '300px' }} />
             </div>
 
-            {/* Cashflow & Serviceability */}
+            {/* Cashflow */}
             <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
               <div className="flex justify-between items-center mb-2">
                 <h2 className="text-xl font-bold" style={{ color: cardText }}>
-                  Cashflow & Serviceability (Income Lens)
+                  Cashflow (Income Lens)
                 </h2>
                 <button
                   onClick={() => toggleSection('cashflow')}
@@ -740,11 +726,11 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
               <ReactECharts option={cashflowOption} style={{ height: '300px' }} />
             </div>
 
-            {/* DTI Ratio Chart */}
+            {/* DTI Ratio & Borrowing Capacity Chart */}
             <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
               <div className="flex justify-between items-center mb-2">
                 <h2 className="text-xl font-bold" style={{ color: cardText }}>
-                  DTI Ratio
+                  DTI Ratio & Borrowing Power
                 </h2>
                 <button
                   onClick={() => toggleSection('dti')}
@@ -759,11 +745,13 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
               </div>
               {expandedSection === 'dti' && (
                 <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}>
-                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Debt-to-Income (DTI) ratio showing the proportion of gross household income used to service debt.</p>
+                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Debt-to-Income (DTI) ratio showing the proportion of gross household income used to service debt, along with total borrowing capacity and max purchase price.</p>
                   <p className="mb-2"><strong style={{ color: cardText }}>Formula:</strong></p>
                   <ul className="list-disc list-inside ml-2 space-y-1">
                     <li><strong>DTI Ratio = Total Debt / Combined Income</strong></li>
                     <li><span style={{ color: '#f59e0b' }}>DTI Ratio</span> - Proportion of income going to debt repayment</li>
+                    <li><span style={{ color: '#06b6d4' }}>Total Borrowing Capacity</span> - Sum of all investors' borrowing capacities (secondary axis)</li>
+                    <li><span style={{ color: '#8b5cf6' }}>Max Purchase Price</span> - Maximum property price affordable based on borrowing capacity</li>
                   </ul>
                   <p className="mt-2 text-sm"><strong style={{ color: cardText }}>Interpretation:</strong></p>
                   <ul className="list-disc list-inside ml-2 space-y-1">
@@ -771,10 +759,11 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
                     <li>DTI 0.30-0.43: Caution - may affect borrowing capacity</li>
                     <li>DTI &gt; 0.43: High risk - likely to struggle with additional debt</li>
                   </ul>
+                  <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: The Total Borrowing Capacity and Max Purchase Price lines show your purchasing power. Higher values with lower DTI indicate room for additional investment.</p>
                 </div>
               )}
               <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
-                Shows Debt-to-Income ratio over time. Lower DTI indicates healthier debt position.
+                Shows Debt-to-Income ratio, total borrowing capacity, and max purchase price over time. Lower DTI indicates healthier debt position. The dashed cyan line shows cumulative borrowing capacity, and the purple line shows max purchase price.
               </p>
               <ReactECharts option={dtiRatioOption} style={{ height: '300px' }} />
             </div>

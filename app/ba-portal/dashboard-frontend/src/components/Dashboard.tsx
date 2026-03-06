@@ -10,6 +10,7 @@ import Footer from "./Footer";
 import {
   fetchDashboardData,
   updateDashboardData,
+  type ConfigParams,
 } from "../services/dashboardService";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -42,6 +43,14 @@ const Dashboard: React.FC = () => {
   const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
   const [progress, setProgress] = useState(100);
   const [investmentYears, setInvestmentYears] = useState(30);
+  const [configParams, setConfigParams] = useState<ConfigParams>({
+    medicareLevyRate: 0.02,
+    cpiRate: 0.03,
+    accessibleEquityRate: 0.80,
+    borrowingPowerMultiplierMin: 3.5,
+    borrowingPowerMultiplierBase: 5.0,
+    borrowingPowerMultiplierDependantReduction: 0.25,
+  });
 
   // Handle OAuth callback on mount
   useEffect(() => {
@@ -197,6 +206,8 @@ const Dashboard: React.FC = () => {
         onToggleDarkMode={toggleDarkMode}
         investmentYears={investmentYears}
         onInvestmentYearsChange={setInvestmentYears}
+        configParams={configParams}
+        onConfigParamsChange={setConfigParams}
       />
       <div className="flex flex-1 overflow-hidden">
       {/* Main Error Toast */}

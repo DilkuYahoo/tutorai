@@ -110,16 +110,19 @@ class DynamoDBUpdater:
             
             self.validate_attributes(attributes)
             
-            # Calculate chart1 value if investors and properties are provided
-            chart1_value = self.calculate_chart1_value(attributes)
-            
-            # Add chart1 to attributes if calculated
+            # Make a copy of attributes for processing
             attributes_to_update = attributes.copy()
-            if chart1_value is not None:
-                attributes_to_update['chart1'] = chart1_value
-                self.log("Adding chart1 attribute to update")
             
-            # Ensure all numeric values are integers for DynamoDB compatibility
+            # Calculate chart1 value ONLY if investors and properties are provided
+            if 'investors' in attributes_to_update and 'properties' in attributes_to_update:
+                chart1_value = self.calculate_chart1_value(attributes_to_update)
+                if chart1_value is not None:
+                    attributes_to_update['chart1'] = chart1_value
+                    self.log("Adding chart1 attribute to update")
+            else:
+                self.log("Skipping chart1 calculation - investors or properties not provided")
+            
+            # Ensure all numeric values are properly handled for DynamoDB
             attributes_to_update = self._ensure_integer_values(attributes_to_update)
             
             # Build update expression for user attributes
@@ -267,11 +270,9 @@ class DynamoDBUpdater:
             return {'S': value}
         elif isinstance(value, bool):
             return {'BOOL': value}
-        elif isinstance(value, int):
+        elif isinstance(value, (int, float, Decimal)):
+            # Convert numbers to strings for DynamoDB N type (supports decimals)
             return {'N': str(value)}
-        elif isinstance(value, float):
-            # Convert float to integer for DynamoDB compatibility
-            return {'N': str(round(value))}
         elif isinstance(value, list):
             return {'L': [self._convert_to_dynamodb_type(item) for item in value]}
         elif isinstance(value, dict):
@@ -297,6 +298,39 @@ class DynamoDBUpdater:
             return 'Item' in response
         except ClientError as e:
             error_msg = f"Error checking existence of item {item_id}: {str(e)}"
+            self.log(error_msg, "error")
+            raise DynamoDBUpdateError(error_msg)
+    
+    def create_item(self, item_id: str, attributes: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new item in DynamoDB with the specified attributes."""
+        try:
+            # Ensure all numeric values are properly handled
+            attributes_to_create = self._ensure_integer_values(attributes.copy())
+            
+            # Add required id field
+            attributes_to_create['id'] = item_id
+            
+            # Add system attributes
+            attributes_to_create['number_of_updates'] = 1
+            attributes_to_create['last_updated_date'] = datetime.now().isoformat()
+            
+            self.log(f"Creating new item {item_id} with attributes: {list(attributes.keys())}")
+            
+            response = self.table.put_item(
+                Item=attributes_to_create,
+                ReturnValues="ALL_OLD"
+            )
+            
+            self.log(f"Successfully created item {item_id}")
+            return response
+            
+        except ClientError as e:
+            error_msg = f"DynamoDB ClientError creating item {item_id}: {str(e)}"
+            self.log(error_msg, "error")
+            raise DynamoDBUpdateError(error_msg) from e
+        
+        except Exception as e:
+            error_msg = f"Unexpected error creating item {item_id}: {str(e)}"
             self.log(error_msg, "error")
             raise DynamoDBUpdateError(error_msg) from e
 
@@ -405,9 +439,12 @@ class DynamoDBUpdater:
             return None
 
     def _ensure_integer_values(self, data: Any) -> Any:
-        """Recursively ensure all numeric values are integers for DynamoDB compatibility."""
+        """Recursively convert float values to Decimal for DynamoDB compatibility.
+        
+        DynamoDB boto3 client requires Decimal types for numbers, not Python floats.
+        """
         if isinstance(data, float):
-            return round(data)
+            return Decimal(str(data))
         elif isinstance(data, dict):
             return {key: self._ensure_integer_values(value) for key, value in data.items()}
         elif isinstance(data, list):
@@ -520,11 +557,20 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             region=params['region']
         )
         
+        # Log what we're about to do
+        updater.log(f"Received attributes to save: {params['attributes']}")
+        
         # Check if item exists
         if not updater.check_item_exists(params['id']):
-            return create_api_gateway_response(404, {
-                'status': 'error',
-                'message': f"Item with ID '{params['id']}' does not exist in table '{params['table_name']}'"
+            # Item doesn't exist, create it with the attributes
+            self.log(f"Item {params['id']} does not exist, creating new item")
+            result = updater.create_item(params['id'], params['attributes'])
+            return create_api_gateway_response(201, {
+                'status': 'success',
+                'message': 'Item created successfully',
+                'item_id': params['id'],
+                'created_attributes': list(params['attributes'].keys()),
+                'result': result
             })
         
         # Perform update
