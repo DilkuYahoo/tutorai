@@ -32,7 +32,7 @@ import boto3
 from botocore.exceptions import ClientError, BotoCoreError
 
 # Import the superchart1 library for chart calculations
-from libs.superchart1 import borrowing_capacity_forecast_investor_blocks
+from libs.superchart1 import borrowing_capacity_forecast_investor_blocks, set_config_params, reset_config_to_defaults
 
 class DynamoDBUpdater:
     def __init__(self, table_name: str, region: str = "ap-southeast-2"):
@@ -300,9 +300,52 @@ class DynamoDBUpdater:
             self.log(error_msg, "error")
             raise DynamoDBUpdateError(error_msg) from e
 
+    def get_config_params(self) -> Dict[str, Any]:
+        """Get configuration parameters from DynamoDB config item."""
+        try:
+            # Try to get the config item
+            response = self.table.get_item(Key={'id': 'config'})
+            item = response.get('Item', {})
+            
+            if item:
+                config = {}
+                # Map DynamoDB attributes to config params
+                if 'medicare_levy_rate' in item:
+                    config['medicare_levy_rate'] = float(item['medicare_levy_rate'])
+                if 'cpi_rate' in item:
+                    config['cpi_rate'] = float(item['cpi_rate'])
+                if 'accessible_equity_rate' in item:
+                    config['accessible_equity_rate'] = float(item['accessible_equity_rate'])
+                if 'borrowing_power_multiplier_min' in item:
+                    config['borrowing_power_multiplier_min'] = float(item['borrowing_power_multiplier_min'])
+                if 'borrowing_power_multiplier_base' in item:
+                    config['borrowing_power_multiplier_base'] = float(item['borrowing_power_multiplier_base'])
+                if 'borrowing_power_multiplier_dependant_reduction' in item:
+                    config['borrowing_power_multiplier_dependant_reduction'] = float(item['borrowing_power_multiplier_dependant_reduction'])
+                
+                self.log(f"Loaded config params from DynamoDB: {config}")
+                return config
+            else:
+                self.log("No config item found in DynamoDB, using defaults")
+                return {}
+                
+        except ClientError as e:
+            error_msg = f"Error retrieving config from DynamoDB: {str(e)}"
+            self.log(error_msg, "warning")
+            return {}  # Return empty dict to use defaults
+
     def calculate_chart1_value(self, attributes: Dict[str, Any]) -> Optional[Dict]:
         """Calculate chart1 value using superchart1 library if investors and properties are provided."""
         try:
+            # First, load config params from DynamoDB
+            config_params = self.get_config_params()
+            
+            # Apply config to superchart1 library
+            if config_params:
+                set_config_params(config_params)
+            else:
+                reset_config_to_defaults()
+            
             # Check if both investors and properties are in the attributes
             if 'investors' in attributes and 'properties' in attributes:
                 # Create deep copies to avoid modifying the original data
@@ -338,6 +381,19 @@ class DynamoDBUpdater:
 
                 # Debug: log the converted chart1 value to ensure no floats remain
                 self.log(f"Chart1 value type check: {self._check_for_floats(chart1_value)}")
+                
+                # Debug: Log a sample of the buy_score data
+                if chart1_value and len(chart1_value) > 0:
+                    first_year = chart1_value[0]
+                    self.log(f"DEBUG: First year buy_score components:")
+                    self.log(f"  buy_score: {first_year.get('buy_score')}")
+                    self.log(f"  buy_score_equity_ratio: {first_year.get('buy_score_equity_ratio')}")
+                    self.log(f"  buy_score_borrowing_ratio: {first_year.get('buy_score_borrowing_ratio')}")
+                    self.log(f"  buy_score_dti: {first_year.get('buy_score_dti')}")
+                    self.log(f"  accessible_equity: {first_year.get('accessible_equity')}")
+                    self.log(f"  combined_borrowing_capacity: {first_year.get('combined_borrowing_capacity')}")
+                    self.log(f"  current_dti: {first_year.get('current_dti')}")
+                
                 self.log("Successfully calculated chart1 value")
                 return chart1_value
             

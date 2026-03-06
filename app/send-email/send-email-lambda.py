@@ -51,6 +51,7 @@ ALLOWED_DOMAINS = [
     'advicegenie.com.au',
     'cognifylabs.ai',
     'ratescan.com.au',
+    'advice-lab.com.au',
     'advicelab.com.au'
 ]
 

@@ -95,6 +95,13 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
             household_surplus: householdSurplus,
             borrowing_capacity: borrowingCapacity,
             investor_borrowing_capacities: item.investor_borrowing_capacities,
+            // Buy score fields
+            buy_score: item.buy_score || 0,
+            buy_score_equity_ratio: item.buy_score_equity_ratio || 0,
+            buy_score_borrowing_ratio: item.buy_score_borrowing_ratio || 0,
+            buy_score_dti: item.buy_score_dti || 0,
+            // DTI ratio from backend
+            dti_ratio: item.dti_ratio || 0,
           };
         })
       : [];
@@ -425,6 +432,66 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
     ]
   };
 
+  // DTI Ratio Chart
+  const dtiRatioOption = {
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: isDarkMode ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+      borderColor: isDarkMode ? '#475569' : '#e5e7eb',
+      textStyle: { color: isDarkMode ? '#f1f5f9' : '#1f2937' },
+      formatter: (params: any) => {
+        let result = `<div style="font-weight: 600; margin-bottom: 8px;">${params[0].name}</div>`;
+        params.forEach((param: any) => {
+          result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${param.color};"></span>
+            ${param.seriesName}: <strong>${param.value.toFixed(2)}</strong>
+          </div>`;
+        });
+        return result;
+      }
+    },
+    legend: { 
+      textStyle: { color: chartColors.legend },
+      top: 0
+    },
+    grid: { left: 60, right: 60, top: 40 },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: transformedData.map((d: any) => d.year),
+      axisLabel: { color: chartColors.axisLabel, fontSize: 12 },
+      axisLine: { lineStyle: { color: isDarkMode ? '#475569' : '#d1d5db' } }
+    },
+    yAxis: {
+      type: 'value',
+      name: 'DTI Ratio',
+      nameTextStyle: { color: chartColors.text },
+      axisLabel: { formatter: (value: number) => value.toFixed(2), color: chartColors.axisLabel, fontSize: 12 },
+      splitLine: { lineStyle: { color: isDarkMode ? '#334155' : '#e5e7eb', type: 'dashed' } },
+      min: 0
+    },
+    series: [
+      {
+        name: 'DTI Ratio',
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 8,
+        data: transformedData.map((d: any) => (d.dti_ratio || 0) / 100),
+        lineStyle: { color: '#f59e0b', width: 3 },
+        itemStyle: { color: '#f59e0b' },
+        areaStyle: { color: '#f59e0b', opacity: 0.2 },
+        markLine: {
+          data: [
+            { yAxis: 0.30, name: 'Safe Zone', lineStyle: { color: '#10b981', type: 'dashed' } },
+            { yAxis: 0.43, name: 'Caution', lineStyle: { color: '#f59e0b', type: 'dashed' } }
+          ],
+          label: { color: chartColors.markLineLabel, fontSize: 10 }
+        }
+      }
+    ]
+  };
+
   // Investor Net Income Chart
   const investorNetIncomeOption = {
     tooltip: {
@@ -673,42 +740,44 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
               <ReactECharts option={cashflowOption} style={{ height: '300px' }} />
             </div>
 
-            {/* Investor Net Income Over Time */}
-            {investorNames.length > 0 && (
-              <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
-                <div className="flex justify-between items-center mb-2">
-                  <h2 className="text-xl font-bold" style={{ color: cardText }}>
-                    Investors Net Income Over Time
-                  </h2>
-                  <button
-                    onClick={() => toggleSection('investor')}
-                    className="transition-colors"
-                    style={{ color: cardTextSecondary }}
-                    title="Learn more about this chart"
-                  >
-                    <svg className={`w-6 h-6 transform transition-transform ${expandedSection === 'investor' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </button>
-                </div>
-                {expandedSection === 'investor' && (
-                  <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}>
-                    <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Net income trends for each investor over the investment horizon, accounting for salary, tax, and investment distributions.</p>
-                    <p className="mb-2"><strong style={{ color: cardText }}>Data sources:</strong></p>
-                    <ul className="list-disc list-inside ml-2 space-y-1">
-                      <li>Each colored line represents one investor's net income trajectory</li>
-                      <li>Includes salary growth, tax implications, and investment distributions</li>
-                      <li>Shows how individual financial situations evolve over time</li>
-                    </ul>
-                    <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: Compare investor income trends to identify who's most able to service additional debt or contribute to the portfolio.</p>
-                  </div>
-                )}
-                <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
-                  Shows the net income for each investor throughout the investment duration.
-                </p>
-                <ReactECharts option={investorNetIncomeOption} style={{ height: '300px' }} />
+            {/* DTI Ratio Chart */}
+            <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-xl font-bold" style={{ color: cardText }}>
+                  DTI Ratio
+                </h2>
+                <button
+                  onClick={() => toggleSection('dti')}
+                  className="transition-colors"
+                  style={{ color: cardTextSecondary }}
+                  title="Learn more about this chart"
+                >
+                  <svg className={`w-6 h-6 transform transition-transform ${expandedSection === 'dti' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
               </div>
-            )}
+              {expandedSection === 'dti' && (
+                <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}>
+                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Debt-to-Income (DTI) ratio showing the proportion of gross household income used to service debt.</p>
+                  <p className="mb-2"><strong style={{ color: cardText }}>Formula:</strong></p>
+                  <ul className="list-disc list-inside ml-2 space-y-1">
+                    <li><strong>DTI Ratio = Total Debt / Combined Income</strong></li>
+                    <li><span style={{ color: '#f59e0b' }}>DTI Ratio</span> - Proportion of income going to debt repayment</li>
+                  </ul>
+                  <p className="mt-2 text-sm"><strong style={{ color: cardText }}>Interpretation:</strong></p>
+                  <ul className="list-disc list-inside ml-2 space-y-1">
+                    <li>DTI &lt; 0.30: Safe zone - comfortable debt servicing</li>
+                    <li>DTI 0.30-0.43: Caution - may affect borrowing capacity</li>
+                    <li>DTI &gt; 0.43: High risk - likely to struggle with additional debt</li>
+                  </ul>
+                </div>
+              )}
+              <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
+                Shows Debt-to-Income ratio over time. Lower DTI indicates healthier debt position.
+              </p>
+              <ReactECharts option={dtiRatioOption} style={{ height: '300px' }} />
+            </div>
           </>
         )}
       </div>

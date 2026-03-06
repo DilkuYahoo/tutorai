@@ -10,9 +10,13 @@ investors = [
         "annual_growth_rate": 0.03,
         "essential_expenditure": 30000,
         "nonessential_expenditure": 15000,
+        "dependants": 2,
         "income_events": [
             {"year": 5, "type": "increase", "amount": 10000},
             {"year": 10, "type": "set", "amount": 150000}
+        ],
+        "dependants_events": [
+            {"year": 3, "dependants": 3}
         ]
     },
     {
@@ -21,7 +25,9 @@ investors = [
         "annual_growth_rate": 0.025,
         "essential_expenditure": 25000,
         "nonessential_expenditure": 12000,
-        "income_events": []
+        "dependants": 2,
+        "income_events": [],
+        "dependants_events": []
     }
 ]
 
@@ -35,20 +41,7 @@ properties = [
         "interest_rate": 0.05,
         "other_expenses": 5000,
         "property_value": 600000,  # Use initial_value directly
-        "initial_value": 600000,
-        "growth_rate": 0.03,
-        "investor_splits": [{"name": "Bob", "percentage": 50}, {"name": "Alice", "percentage": 50}]
-    },
-    {
-        "name": "Property B",
-        "purchase_year": 3,
-        "loan_amount": 50000,
-        "annual_principal_change":  0,  # Interest-only
-        "rent": 25000,
-        "interest_rate": 0.04,
-        "other_expenses": 4000,
-        "property_value": 500000,  # Use initial_value directly
-        "initial_value": 500000,
+        "initial_value": 550000,
         "growth_rate": 0.03,
         "investor_splits": [{"name": "Bob", "percentage": 50}, {"name": "Alice", "percentage": 50}]
     }

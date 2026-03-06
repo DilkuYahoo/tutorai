@@ -1,18 +1,49 @@
 import React, { useState, useEffect } from "react";
-import { Settings, Sun, Moon, LogIn, LogOut, User, Settings2 } from "lucide-react";
+import { Settings, Sun, Moon, LogIn, LogOut, User, Settings2, X, Save } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+
+interface ConfigParams {
+  medicareLevyRate: number;
+  cpiRate: number;
+  accessibleEquityRate: number;
+  borrowingPowerMultiplierMin: number;
+  borrowingPowerMultiplierBase: number;
+  borrowingPowerMultiplierDependantReduction: number;
+}
 
 interface HeaderProps {
   isDarkMode?: boolean;
   onToggleDarkMode?: () => void;
   investmentYears?: number;
   onInvestmentYearsChange?: (years: number) => void;
+  configParams?: ConfigParams;
+  onConfigParamsChange?: (params: ConfigParams) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isDarkMode: propIsDarkMode, onToggleDarkMode, investmentYears, onInvestmentYearsChange }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  isDarkMode: propIsDarkMode, 
+  onToggleDarkMode, 
+  investmentYears, 
+  onInvestmentYearsChange,
+  configParams: propConfigParams,
+  onConfigParamsChange
+}) => {
   const { isAuthenticated, user, login, logout } = useAuth();
   const [localIsDarkMode, setLocalIsDarkMode] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showConfigPanel, setShowConfigPanel] = useState(false);
+
+  // Default config params
+  const defaultConfigParams: ConfigParams = {
+    medicareLevyRate: 0.02,
+    cpiRate: 0.03,
+    accessibleEquityRate: 0.80,
+    borrowingPowerMultiplierMin: 3.5,
+    borrowingPowerMultiplierBase: 5.0,
+    borrowingPowerMultiplierDependantReduction: 0.25
+  };
+
+  const [configParams, setConfigParams] = useState<ConfigParams>(propConfigParams || defaultConfigParams);
 
   useEffect(() => {
     const checkDarkMode = () => {
@@ -51,6 +82,32 @@ const Header: React.FC<HeaderProps> = ({ isDarkMode: propIsDarkMode, onToggleDar
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserMenu]);
+
+  // Close config panel when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showConfigPanel) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.config-panel')) {
+          setShowConfigPanel(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showConfigPanel]);
+
+  const handleConfigChange = (field: keyof ConfigParams, value: number) => {
+    const updated = { ...configParams, [field]: value };
+    setConfigParams(updated);
+    onConfigParamsChange?.(updated);
+  };
+
+  const handleConfigSave = () => {
+    onConfigParamsChange?.(configParams);
+    setShowConfigPanel(false);
+  };
 
   const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : localIsDarkMode;
 
@@ -178,14 +235,132 @@ const Header: React.FC<HeaderProps> = ({ isDarkMode: propIsDarkMode, onToggleDar
 
         {/* Config Button */}
         <button 
-          className="p-2 rounded-lg transition-colors"
-          style={{ color: textSecondary }}
+          className="p-2 rounded-lg transition-colors config-panel"
+          style={{ color: showConfigPanel ? '#06b6d4' : textSecondary }}
+          onClick={() => setShowConfigPanel(!showConfigPanel)}
           onMouseEnter={(e) => e.currentTarget.style.color = textColor}
-          onMouseLeave={(e) => e.currentTarget.style.color = textSecondary}
+          onMouseLeave={(e) => e.currentTarget.style.color = showConfigPanel ? '#06b6d4' : textSecondary}
           aria-label="Config"
         >
           <Settings2 size={20} />
         </button>
+
+        {/* Config Panel */}
+        {showConfigPanel && (
+          <div 
+            className="absolute right-4 top-16 w-80 rounded-lg shadow-xl border z-50 config-panel"
+            style={{ 
+              backgroundColor: bgColor, 
+              borderColor: borderColor 
+            }}
+          >
+            <div 
+              className="px-4 py-3 border-b flex items-center justify-between"
+              style={{ borderColor: borderColor }}
+            >
+              <h3 className="text-sm font-semibold" style={{ color: textColor }}>
+                Configuration Parameters
+              </h3>
+              <button
+                onClick={() => setShowConfigPanel(false)}
+                className="p-1 rounded hover:bg-slate-600"
+              >
+                <X size={16} style={{ color: textSecondary }} />
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="text-xs text-cyan-400 block mb-1">Medicare Levy Rate</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="1"
+                  value={configParams.medicareLevyRate}
+                  onChange={(e) => handleConfigChange('medicareLevyRate', parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 rounded text-sm"
+                  style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-cyan-400 block mb-1">CPI Rate</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="1"
+                  value={configParams.cpiRate}
+                  onChange={(e) => handleConfigChange('cpiRate', parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 rounded text-sm"
+                  style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-cyan-400 block mb-1">Accessible Equity Rate</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="1"
+                  value={configParams.accessibleEquityRate}
+                  onChange={(e) => handleConfigChange('accessibleEquityRate', parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 rounded text-sm"
+                  style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-cyan-400 block mb-1">Borrowing Power Min</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={configParams.borrowingPowerMultiplierMin}
+                  onChange={(e) => handleConfigChange('borrowingPowerMultiplierMin', parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 rounded text-sm"
+                  style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-cyan-400 block mb-1">Borrowing Power Base</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={configParams.borrowingPowerMultiplierBase}
+                  onChange={(e) => handleConfigChange('borrowingPowerMultiplierBase', parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 rounded text-sm"
+                  style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-cyan-400 block mb-1">Dependant Reduction</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={configParams.borrowingPowerMultiplierDependantReduction}
+                  onChange={(e) => handleConfigChange('borrowingPowerMultiplierDependantReduction', parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 rounded text-sm"
+                  style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
+                />
+              </div>
+
+              <button
+                onClick={handleConfigSave}
+                className="w-full flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white text-sm px-4 py-2 rounded transition-colors"
+              >
+                <Save size={16} />
+                Save Configuration
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Dark/Light Mode Toggle */}
         <button 

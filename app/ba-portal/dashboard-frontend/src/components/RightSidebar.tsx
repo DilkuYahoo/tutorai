@@ -11,6 +11,29 @@ import {
   Upload,
 } from "lucide-react";
 
+// Format number for display in thousands (e.g., 1500000 → "1.5M")
+const formatInThousands = (value: number): string => {
+  if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(1)}M`;
+  } else if (value >= 1000) {
+    return `${Math.round(value / 1000)}K`;
+  }
+  return value.toString();
+};
+
+// Parse thousands input back to actual value (e.g., "1.5K" → 1500)
+const parseThousandsInput = (input: string): number => {
+  const trimmed = input.trim().toUpperCase();
+  const num = parseFloat(trimmed);
+
+  if (trimmed.endsWith('M')) {
+    return Math.round(num * 1000000);
+  } else if (trimmed.endsWith('K')) {
+    return Math.round(num * 1000);
+  }
+  return isNaN(num) ? 0 : Math.round(num * 1000); // Default: assume input is in thousands
+};
+
 interface RightSidebarProps {
   investors: any[];
   properties: any[];
@@ -224,13 +247,13 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
                   <div className="flex justify-between">
                     <span>Initial Value:</span>
                     <input
-                      type="number"
-                      value={prop?.initial_value || 0}
+                      type="text"
+                      value={formatInThousands(prop?.initial_value || 0)}
                       onChange={(e) =>
                         updateProperty(
                           index,
                           "initial_value",
-                          parseFloat(e.target.value),
+                          parseThousandsInput(e.target.value),
                         )
                       }
                       className="rounded px-1 py-0 w-20 text-xs text-right"
@@ -240,13 +263,13 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
                   <div className="flex justify-between">
                     <span>Loan Amount:</span>
                     <input
-                      type="number"
-                      value={prop?.loan_amount || 0}
+                      type="text"
+                      value={formatInThousands(prop?.loan_amount || 0)}
                       onChange={(e) =>
                         updateProperty(
                           index,
                           "loan_amount",
-                          parseFloat(e.target.value),
+                          parseThousandsInput(e.target.value),
                         )
                       }
                       className="rounded px-1 py-0 w-20 text-xs text-right"
@@ -272,13 +295,13 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
                   <div className="flex justify-between">
                     <span>Annual Rent:</span>
                     <input
-                      type="number"
-                      value={prop?.rent || 0}
+                      type="text"
+                      value={formatInThousands(prop?.rent || 0)}
                       onChange={(e) =>
                         updateProperty(
                           index,
                           "rent",
-                          parseFloat(e.target.value),
+                          parseThousandsInput(e.target.value),
                         )
                       }
                       className="rounded px-1 py-0 w-20 text-xs text-right"
@@ -304,13 +327,13 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
                   <div className="flex justify-between">
                     <span>Other Expenses:</span>
                     <input
-                      type="number"
-                      value={prop?.other_expenses || 0}
+                      type="text"
+                      value={formatInThousands(prop?.other_expenses || 0)}
                       onChange={(e) =>
                         updateProperty(
                           index,
                           "other_expenses",
-                          parseFloat(e.target.value),
+                          parseThousandsInput(e.target.value),
                         )
                       }
                       className="rounded px-1 py-0 w-20 text-xs text-right"
@@ -320,13 +343,13 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
                   <div className="flex justify-between">
                     <span>Annual Principal Change:</span>
                     <input
-                      type="number"
-                      value={prop?.annual_principal_change || 0}
+                      type="text"
+                      value={formatInThousands(prop?.annual_principal_change || 0)}
                       onChange={(e) =>
                         updateProperty(
                           index,
                           "annual_principal_change",
-                          parseFloat(e.target.value),
+                          parseThousandsInput(e.target.value),
                         )
                       }
                       className="rounded px-1 py-0 w-20 text-xs text-right"

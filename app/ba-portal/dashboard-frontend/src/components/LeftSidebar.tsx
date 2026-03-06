@@ -12,6 +12,29 @@ import {
   Upload,
 } from "lucide-react";
 
+// Format number for display in thousands (e.g., 1500000 → "1.5M")
+const formatInThousands = (value: number): string => {
+  if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(1)}M`;
+  } else if (value >= 1000) {
+    return `${Math.round(value / 1000)}K`;
+  }
+  return value.toString();
+};
+
+// Parse thousands input back to actual value (e.g., "1.5K" → 1500)
+const parseThousandsInput = (input: string): number => {
+  const trimmed = input.trim().toUpperCase();
+  const num = parseFloat(trimmed);
+
+  if (trimmed.endsWith('M')) {
+    return Math.round(num * 1000000);
+  } else if (trimmed.endsWith('K')) {
+    return Math.round(num * 1000);
+  }
+  return isNaN(num) ? 0 : Math.round(num * 1000); // Default: assume input is in thousands
+};
+
 interface LeftSidebarProps {
   investors: any[];
   properties: any[];
@@ -36,6 +59,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
 }) => {
   const [localVisible, setLocalVisible] = useState(isVisible);
   const [expandedInvestor, setExpandedInvestor] = useState<string | null>(null);
+  const [expandedDependants, setExpandedDependants] = useState<string | null>(null);
   const [localInvestors, setLocalInvestors] = useState<any[]>([]);
   const [originalInvestors, setOriginalInvestors] = useState<any[]>([]);
 
@@ -53,6 +77,12 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   const toggleInvestorExpand = (investorName: string) => {
     setExpandedInvestor(
       expandedInvestor === investorName ? null : investorName,
+    );
+  };
+
+  const toggleDependantsExpand = (investorName: string) => {
+    setExpandedDependants(
+      expandedDependants === investorName ? null : investorName,
     );
   };
 
@@ -78,6 +108,17 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     setLocalInvestors(updated);
   };
 
+  const addDependantsEvent = (investorIndex: number) => {
+    const updated = [...localInvestors];
+    if (!updated[investorIndex].dependants_events)
+      updated[investorIndex].dependants_events = [];
+    updated[investorIndex].dependants_events.push({
+      year: new Date().getFullYear(),
+      dependants: 0,
+    });
+    setLocalInvestors(updated);
+  };
+
   const updateIncomeEvent = (
     investorIndex: number,
     eventIndex: number,
@@ -92,9 +133,29 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     setLocalInvestors(updated);
   };
 
+  const updateDependantsEvent = (
+    investorIndex: number,
+    eventIndex: number,
+    field: string,
+    value: any,
+  ) => {
+    const updated = [...localInvestors];
+    updated[investorIndex].dependants_events[eventIndex] = {
+      ...updated[investorIndex].dependants_events[eventIndex],
+      [field]: value,
+    };
+    setLocalInvestors(updated);
+  };
+
   const deleteIncomeEvent = (investorIndex: number, eventIndex: number) => {
     const updated = [...localInvestors];
     updated[investorIndex].income_events.splice(eventIndex, 1);
+    setLocalInvestors(updated);
+  };
+
+  const deleteDependantsEvent = (investorIndex: number, eventIndex: number) => {
+    const updated = [...localInvestors];
+    updated[investorIndex].dependants_events.splice(eventIndex, 1);
     setLocalInvestors(updated);
   };
 
@@ -115,6 +176,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
         base_income: 0,
         annual_growth_rate: 0,
         income_events: [],
+        dependants_events: [],
         essential_expenditure: 0,
         nonessential_expenditure: 0,
       };
@@ -200,13 +262,13 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                   <div className="flex justify-between">
                     <span>Base Income:</span>
                     <input
-                      type="number"
-                      value={investor?.base_income || 0}
+                      type="text"
+                      value={formatInThousands(investor?.base_income || 0)}
                       onChange={(e) =>
                         updateInvestor(
                           index,
                           "base_income",
-                          parseFloat(e.target.value),
+                          parseThousandsInput(e.target.value),
                         )
                       }
                       className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
@@ -230,13 +292,13 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                   <div className="flex justify-between">
                     <span>Essential Expenditure:</span>
                     <input
-                      type="number"
-                      value={investor?.essential_expenditure || 0}
+                      type="text"
+                      value={formatInThousands(investor?.essential_expenditure || 0)}
                       onChange={(e) =>
                         updateInvestor(
                           index,
                           "essential_expenditure",
-                          parseFloat(e.target.value),
+                          parseThousandsInput(e.target.value),
                         )
                       }
                       className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
@@ -245,19 +307,138 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                   <div className="flex justify-between">
                     <span>Nonessential Expenditure:</span>
                     <input
-                      type="number"
-                      value={investor?.nonessential_expenditure || 0}
+                      type="text"
+                      value={formatInThousands(investor?.nonessential_expenditure || 0)}
                       onChange={(e) =>
                         updateInvestor(
                           index,
                           "nonessential_expenditure",
-                          parseFloat(e.target.value),
+                          parseThousandsInput(e.target.value),
+                        )
+                      }
+                      className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
+                    />
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Dependants:</span>
+                    <input
+                      type="number"
+                      value={investor?.dependants || 0}
+                      onChange={(e) =>
+                        updateInvestor(
+                          index,
+                          "dependants",
+                          parseInt(e.target.value),
                         )
                       }
                       className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
                     />
                   </div>
                 </div>
+
+                {/* Dependants Events */}
+                {investor?.dependants_events &&
+                  investor.dependants_events.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-slate-500">
+                      <div className="flex items-center justify-between mb-2">
+                        <button
+                          onClick={() =>
+                            toggleDependantsExpand(investor?.name || "")
+                          }
+                          className="flex items-center justify-between text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors flex-1"
+                        >
+                          <span>Dependants Events</span>
+                          <span>
+                            {expandedDependants === investor?.name ? (
+                              <ChevronDown size={16} />
+                            ) : (
+                              <ChevronRight size={16} />
+                            )}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => addDependantsEvent(index)}
+                          className="text-green-400 hover:text-green-300 ml-2"
+                          title="Add Dependants Event"
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                      {expandedDependants === investor?.name && (
+                        <div className="space-y-1">
+                          {investor.dependants_events.map(
+                            (event: any, eIdx: number) => (
+                              <div
+                                key={eIdx}
+                                className="rounded p-2 text-xs flex justify-between items-center"
+                               style={{ backgroundColor: 'var(--bg-secondary)' }}
+                              >
+                                <div className="flex-1">
+                                    <div className="space-y-1">
+                                      <div className="flex gap-2">
+                                        <label className="text-gray-300">
+                                          Year:
+                                        </label>
+                                        <input
+                                          type="number"
+                                          value={event.year || 0}
+                                          onChange={(e) =>
+                                            updateDependantsEvent(
+                                              index,
+                                              eIdx,
+                                              "year",
+                                              parseInt(e.target.value),
+                                            )
+                                          }
+                                          className="bg-slate-500 text-white rounded px-1 py-0 w-16 text-xs"
+                                        />
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <label className="text-gray-300">
+                                          Dependants:
+                                        </label>
+                                        <input
+                                          type="number"
+                                          value={event.dependants || 0}
+                                          onChange={(e) =>
+                                            updateDependantsEvent(
+                                              index,
+                                              eIdx,
+                                              "dependants",
+                                              parseInt(e.target.value),
+                                            )
+                                          }
+                                          className="bg-slate-500 text-white rounded px-1 py-0 w-16 text-xs"
+                                        />
+                                      </div>
+                                    </div>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    deleteDependantsEvent(index, eIdx)
+                                  }
+                                  className="text-red-400 hover:text-red-300 ml-2"
+                                  title="Delete Dependants Event"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                {(!investor?.dependants_events || investor.dependants_events.length === 0) && (
+                      <div className="mt-4 pt-4 border-t border-slate-500">
+                        <button
+                          onClick={() => addDependantsEvent(index)}
+                          className="text-green-400 hover:text-green-300 flex items-center gap-1 text-xs"
+                        >
+                          <Plus size={14} /> Add Dependants Event
+                        </button>
+                      </div>
+                    )}
 
                 {/* Income Events */}
                 {investor?.income_events &&
@@ -321,14 +502,14 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                           Amount:
                                         </label>
                                         <input
-                                          type="number"
-                                          value={event.amount || 0}
+                                          type="text"
+                                          value={formatInThousands(event.amount || 0)}
                                           onChange={(e) =>
                                             updateIncomeEvent(
                                               index,
                                               eIdx,
                                               "amount",
-                                              parseFloat(e.target.value),
+                                              parseThousandsInput(e.target.value),
                                             )
                                           }
                                           className="bg-slate-500 text-white rounded px-1 py-0 w-20 text-xs"
