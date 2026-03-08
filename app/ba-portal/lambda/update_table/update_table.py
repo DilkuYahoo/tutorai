@@ -464,13 +464,23 @@ class DynamoDBUpdater:
             return False
 
     def _convert_chart_floats_to_integers(self, chart_data: Any) -> Any:
-        """Recursively convert float values to integers in chart data for DynamoDB compatibility."""
+        """Recursively convert float values to integers in chart data for DynamoDB compatibility.
+        
+        Note: dti_ratio is preserved as a decimal since it represents a ratio, not an integer.
+        """
         if isinstance(chart_data, float):
             # Convert float to integer (round to nearest integer)
             return round(chart_data)
         elif isinstance(chart_data, dict):
             # Recursively process dictionary values
-            return {key: self._convert_chart_floats_to_integers(value) for key, value in chart_data.items()}
+            result = {}
+            for key, value in chart_data.items():
+                # Preserve dti_ratio as decimal (ratio), not as integer
+                if key == 'dti_ratio' and isinstance(value, float):
+                    result[key] = value  # Keep as decimal
+                else:
+                    result[key] = self._convert_chart_floats_to_integers(value)
+            return result
         elif isinstance(chart_data, list):
             # Recursively process list items
             return [self._convert_chart_floats_to_integers(item) for item in chart_data]

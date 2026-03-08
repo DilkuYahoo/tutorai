@@ -1,4 +1,3 @@
-import json
 from typing import List, Dict, Optional
 
 
@@ -117,12 +116,12 @@ def calculate_dti(total_debt: float, annual_income: float) -> dict:
     if annual_income <= 0:
         dti_ratio = 0.0
     else:
-        dti_ratio = (total_debt / annual_income) * 100
+        dti_ratio = total_debt / annual_income
     
     return {
         "total_debt": round(total_debt, 2),
         "annual_income": round(annual_income, 2),
-        "dti_ratio": round(dti_ratio, 2)
+        "dti_ratio": dti_ratio
     }
 
 def calculate_net_income(gross_income: float) -> dict:
@@ -172,8 +171,7 @@ def calculate_max_purchase_price(property_value: float, loans: float) -> dict:
     Calculate the maximum purchase price based on accessible equity.
     
     Formula:
-        - Raw Equity = Property value - Loans
-        - Accessible Equity = Raw Equity × 0.8
+        - Accessible Equity = (Property value × ACCESSIBLE_EQUITY_RATE) - Loans
         - MaxPurchasePrice = Accessible Equity / 0.25
     
     Parameters
@@ -189,7 +187,7 @@ def calculate_max_purchase_price(property_value: float, loans: float) -> dict:
         A dictionary containing raw_equity, accessible_equity, and max_purchase_price
     """
     raw_equity = property_value - loans
-    accessible_equity = raw_equity * ACCESSIBLE_EQUITY_RATE
+    accessible_equity = max(0, (property_value * ACCESSIBLE_EQUITY_RATE) - loans)
     max_purchase_price = accessible_equity / 0.25
     
     return {
@@ -282,8 +280,8 @@ def borrowing_capacity_forecast_investor_blocks(
     # property balances
     property_balances = {}
 
-    # property values
-    property_values = {prop["name"]: prop.get("initial_value", prop["loan_amount"]) for prop in properties}
+    # property values - start empty, add properties when they are purchased
+    property_values = {}
 
     # track current property rent and other_expenses (grow with CPI)
     property_rent_current = {prop["name"]: prop["rent"] for prop in properties}
@@ -334,6 +332,8 @@ def borrowing_capacity_forecast_investor_blocks(
         for prop in properties:
             if prop["purchase_year"] == year:
                 property_balances[prop["name"]] = prop["loan_amount"]
+                # Initialize property value when purchased
+                property_values[prop["name"]] = prop.get("initial_value", prop["loan_amount"])
                 for split in prop.get("investor_splits", []):
                     investor_debt[split["name"]] += prop["loan_amount"] * split["percentage"] / 100
 
@@ -346,9 +346,11 @@ def borrowing_capacity_forecast_investor_blocks(
 
         total_debt = sum(property_balances.values())
 
-        # update property values for this year
-        for prop in properties:
-            property_values[prop["name"]] *= (1 + prop["growth_rate"])
+        # update property values for this year - only apply growth to properties already in the portfolio and purchased
+        for name in list(property_values.keys()):
+            prop = next((p for p in properties if p["name"] == name), None)
+            if prop and year >= prop.get("purchase_year", 1):
+                property_values[name] *= (1 + prop["growth_rate"])
 
         # apply annual CPI growth to property rent and other expenses (after year 1)
         if year > 1:
@@ -446,7 +448,8 @@ def borrowing_capacity_forecast_investor_blocks(
             borrowing_multiple = calculate_borrowing_multiple(dependants)
             investor_borrowing_multiples[name] = borrowing_multiple
             # Use net income after tax and expenditures
-            investor_borrowing_capacities[name] = round(net_income * borrowing_multiple - debt, 2)
+            # Ensure borrowing capacity is not less than 0
+            investor_borrowing_capacities[name] = round(max(0, net_income * borrowing_multiple - debt), 2)
 
         # ---- write results for year ----
         results["yearly_forecast"].append({
