@@ -573,7 +573,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Check if item exists
         if not updater.check_item_exists(params['id']):
             # Item doesn't exist, create it with the attributes
-            self.log(f"Item {params['id']} does not exist, creating new item")
+            updater.log(f"Item {params['id']} does not exist, creating new item")
             result = updater.create_item(params['id'], params['attributes'])
             return create_api_gateway_response(201, {
                 'status': 'success',
