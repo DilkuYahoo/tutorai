@@ -767,6 +767,39 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
               </p>
               <ReactECharts option={dtiRatioOption} style={{ height: '300px' }} />
             </div>
+
+            {/* Investor Net Income Chart */}
+            <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-xl font-bold" style={{ color: cardText }}>
+                  Investor Net Income
+                </h2>
+                <button
+                  onClick={() => toggleSection('investorNetIncome')}
+                  className="transition-colors"
+                  style={{ color: cardTextSecondary }}
+                  title="Learn more about this chart"
+                >
+                  <svg className={`w-6 h-6 transform transition-transform ${expandedSection === 'investorNetIncome' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+              </div>
+              {expandedSection === 'investorNetIncome' && (
+                <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}>
+                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Net income trends for each investor over time.</p>
+                  <p className="mb-2"><strong style={{ color: cardText }}>Data sources:</strong></p>
+                  <ul className="list-disc list-inside ml-2 space-y-1">
+                    <li>Individual investor net income lines showing income progression</li>
+                  </ul>
+                  <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: Rising net income indicates improving financial position for each investor.</p>
+                </div>
+              )}
+              <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
+                Shows net income trends for each investor over time.
+              </p>
+              <ReactECharts option={investorNetIncomeOption} style={{ height: '300px' }} />
+            </div>
           </>
         )}
       </div>
