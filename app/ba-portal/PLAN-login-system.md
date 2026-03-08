@@ -116,12 +116,14 @@ sequenceDiagram
 
 ### 3.1 ba-dashboard-users-table
 
+**Note**: user_id, email, advicer_name, and cognito_username are ALL THE SAME (email address). This simplifies the table design.
+
 | Attribute | Type | Key | Description |
 |-----------|------|-----|-------------|
-| user_id | String | PK | Cognito sub (UUID) |
-| email | String | GSI1 | User email (indexed) |
-| advicer_name | String | - | **Buyer Agent unique ID** |
-| cognito_username | String | - | Cognito username |
+| user_id | String | PK | **Same as email** - User's email address |
+| email | String | GSI1 | **Same as user_id** - User's email (indexed) |
+| advicer_name | String | - | **Same as email** - Buyer Agent unique ID |
+| cognito_username | String | - | **Same as email** - Cognito username |
 | name | String | - | Full name |
 | created_at | String | - | ISO timestamp |
 | updated_at | String | - | ISO timestamp |
@@ -159,12 +161,13 @@ sequenceDiagram
 
 **Purpose**: Register new user (passwordless)
 
+**Note**: user_id = email = advicer_name = cognito_username (all the same value)
+
 **Input**:
 ```json
 {
-  "email": "user@example.com",
-  "advicer_name": "ADVISOR001",
-  "name": "John Doe"
+  "email": "johnsmith@company.com",
+  "name": "John Smith"
 }
 ```
 
@@ -173,9 +176,10 @@ sequenceDiagram
 {
   "statusCode": 201,
   "body": {
-    "user_id": "uuid",
-    "email": "user@example.com",
-    "advicer_name": "ADVISOR001",
+    "user_id": "johnsmith@company.com",
+    "email": "johnsmith@company.com",
+    "advicer_name": "johnsmith@company.com",
+    "name": "John Smith",
     "message": "User registered successfully"
   }
 }
@@ -185,10 +189,12 @@ sequenceDiagram
 
 **Purpose**: Authenticate with email + verification code
 
+**Note**: user_id = email = advicer_name = cognito_username (all the same value)
+
 **Input**:
 ```json
 {
-  "email": "user@example.com",
+  "email": "johnsmith@company.com",
   "verification_code": "123456"
 }
 ```
@@ -202,8 +208,9 @@ sequenceDiagram
     "id_token": "eyJ...",
     "refresh_token": "eyJ...",
     "expires_in": 3600,
-    "user_id": "uuid",
-    "advicer_name": "ADVISOR001"
+    "user_id": "johnsmith@company.com",
+    "email": "johnsmith@company.com",
+    "advicer_name": "johnsmith@company.com"
   }
 }
 ```
