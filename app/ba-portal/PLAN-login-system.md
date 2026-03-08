@@ -5,8 +5,8 @@
 - **Authentication Type**: Passwordless login (no password required)
 - **Login Code Expiry**: 5 minutes for verification code
 - **Cognito User Pool**: NEW pool with "ba-dashboard-" prefix, redeployable Python script
-- **advicer_name**: This IS the unique ID for the advisor
-- **Duplicate Logic**: Entire user record duplicated to BA-PORTAL-BASETABLE on **registration** (not login)
+- **advicer_name**: This IS the unique ID for the Buyer Agent (BA) - links login to BA-PORTAL-BASETABLE
+- **BA-PORTAL-BASETABLE**: Already exists and contains dashboard data - linked via advicer_name (NOT duplicated)
 - **User Status**: Active by default, with manual status field for activation/blocking
 - **No Admin Features**: No block/unblock user functionality, no admin user list
 
@@ -16,14 +16,17 @@
 
 This document outlines the architecture for a secure, serverless login system integrated with AWS Cognito, API Gateway, Lambda, and DynamoDB. The system provides signup, login, and logout functionality with JWT token authentication.
 
+**Key Understanding**: BA-PORTAL-BASETABLE already exists and contains the dashboard data for each Buyer Agent. Each BA is uniquely identified by `advicer_name`. The login system links to this table via `advicer_name` - NOT by duplicating records.
+
 ### Key Requirements Summary:
 - **Prefix**: All resources use "ba-dashboard-" prefix
 - **Authentication**: AWS Cognito with JWT tokens
 - **Storage**: DynamoDB for login details and attempt logging
+- **Dashboard Data**: BA-PORTAL-BASETABLE (already exists) - linked via advicer_name
 - **API**: Existing API Gateway integration
 - **Token Expiry**: 5 minutes for login codes
-- **Registration Feature**: Duplicate ID "B57153AB-B66E-4085-A4C1-929EC158FC3E" to BA-PORTAL-BASETABLE on new user registration
 - **User Status**: Active by default, manually toggleable status field
+- **Linkage**: advicer_name is the key that links login users to their dashboard data in BA-PORTAL-BASETABLE
 
 ---
 
@@ -57,19 +60,28 @@ flowchart TB
             VerifyTokenLambda["verify-token-lambda"]
         end
         
-        subgraph DynamoDB["DynamoDB Tables (ba-dashboard-)"]
-            UsersTable["users-table"]
-            VerificationCodesTable["verification-codes-table"]
-            LoginAttemptsTable["login-attempts-table"]
-            BaseTable["BA-PORTAL-BASETABLE (External)"]
+        subgraph DynamoDB["DynamoDB Tables"]
+            subgraph AuthTables["Auth Tables (ba-dashboard-)"]
+                UsersTable["users-table"]
+                VerificationCodesTable["verification-codes-table"]
+                LoginAttemptsTable["login-attempts-table"]
+            end
+            
+            subgraph ExistingTables["Existing Tables"]
+                BASETable["BA-PORTAL-BASETABLE"]
+                AdvisersTable["AL-DSOA-ADVISERS"]
+            end
         end
     end
     
     Frontend -->|"OAuth 2.0 / API Calls"| Cognito
     Frontend -->|"HTTP Requests"| APIGateway
     APIGateway -->|"Invoke"| Lambda
-    Lambda -->|"Read/Write"| DynamoDB
+    Lambda -->|"Read/Write"| AuthTables
+    Lambda -->|"Read Dashboard Data"| BASETable
     Lambda -->|"Verify Token"| Cognito
+    
+    Dashboard -.->|"Query by advicer_name"| BASETable
     
     style Lambda fill:#f9f,stroke:#333
     style DynamoDB fill:#ff9,stroke:#333
@@ -89,14 +101,14 @@ sequenceDiagram
     participant Lambda
     participant DynamoDB
     
-    Note over User,Frontend: SIGNUP FLOW (With Duplicate)
-    User->>Frontend: Enter signup details
-    Frontend->>APIGateway: POST /signup (email, advicer_name, name)
+    Note over User,Frontend: SIGNUP FLOW (Link to BA-PORTAL-BASETABLE)
+    User->>Frontend: Enter signup details (email, advicer_name, name)
+    Frontend->>APIGateway: POST /signup
     APIGateway->>Lambda: Invoke signup-lambda
     Lambda->>Cognito: Create user in User Pool
-    Lambda->>DynamoDB: Store user profile (advicer_name, status=Active)
-    Lambda->>DynamoDB: Duplicate record to BA-PORTAL-BASETABLE
-    Lambda-->>APIGateway: Return success
+    Lambda->>DynamoDB: Store user profile with advicer_name
+    Lambda->>DynamoDB: Verify advicer_name exists in BA-PORTAL-BASETABLE
+    Lambda-->>APIGateway: Return success with advicer_name
     APIGateway-->>Frontend: Signup success
     
     Note over User,Frontend: LOGIN FLOW (Passwordless)
@@ -112,10 +124,16 @@ sequenceDiagram
     Lambda->>DynamoDB: Validate code (check expiry)
     Lambda->>DynamoDB: Log login attempt
     Lambda->>DynamoDB: Check if user status is Active
-    Lambda->>Cognito: Get tokens
-    Lambda-->>APIGateway: Return JWT tokens
+    Lambda->>Cognito: Get tokens (include advicer_name)
+    Lambda-->>APIGateway: Return JWT tokens + advicer_name
     APIGateway-->>Frontend: Return tokens
     Frontend->>Frontend: Store tokens
+    
+    Note over User,Frontend: DASHBOARD ACCESS
+    Frontend->>APIGateway: GET /read-table (with JWT)
+    Lambda->>Lambda: Extract advicer_name from token
+    Lambda->>DynamoDB: Query BA-PORTAL-BASETABLE by advicer_name
+    Lambda-->>Frontend: Return BA's dashboard data
     
     Note over User,Frontend: LOGOUT FLOW
     User->>Frontend: Click Logout
@@ -130,15 +148,35 @@ sequenceDiagram
 
 ## 4. DynamoDB Table Schemas
 
-### 4.1 ba-dashboard-users-table
+### 4.1 BA-PORTAL-BASETABLE (EXISTING - Already Contains Dashboard Data)
 
-Stores user profiles with their unique advicer_name.
+**This table already exists and should NOT be duplicated. It is linked via advicer_name.**
+
+| Attribute | Type | Key | Description |
+|-----------|------|-----|-------------|
+| id | String | PK | Unique record ID |
+| advicer_name | String | - | **Buyer Agent unique ID - the link to login** |
+| status | String | - | active/inactive |
+| creation_date | String | - | ISO timestamp |
+| last_updated_date | String | - | ISO timestamp |
+| investment_years | Number | - | Number of investment years |
+| cpi_rate | Number | - | CPI rate |
+| borrowing_power_multiplier_base | Number | - | Base borrowing multiplier |
+| borrowing_power_multiplier_min | Number | - | Minimum borrowing multiplier |
+| medicare_levy_rate | Number | - | Medicare levy rate |
+| investors | List | - | List of investors with details |
+| properties | List | - | List of properties |
+| chart1 | List | - | Yearly projections (25 years) |
+
+### 4.2 ba-dashboard-users-table
+
+Stores user profiles with their unique advicer_name that links to BA-PORTAL-BASETABLE.
 
 | Attribute | Type | Key | Description |
 |-----------|------|-----|-------------|
 | user_id | String | PK | Cognito sub (UUID) |
 | email | String | GSI1 | User email (indexed) |
-| advicer_name | String | - | Advisor unique ID |
+| advicer_name | String | GSI2 | **Buyer Agent unique ID - links to BA-PORTAL-BASETABLE** |
 | cognito_username | String | - | Cognito username |
 | name | String | - | Full name |
 | created_at | String | - | ISO timestamp |
@@ -146,7 +184,7 @@ Stores user profiles with their unique advicer_name.
 | last_login | String | - | ISO timestamp |
 | status | String | - | **Active** or **Blocked** (manually toggleable) |
 
-### 4.2 ba-dashboard-verification-codes-table
+### 4.3 ba-dashboard-verification-codes-table
 
 Stores verification codes with 5-minute TTL.
 
@@ -159,7 +197,7 @@ Stores verification codes with 5-minute TTL.
 | attempts | Number | - | Failed attempts |
 | is_used | Boolean | - | Code used flag |
 
-### 4.3 ba-dashboard-login-attempts-table
+### 4.4 ba-dashboard-login-attempts-table
 
 Logs all login attempts for security and auditing.
 
@@ -183,7 +221,7 @@ All Lambda functions use the prefix "ba-dashboard-" and are designed to be gener
 
 ### 5.1 ba-dashboard-signup-lambda
 
-**Purpose**: Register a new user (passwordless - no password required) + duplicate record to BA-PORTAL-BASETABLE
+**Purpose**: Register a new user (passwordless - no password required) + link to BA-PORTAL-BASETABLE via advicer_name
 
 **Input**:
 ```json
@@ -210,7 +248,8 @@ All Lambda functions use the prefix "ba-dashboard-" and are designed to be gener
 **Features**:
 - Creates user in Cognito User Pool
 - Stores user profile in DynamoDB with status = "Active"
-- **Duplicates entire record from BA-PORTAL-BASETABLE** (ID: B57153AB-B66E-4085-A4C1-929EC158FC3E) to the same table with user's identifier
+- **Verifies advicer_name exists in BA-PORTAL-BASETABLE** (links, does NOT duplicate)
+- Returns advicer_name in response for dashboard access
 
 **Environment Variables**:
 - COGNITO_USER_POOL_ID
@@ -218,7 +257,6 @@ All Lambda functions use the prefix "ba-dashboard-" and are designed to be gener
 - REGION
 - DYNAMODB_USERS_TABLE
 - BA_PORTAL_BASE_TABLE
-- SOURCE_RECORD_ID=B57153AB-B66E-4085-A4C1-929EC158FC3E
 
 ### 5.2 ba-dashboard-login-lambda
 
@@ -228,7 +266,7 @@ All Lambda functions use the prefix "ba-dashboard-" and are designed to be gener
 ```json
 {
   "email": "user@example.com",
-  "verification_code": "123456"  // 5-minute expiry
+  "verification_code": "123456"
 }
 ```
 
@@ -253,7 +291,7 @@ All Lambda functions use the prefix "ba-dashboard-" and are designed to be gener
 - Logs attempt to DynamoDB
 - Generates JWT tokens after verification
 - Updates user's last_login timestamp
-- **NOTE**: Duplicate logic moved to signup-lambda
+- **Includes advicer_name in token for dashboard access**
 
 **Environment Variables**:
 - COGNITO_USER_POOL_ID
@@ -287,7 +325,7 @@ All Lambda functions use the prefix "ba-dashboard-" and are designed to be gener
 
 **Features**:
 - Generates 6-digit verification code
-- Stores code in DynamoDB with 5-minute TTL
+- Stores code in DynamoDB with 5-min TTL
 - Logs the request
 
 ### 5.4 ba-dashboard-logout-lambda
@@ -349,7 +387,7 @@ All endpoints added to the existing API Gateway.
 
 | Method | Path | Lambda | Auth | Description |
 |--------|------|--------|------|-------------|
-| POST | /auth/signup | ba-dashboard-signup-lambda | NONE | User registration + duplicate to BA-PORTAL-BASETABLE |
+| POST | /auth/signup | ba-dashboard-signup-lambda | NONE | User registration + link to BA-PORTAL-BASETABLE |
 | POST | /auth/request-code | ba-dashboard-request-code-lambda | NONE | Request 5-min verification code |
 | POST | /auth/login | ba-dashboard-login-lambda | NONE | Login with email + verification code |
 | POST | /auth/logout | ba-dashboard-logout-lambda | COGNITO | User logout |
@@ -371,30 +409,30 @@ All endpoints added to the existing API Gateway.
   "email": "user@example.com",
   "code": "123456",
   "created_at": "2026-03-08T04:30:00Z",
-  "expires_at": "2026-03-08T04:35:00Z",  // 5 minutes later
+  "expires_at": "2026-03-08T04:35:00Z",
   "attempts": 0
 }
 ```
 
 ### Standard Access Token (from Cognito)
 - Expiry: 1 hour (from Cognito)
-- Contains: user claims, groups, advicer_name
+- Contains: user claims, groups, **advicer_name** (for dashboard access)
 
 ---
 
-## 8. Registration Record Duplication Logic
+## 8. Linkage Logic (NOT Duplication)
 
-When a new user registers successfully:
+**Key Change**: The login system LINKS to BA-PORTAL-BASETABLE via advicer_name, NOT by duplicating records.
 
-1. Check if user already exists in `ba-dashboard-users-table`
-2. If new user:
-   - Create user in Cognito User Pool
-   - Store user profile in `ba-dashboard-users-table` with status = "Active"
-   - **Read item with ID "B57153AB-B66E-4085-A4C1-929EC158FC3E" from `BA-PORTAL-BASETABLE`**
-   - **Duplicate the ENTIRE RECORD** to the same table (BA-PORTAL-BASETABLE) with user's identifier
-   - Return success response
+### How Linkage Works:
 
-### Implementation Steps in ba-dashboard-signup-lambda:
+1. **Signup**: User provides their advicer_name (must exist in BA-PORTAL-BASETABLE)
+2. **Verification**: Signup Lambda verifies advicer_name exists in BA-PORTAL-BASETABLE
+3. **Storage**: User profile stored in ba-dashboard-users-table with advicer_name
+4. **Login**: JWT token includes advicer_name
+5. **Dashboard Access**: All dashboard queries use advicer_name from token to fetch data from BA-PORTAL-BASETABLE
+
+### Implementation:
 ```python
 def handle_new_registration(email, advicer_name, name):
     # Check if user already exists
@@ -402,17 +440,25 @@ def handle_new_registration(email, advicer_name, name):
     if existing_user:
         return {"error": "User already exists"}
     
+    # Verify advicer_name exists in BA-PORTAL-BASETABLE
+    ba_record = get_item_from_dynamodb(
+        table_name='BA-PORTAL-BASETABLE',
+        key={'advicer_name': advicer_name}
+    )
+    if not ba_record:
+        return {"error": "Invalid advicer_name - not found in BA-PORTAL-BASETABLE"}
+    
     # Create user in Cognito
     cognito_user = create_cognito_user(email, name)
     
-    # Store user in users-table with Active status
+    # Store user in users-table with Active status and advicer_name
     user_id = cognito_user['UserSub']
     user_item = {
         'user_id': user_id,
         'email': email,
-        'advicer_name': advicer_name,
+        'advicer_name': advicer_name,  # Links to BA-PORTAL-BASETABLE
         'name': name,
-        'status': 'Active',  # Default status
+        'status': 'Active',
         'created_at': datetime.utcnow().isoformat(),
         'cognito_username': cognito_user['UserUsername']
     }
@@ -421,25 +467,7 @@ def handle_new_registration(email, advicer_name, name):
         item=user_item
     )
     
-    # Duplicate record to BA-PORTAL-BASETABLE
-    source_item = get_item_from_dynamodb(
-        table_name='BA-PORTAL-BASETABLE',
-        key={'id': 'B57153AB-B66E-4085-A4C1-929EC158FC3E'}
-    )
-    
-    # Create new item with user's identifier
-    new_item = source_item.copy()
-    new_item['id'] = user_id
-    new_item['advicer_name'] = advicer_name
-    new_item['email'] = email
-    
-    # Write to BA-PORTAL-BASETABLE
-    put_item_to_dynamodb(
-        table_name='BA-PORTAL-BASETABLE',
-        item=new_item
-    )
-    
-    return {"user_id": user_id, "status": "Active"}
+    return {"user_id": user_id, "advicer_name": advicer_name, "status": "Active"}
 ```
 
 ---
@@ -487,7 +515,7 @@ interface UserProfile {
   userId: string;
   email: string;
   name: string;
-  advicerName: string;
+  advicerName: string;  // Links to BA-PORTAL-BASETABLE
   status: 'Active' | 'Blocked';
   groups: string[];
 }
@@ -504,9 +532,21 @@ authAPI.verifyToken(token: string): Promise<VerifyResponse>
 
 interface SignupData {
   email: string;
-  advicer_name: string;
+  advicer_name: string;  // Must exist in BA-PORTAL-BASETABLE
   name: string;
 }
+```
+
+### 10.3 Dashboard Data Access
+
+```typescript
+// When accessing dashboard data, use advicer_name from user profile
+const getDashboardData = async (advicerName: string) => {
+  const response = await api.get(`/read-table`, {
+    params: { advicer_name: advicerName }
+  });
+  return response.data;
+};
 ```
 
 ---
@@ -520,6 +560,7 @@ interface SignupData {
 5. **CORS**: Configure specific origins, not "*"
 6. **Input Validation**: Validate all inputs in Lambda functions
 7. **Logging**: All authentication events logged to CloudWatch
+8. **advicer_name Validation**: Verify advicer_name exists in BA-PORTAL-BASETABLE before allowing registration
 
 ### 11.1 API Gateway Rate Limiting (Endpoint-Specific)
 
@@ -533,19 +574,6 @@ interface SignupData {
 | /update-table | POST | 60 requests/min | 100 | Data operations |
 | /read-table | POST | 120 requests/min | 200 | Dashboard reads |
 
-#### Implementation via API Gateway Usage Plans:
-
-```python
-# AWS CLI commands to set up rate limiting
-# Create usage plan
-aws apigateway create-usage-plan \
-  --name ba-dashboard-auth-usage-plan \
-  --api-stages apiId=YOUR_API_ID,stage=prod \
-  --quota settings='{ "limit": 1000, "period": "DAY" }' \
-  --throttle settings='{ "rateLimit": 10, "burstLimit": 20 }' \
-  --region ap-southeast-2
-```
-
 ---
 
 ## 12. Implementation Order
@@ -557,7 +585,7 @@ aws apigateway create-usage-plan \
    - Script: `app/ba-portal/IaC/create_auth_tables.py`
    - Tables: users, verification-codes, login-attempts (no blocked-users)
 3. **Deploy Lambda Functions** (5 functions with "ba-dashboard-" prefix)
-   - signup-lambda (with duplication logic)
+   - signup-lambda (with linkage logic - NOT duplication)
    - request-code-lambda
    - login-lambda
    - logout-lambda
@@ -576,7 +604,7 @@ aws apigateway create-usage-plan \
 - `app/ba-portal/IaC/create_auth_tables.py` - Create all DynamoDB tables with "ba-dashboard-" prefix (users, verification-codes, login-attempts)
 
 ### New Files - Lambda Functions (prefix: ba-dashboard-)
-- `app/ba-portal/lambda/auth_signup/signup.py` - User registration + duplicate to BA-PORTAL-BASETABLE
+- `app/ba-portal/lambda/auth_signup/signup.py` - User registration + link to BA-PORTAL-BASETABLE (verify advicer_name)
 - `app/ba-portal/lambda/auth_request_code/request_code.py` - Generate 5-min verification code
 - `app/ba-portal/lambda/auth_login/login.py` - Login with verification code + status check
 - `app/ba-portal/lambda/auth_logout/logout.py` - User logout
@@ -591,12 +619,12 @@ aws apigateway create-usage-plan \
 - `app/ba-portal/dashboard-frontend/src/services/authService.ts` - Add signup methods
 - `app/ba-portal/dashboard-frontend/src/config/cognitoConfig.ts` - Update for new Cognito pool
 - `app/ba-portal/IaC/api-config.json` - Add auth endpoints to existing API Gateway
+- `app/ba-portal/lambda/read_table/read_table.py` - Add advicer_name query support
+- `app/ba-portal/lambda/update_table/update_table.py` - Add advicer_name ownership check
 
 ### Files NO LONGER NEEDED (Removed)
-- `app/ba-portal/lambda/auth_block_user/block_user.py` - REMOVED (no admin)
-- `app/ba-portal/lambda/auth_unblock_user/unblock_user.py` - REMOVED (no admin)
-- `app/ba-portal/lambda/auth_get_users/get_users.py` - REMOVED (no admin)
-- blocked-users-table - REMOVED (using status field instead)
+- ~~Duplicate logic for BA-PORTAL-BASETABLE~~ - REMOVED (now uses linkage)
+- ~~Record duplication code in signup-lambda~~ - REMOVED
 
 ---
 
@@ -605,64 +633,22 @@ aws apigateway create-usage-plan \
 | Resource | Prefix | Example Name |
 |----------|--------|--------------|
 | Lambda Functions | ba-dashboard- | ba-dashboard-login-lambda |
-| DynamoDB Tables | ba-dashboard- | ba-dashboard-users-table |
+| DynamoDB Tables (Auth) | ba-dashboard- | ba-dashboard-users-table |
+| DynamoDB Tables (Data) | Existing | BA-PORTAL-BASETABLE |
 | Cognito User Pool | ba-dashboard- | ba-dashboard-user-pool |
 | Cognito App Client | ba-dashboard- | ba-dashboard-spa-client |
 
 ---
 
-## 15. Assumptions & Clarifications
+## 15. Key Differences: Old vs New
 
-The following assumptions were made during the design. Please verify:
-
-### 15.1 Authentication & Verification
-
-| Assumption | Description | Needs Clarification? |
-|------------|-------------|---------------------|
-| **Verification Code Delivery** | Currently stored in DynamoDB. Not sent via email/SMS yet - displayed in UI for testing | Yes - How should codes be delivered in production? |
-| **No Password Required** | This is a passwordless login system using 6-digit codes | Verified |
-| **5-Minute Code Expiry** | Verification codes expire after 5 minutes | Verified |
-
-### 15.2 Cognito Integration
-
-| Assumption | Description | Needs Clarification? |
-|------------|-------------|---------------------|
-| **New User Pool** | Create NEW Cognito User Pool with "ba-dashboard-" prefix | Verified |
-| **User Pool Type** | Using Cognito User Pool for user management | What about federated identities? |
-| **Token Exchange** | Lambda handles token exchange with Cognito | Is this correct? |
-
-### 15.3 DynamoDB & Data
-
-| Assumption | Description | Needs Clarification? |
-|------------|-------------|---------------------|
-| **advicer_name Source** | Provided during signup by user | Should this come from Cognito custom attribute? |
-| **Base Table Access** | Lambda has read/write access to BA-PORTAL-BASETABLE | Verify IAM permissions |
-| **Record Duplication** | Entire record from source ID is duplicated during signup | Which fields to update with user data? |
-| **Status Field** | Status = "Active" by default, manually toggleable | Verified |
-
-### 15.4 Frontend
-
-| Assumption | Description | Needs Clarification? |
-|------------|-------------|---------------------|
-| **Existing Frontend** | Modifying existing dashboard frontend | Any new pages needed? |
-| **Token Storage** | Using sessionStorage for tokens | Should use httpOnly cookies? |
-| **Callback Handling** | Using code flow for verification | Is this the desired flow? |
-
-### 15.5 Security
-
-| Assumption | Description | Needs Clarification? |
-|------------|-------------|---------------------|
-| **Rate Limiting** | Not implemented yet | Add at API Gateway? |
-| **Code Attempts** | Tracking failed verification attempts | Max attempts before lockout? |
-| **HTTPS** | Assumed in production | Verify deployment environment |
-
-### 15.6 Lambda Functions
-
-| Assumption | Description | Needs Clarification? |
-|------------|-------------|---------------------|
-| **Generic Design** | Functions designed to be reusable | Verify environment variable configuration |
-| **Python Runtime** | Using Python 3.13 | OK? |
-| **Prefix** | All functions start with "ba-dashboard-" | Verified |
+| Aspect | Old (Duplication) | New (Linkage) |
+|--------|-------------------|---------------|
+| Signup | Duplicates entire BA-PORTAL-BASETABLE record | Verifies advicer_name exists in BA-PORTAL-BASETABLE |
+| Data Storage | Multiple copies of BA data | Single source of truth in BA-PORTAL-BASETABLE |
+| Updates | Complex - update all copies | Simple - update one record |
+| Integrity | Risk of data drift | Strong integrity via advicer_name |
+| User ID | Uses UUID | Uses advicer_name from BA-PORTAL-BASETABLE |
 
 ---
 
@@ -672,7 +658,7 @@ The following assumptions were made during the design. Please verify:
 
 The ba-dashboard should work as follows:
 - **Before Login**: Dashboard is READ-ONLY (can view data)
-- **After Login**: User can EDIT their own data only
+- **After Login**: User can EDIT their own data only (by advicer_name)
 
 ### 16.2 Existing Lambdas to Update
 
@@ -726,17 +712,23 @@ flowchart LR
     subgraph Business["Business Logic"]
         UpdateLambda[update-table-lambda]
         InsertLambda[insert-table-lambda]
+        ReadLambda[read-table-lambda]
     end
     
     subgraph Data["Data Layer"]
-        DynamoDB[DynamoDB]
+        UsersTable[ba-dashboard-users-table]
+        BASETable[BA-PORTAL-BASETABLE]
     end
     
     Frontend -->|HTTP Request| APIG
     APIG -->|Invoke| Token
     Token -->|User Info| Extract
-    Extract -->|auth check| UpdateLambda
-    UpdateLambda -->|validate ownership| DynamoDB
+    Extract -->|auth check| ReadLambda
+    Extract -->|auth check + ownership| UpdateLambda
+    Extract -->|auth check + ownership| InsertLambda
+    ReadLambda -->|query by advicer_name| BASETable
+    UpdateLambda -->|validate + update| BASETable
+    InsertLambda -->|validate + insert| BASETable
     
     style Auth fill:#f96,stroke:#333
     style Business fill:#9f9,stroke:#333
@@ -759,4 +751,4 @@ flowchart LR
 
 ---
 
-This plan provides a comprehensive architecture for the simplified login system. Once approved, I will proceed with implementation in Code mode.
+This plan provides a comprehensive architecture for the simplified login system with proper linkage to BA-PORTAL-BASETABLE via advicer_name. Once approved, proceed with implementation in Code mode.
