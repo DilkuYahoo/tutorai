@@ -16,7 +16,7 @@ class DecimalEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-def invoke_bedrock(system_prompt: str, user_prompt: str, model_id: str = None, model_kwargs: dict = None) -> str:
+def invoke_bedrock(system_prompt: str, user_prompt: str, model_id: str = None, model_kwargs: dict = None, region: str = "ap-southeast-2") -> str:
     """
     Invoke AWS Bedrock to generate a response.
     
@@ -25,6 +25,7 @@ def invoke_bedrock(system_prompt: str, user_prompt: str, model_id: str = None, m
         user_prompt: The user input/prompt to generate response for
         model_id: The Bedrock model ID to use (defaults to environment variable BEDROCK_MODEL_ID)
         model_kwargs: Additional model parameters like temperature, max_tokens, etc.
+        region: AWS region (defaults to ap-southeast-2)
     
     Returns:
         The generated text response from Bedrock
@@ -38,13 +39,14 @@ def invoke_bedrock(system_prompt: str, user_prompt: str, model_id: str = None, m
     }
     model_kwargs = model_kwargs or default_kwargs
     
-    # Initialize Bedrock Runtime client
-    bedrock_runtime = boto3.client('bedrock-runtime')
+    # Initialize Bedrock Runtime client with explicit region (Sydney)
+    bedrock_runtime = boto3.client('bedrock-runtime', region_name='ap-southeast-2')
     
     # Build the full prompt
     full_prompt = f"{system_prompt}\n\nUser: {user_prompt}\n\nAssistant:"
     
     print(f"LOG: Invoking Bedrock model: {model_id}")
+    print(f"LOG: Using Bedrock region: {region}")
     print(f"LOG: Prompt length: {len(full_prompt)} characters")
     
     try:
