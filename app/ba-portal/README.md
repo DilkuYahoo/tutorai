@@ -360,6 +360,347 @@ Production files will be generated in the `dist/` directory.
 
 ---
 
+## Financial Formulas
+
+This section documents all the financial formulas used in the BA Portal's Chart1 calculations.
+
+### Configuration Parameters
+
+The following parameters can be configured in the dashboard header and affect the calculations below:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| Medicare Levy Rate | 2% | Australian Medicare levy percentage |
+| CPI Rate | 3% | Consumer Price Index growth rate |
+| Accessible Equity Rate | 80% | Percentage of equity accessible for new purchases |
+| Borrowing Power Min | 3.5 | Minimum income multiple for borrowing capacity |
+| Borrowing Power Base | 5.0 | Base income multiple before dependants reduction |
+| Dependant Reduction | 0.25 | Borrowing power reduction per dependant |
+
+---
+
+### 1. Borrowing Multiple
+
+Determines the income multiple used to calculate borrowing capacity based on the number of dependants.
+
+**Formula:**
+```
+Borrowing Multiple = max(3.5, 5.0 - (dependants × 0.25))
+```
+
+**Example:**
+- 0 dependants: `max(3.5, 5.0 - 0) = 5.0`
+- 1 dependant: `max(3.5, 5.0 - 0.25) = 4.75`
+- 2 dependants: `max(3.5, 5.0 - 0.50) = 4.5`
+- 5 dependants: `max(3.5, 5.0 - 1.25) = 3.75`
+- 6+ dependants: `max(3.5, 5.0 - 1.5) = 3.5` (capped at minimum)
+
+**Source:** [`superchart1.py:82-99`](app/ba-portal/lambda/update_table/libs/superchart1.py:82)
+
+---
+
+### 2. Debt-to-Income (DTI) Ratio
+
+Measures the ratio of total debt to annual gross income (expressed as a decimal, not percentage).
+
+**Formula:**
+```
+DTI Ratio = Total Debt / Annual Gross Income
+```
+
+**Components:**
+- **Total Debt:** Sum of all property loan balances (`total_debt`)
+- **Annual Gross Income:** Combined gross income of all investors (before tax)
+
+**Important Note:** The DTI ratio is stored as a **decimal** (e.g., 0.35 for 35%), not as a percentage. The frontend divides by 100 when displaying.
+
+**Example:**
+- Total Debt: $600,000
+- Annual Gross Income: $120,000
+- DTI = 600,000 / 120,000 = 5.0 (stored as 5.0, displayed as 500%)
+
+**Frontend Display (ChartSection.tsx):**
+```typescript
+// Line 377: Converts decimal to percentage for display
+data: transformedData.map((d: any) => (d.dti_ratio || 0) / 100),
+```
+
+**Note:** A lower DTI indicates healthier borrowing capacity. Typically, lenders prefer DTI below 0.30-0.40 (30-40%). A DTI above 1.0 (100%) means debt exceeds annual income.
+
+**Source:** [`superchart1.py:102-130`](app/ba-portal/lambda/update_table/libs/superchart1.py:102)
+
+---
+
+### 3. Net Income Calculation
+
+Calculates net income after Australian taxes and Medicare levy.
+
+**Tax Brackets (Australia):**
+
+| Income Range | Tax Rate |
+|--------------|----------|
+| $0 - $18,200 | 0% |
+| $18,201 - $45,000 | 16% |
+| $45,001 - $135,000 | 30% |
+| $135,001 - $190,000 | 37% |
+| $190,001+ | 45% |
+
+**Formulas:**
+```
+Income Tax = Sum of (taxable_amount × bracket_rate) for each bracket
+Medicare Levy = Gross Income × Medicare Levy Rate (default 2%)
+Total Tax = Income Tax + Medicare Levy
+Net Income = Gross Income - Total Tax
+```
+
+**Example:**
+- Gross Income: $120,000
+- Tax on first $18,200: $0
+- Tax on $18,200-$45,000 (26,800 × 16%): $4,288
+- Tax on $45,000-$120,000 (75,000 × 30%): $22,500
+- Total Income Tax: $26,788
+- Medicare Levy: $120,000 × 2% = $2,400
+- Total Tax: $29,188
+- Net Income: $120,000 - $29,188 = $90,812
+
+**Source:** [`superchart1.py:132-170`](app/ba-portal/lambda/update_table/libs/superchart1.py:132)
+
+---
+
+### 4. Raw Equity
+
+The total equity in a property (property value minus loan balance).
+
+**Formula:**
+```
+Raw Equity = Property Value - Loan Amount
+```
+
+**Example:**
+- Property Value: $1,000,000
+- Loan Amount: $600,000
+- Raw Equity: $1,000,000 - $600,000 = $400,000
+
+**Source:** [`superchart1.py:174-202`](app/ba-portal/lambda/update_table/libs/superchart1.py:174)
+
+---
+
+### 5. Accessible Equity
+
+The portion of equity that can be accessed for new property purchases (after deducting the existing loan from 80% of property value).
+
+**Formula:**
+```
+Accessible Equity = max(0, (Property Value × 0.80) - Loan Amount)
+```
+
+**Example:**
+- Property Value: $1,000,000
+- Loan Amount: $600,000
+- 80% of Property Value: $800,000
+- Accessible Equity: max(0, $800,000 - $600,000) = $200,000
+
+**Note:** If the loan exceeds 80% of the property value, accessible equity is $0.
+
+**Source:** [`superchart1.py:174-202`](app/ba-portal/lambda/update_table/libs/superchart1.py:174)
+
+---
+
+### 6. Maximum Purchase Price
+
+The maximum price that can be paid for a new property based on accessible equity, assuming a 25% deposit.
+
+**Formula:**
+```
+Max Purchase Price = Accessible Equity / 0.25
+```
+
+**Example:**
+- Accessible Equity: $200,000
+- Max Purchase Price: $200,000 / 0.25 = $800,000
+
+**Logic:** The accessible equity represents a 25% deposit, so dividing by 0.25 gives the maximum property purchase price that can be supported.
+
+**Source:** [`superchart1.py:174-202`](app/ba-portal/lambda/update_table/libs/superchart1.py:174)
+
+---
+
+### 7. Loan-to-Value Ratio (LVR)
+
+Measures the loan amount as a percentage of the property value.
+
+**Formula:**
+```
+LVR = (Loan Amount / Property Value) × 100
+```
+
+**Example:**
+- Property Value: $1,000,000
+- Loan Amount: $600,000
+- LVR: ($600,000 / $1,000,000) × 100 = 60%
+
+**Note:** 
+- LVR above 80% typically requires Lenders Mortgage Insurance (LMI)
+- Lower LVR means lower risk for lenders
+
+**Source:** [`superchart1.py:400-408`](app/ba-portal/lambda/update_table/libs/superchart1.py:400)
+
+---
+
+### 8. Property Cashflow
+
+The net cashflow generated by all properties (rental income minus costs).
+
+**Formula:**
+```
+Property Cashflow = Total Rent - Total Interest Cost - Total Other Expenses
+```
+
+**Components:**
+- **Total Rent:** Sum of all rental income from properties
+- **Total Interest Cost:** Sum of all interest payments on loans
+- **Total Other Expenses:** Sum of all other property expenses
+
+**Example:**
+- Total Rent: $30,000
+- Total Interest Cost: $36,000
+- Total Other Expenses: $10,000
+- Property Cashflow: $30,000 - $36,000 - $10,000 = -$16,000 (negative cashflow)
+
+**Source:** [`superchart1.py:441-447`](app/ba-portal/lambda/update_table/libs/superchart1.py:441)
+
+---
+
+### 9. Household Surplus
+
+The remaining funds after all expenses from the combined investor net incomes.
+
+**Formula:**
+```
+Household Surplus = Combined Net Income - Essential Expenses - Nonessential Expenses + Property Cashflow
+```
+
+**Components:**
+- **Combined Net Income:** Sum of all investors' net incomes after tax
+- **Essential Expenses:** Total essential expenditure from all investors
+- **Nonessential Expenses:** Total non-essential expenditure from all investors
+- **Property Cashflow:** Net cashflow from properties (can be positive or negative)
+
+**Example:**
+- Combined Net Income: $170,000
+- Essential Expenses: $60,000
+- Nonessential Expenses: $30,000
+- Property Cashflow: $20,000
+- Household Surplus: $170,000 - $60,000 - $30,000 + $20,000 = $100,000
+
+**Source:** [`superchart1.py:447-448`](app/ba-portal/lambda/update_table/libs/superchart1.py:447)
+
+---
+
+### 10. Borrowing Capacity
+
+The maximum amount an investor can borrow based on their net income and existing debt.
+
+**Formula:**
+```
+Borrowing Capacity = max(0, Net Income × Borrowing Multiple - Existing Debt)
+```
+
+**Components:**
+- **Net Income:** Investor's net income after tax and expenses
+- **Borrowing Multiple:** Calculated based on number of dependants (see Section 1)
+- **Existing Debt:** Current total debt owed by the investor
+
+**Example:**
+- Net Income: $90,000
+- Borrowing Multiple: 5.0
+- Existing Debt: $0
+- Borrowing Capacity: max(0, $90,000 × 5.0 - $0) = $450,000
+
+With existing debt:
+- Existing Debt: $100,000
+- Borrowing Capacity: max(0, $90,000 × 5.0 - $100,000) = $350,000
+
+**Source:** [`superchart1.py:451-464`](app/ba-portal/lambda/update_table/libs/superchart1.py:451)
+
+---
+
+### 11. Investor Net Income
+
+The net income for each investor after all deductions, including property-related income and expenses.
+
+**Formula:**
+```
+Investor Net Income = Net Income After Tax - Essential Expenditure - Nonessential Expenditure 
+                    + Rental Income Share - Interest Cost Share - Other Expenses Share
+```
+
+**Components:**
+- **Net Income After Tax:** Gross income minus income tax and Medicare levy
+- **Essential Expenditure:** Personal essential living costs
+- **Nonessential Expenditure:** Personal discretionary spending
+- **Rental Income Share:** Proportional rental income from properties (based on investor splits)
+- **Interest Cost Share:** Proportional interest costs from loans (based on investor splits)
+- **Other Expenses Share:** Proportional other property expenses (based on investor splits)
+
+**Source:** [`superchart1.py:426-439`](app/ba-portal/lambda/update_table/libs/superchart1.py:426)
+
+---
+
+### 12. Annual Growth Calculations
+
+Both investor income and property values grow annually based on configured rates.
+
+**Income Growth:**
+```
+Year N Income = Year (N-1) Income × (1 + Annual Growth Rate)
+```
+
+**Property Value Growth:**
+```
+Year N Property Value = Year (N-1) Property Value × (1 + Growth Rate)
+```
+
+**CPI-Adjusted Expenses:**
+```
+Year N Expense = Year (N-1) Expense × (1 + CPI Rate)
+```
+
+**Source:** [`superchart1.py:333-371`](app/ba-portal/lambda/update_table/libs/superchart1.py:333)
+
+---
+
+### 13. Yearly Forecast Data Structure
+
+Each year in the 30-year forecast contains the following calculated fields:
+
+| Field | Description |
+|-------|-------------|
+| year | Forecast year (1-30) |
+| investor_net_incomes | Net income per investor |
+| combined_income | Combined net income of all investors |
+| investor_borrowing_capacities | Borrowing capacity per investor |
+| investor_borrowing_multiples | Borrowing multiple per investor |
+| investor_dependants | Number of dependants per investor |
+| investor_debts | Total debt per investor |
+| total_debt | Combined total debt across all properties |
+| total_rent | Total rental income |
+| total_interest_cost | Total interest payments |
+| total_other_expenses | Total other property expenses |
+| total_essential_expenses | Total essential household expenses |
+| total_nonessential_expenses | Total nonessential household expenses |
+| property_cashflow | Net cashflow from properties |
+| household_surplus | Remaining funds after all expenses |
+| property_loan_balances | Loan balance per property |
+| property_lvrs | LVR percentage per property |
+| property_values | Current value per property |
+| max_purchase_price | Maximum purchase price based on accessible equity |
+| accessible_equity | Total accessible equity |
+| raw_equity | Total raw equity |
+| dti_ratio | Debt-to-Income ratio |
+
+---
+
 ## Configuration
 
 ### Cognito Setup

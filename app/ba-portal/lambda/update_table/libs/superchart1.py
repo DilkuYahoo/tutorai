@@ -492,9 +492,7 @@ def borrowing_capacity_forecast_investor_blocks(
             "accessible_equity": max_purchase_result["accessible_equity"],
             "raw_equity": max_purchase_result["raw_equity"],
             # DTI (Debt to Income) ratio
-            "dti_ratio": dti_result["dti_ratio"],
-            "dti_total_debt": dti_result["total_debt"],
-            "dti_annual_income": dti_result["annual_income"]
+            "dti_ratio": dti_result["dti_ratio"]
         })
 
     # Return just the yearly_forecast
