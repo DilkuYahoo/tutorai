@@ -172,3 +172,47 @@ export async function saveConfigParams(
     throw new Error(result.message || "API returned error status");
   }
 }
+
+export interface BaAgentProperty {
+  name: string;
+  purchase_year: number;
+  loan_amount: number;
+  annual_principal_change: number;
+  rent: number;
+  interest_rate: number;
+  other_expenses: number;
+  property_value: number;
+  initial_value: number;
+  growth_rate: number;
+  investor_splits: Array<{ name: string; percentage: number }>;
+}
+
+export interface BaAgentResponse {
+  status: string;
+  action: string;
+  property: BaAgentProperty;
+}
+
+export async function addPropertyWithBaAgent(): Promise<BaAgentProperty> {
+  const response = await fetch(`${FINANCE_URL}/ba-agent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      table_name: "BA-PORTAL-BASETABLE",
+      id: "B57153AB-B66E-4085-A4C1-929EC158FC3E",
+      property_action: "add",
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.statusText}`);
+  }
+
+  const result: BaAgentResponse = await response.json();
+
+  if (result.status !== "success") {
+    throw new Error(result.property?.name ? "Failed to add property" : "API returned error status");
+  }
+
+  return result.property;
+}

@@ -4,6 +4,14 @@
   "description": "API Gateway for BA Portal Lambda functions including read and update operations",
   "endpoints": [
     {
+      "path": "/ba-agent",
+      "method": "POST",
+      "lambda_integration": {
+        "function_name": "ba-portal-ba-agent-lambda-function",
+        "timeout": 30
+      }
+    },
+    {
       "path": "/update-table",
       "method": "POST",
       "lambda_integration": {

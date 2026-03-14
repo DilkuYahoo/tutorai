@@ -1,0 +1,11 @@
+# Sample domains.txt file for SES MAIL FROM configuration
+# One domain per line. Lines starting with # are comments.
+# Empty lines will be skipped.
+
+# Example domains (replace with your actual domains):
+# example.com
+# mydomain.org
+# another-domain.net
+advicegenie.com.au
+ratescan.com.au
+theceylonlens.com

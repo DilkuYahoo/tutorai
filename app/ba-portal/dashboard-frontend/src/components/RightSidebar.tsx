@@ -9,7 +9,9 @@ import {
   Plus,
   Trash2,
   Upload,
+  Loader2,
 } from "lucide-react";
+import { addPropertyWithBaAgent } from "../services/dashboardService";
 
 // Format number for display in thousands (e.g., 1500000 → "1.5M")
 const formatInThousands = (value: number): string => {
@@ -62,6 +64,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   const [expandedProperty, setExpandedProperty] = useState<string | null>(null);
   const [localProperties, setLocalProperties] = useState<any[]>([]);
   const [originalProperties, setOriginalProperties] = useState<any[]>([]);
+  const [isAddingProperty, setIsAddingProperty] = useState(false);
 
   // Get latest property values from chartData (end of investment period)
   const latestPropertyValues = React.useMemo(() => {
@@ -131,27 +134,37 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
     setLocalProperties(updated);
   };
 
-  const addProperty = () => {
-    let newProperty;
-    if (localProperties.length > 0) {
-      newProperty = JSON.parse(JSON.stringify(localProperties[0]));
-      newProperty.name = `Property ${localProperties.length + 1}`;
-    } else {
-      newProperty = {
-        name: "Property 1",
-        property_value: 0,
-        purchase_year: 0,
-        initial_value: 0,
-        loan_amount: 0,
-        interest_rate: 0,
-        rent: 0,
-        growth_rate: 0,
-        other_expenses: 0,
-        annual_principal_change: 0,
-        investor_splits: [],
-      };
+  const addProperty = async () => {
+    setIsAddingProperty(true);
+    try {
+      const newProperty = await addPropertyWithBaAgent();
+      setLocalProperties([...localProperties, newProperty]);
+    } catch (error) {
+      console.error("Error adding property with ba_agent:", error);
+      // Fallback to local property creation if API fails
+      let fallbackProperty;
+      if (localProperties.length > 0) {
+        fallbackProperty = JSON.parse(JSON.stringify(localProperties[0]));
+        fallbackProperty.name = `Property ${localProperties.length + 1}`;
+      } else {
+        fallbackProperty = {
+          name: "Property 1",
+          property_value: 0,
+          purchase_year: 0,
+          initial_value: 0,
+          loan_amount: 0,
+          interest_rate: 0,
+          rent: 0,
+          growth_rate: 0,
+          other_expenses: 0,
+          annual_principal_change: 0,
+          investor_splits: [],
+        };
+      }
+      setLocalProperties([...localProperties, fallbackProperty]);
+    } finally {
+      setIsAddingProperty(false);
     }
-    setLocalProperties([...localProperties, newProperty]);
   };
 
   if (!localVisible) {
@@ -448,10 +461,11 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
             ))}
             <button
               onClick={addProperty}
-              className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-2 rounded mt-4 transition-colors"
+              disabled={isAddingProperty}
+              className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-2 rounded mt-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Plus size={14} />
-              Add Property
+              {isAddingProperty ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              {isAddingProperty ? "Adding Property..." : "Add Property"}
             </button>
 
             {/* Update Button - Always Visible */}
