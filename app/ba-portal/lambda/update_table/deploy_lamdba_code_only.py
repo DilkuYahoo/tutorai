@@ -43,9 +43,37 @@ def check_lambda_function_exists(lambda_client, function_name):
         logger.error(f"Error checking lambda function: {e}")
         return False
 
+def clean_pycache(directory):
+    """Remove __pycache__ directories and .pyc files from the directory."""
+    import shutil
+    count = 0
+    for root, dirs, files in os.walk(directory):
+        # Remove __pycache__ directories
+        if '__pycache__' in dirs:
+            pycache_path = os.path.join(root, '__pycache__')
+            shutil.rmtree(pycache_path)
+            logger.info(f"Removed __pycache__: {pycache_path}")
+            count += 1
+        # Remove .pyc files
+        for file in files:
+            if file.endswith('.pyc'):
+                pyc_path = os.path.join(root, file)
+                os.remove(pyc_path)
+                logger.info(f"Removed .pyc file: {pyc_path}")
+                count += 1
+    return count
+
+
 def create_lambda_deployment_package(config):
     """Create a zip file containing the lambda function code and its dependencies."""
     logger.info("Creating lambda deployment package")
+    
+    # Clean up __pycache__ before creating package
+    script_dir = os.path.dirname(config['script_path'])
+    logger.info(f"Cleaning up cache in: {script_dir}")
+    cache_count = clean_pycache(script_dir)
+    logger.info(f"Cleaned up {cache_count} cache items")
+    
     # Create a zip buffer
     zip_buffer = io.BytesIO()
     
@@ -55,12 +83,18 @@ def create_lambda_deployment_package(config):
         logger.info(f"Adding script file: {script_path}")
         zipf.write(script_path, arcname=os.path.basename(script_path))
         
-        # Add the libs directory if it exists
+        # Add the libs directory if it exists (excluding __pycache__)
         libs_dir = os.path.join(os.path.dirname(script_path), 'libs')
         if os.path.exists(libs_dir):
             logger.info(f"Adding libs directory: {libs_dir}")
             for root, dirs, files in os.walk(libs_dir):
+                # Skip __pycache__ directories
+                dirs[:] = [d for d in dirs if d != '__pycache__']
                 for file in files:
+                    # Skip .pyc files (compiled Python bytecode)
+                    if file.endswith('.pyc'):
+                        logger.info(f"Skipping bytecode file: {file}")
+                        continue
                     file_path = os.path.join(root, file)
                     arcname = os.path.join('libs', os.path.relpath(file_path, libs_dir))
                     zipf.write(file_path, arcname=arcname)

@@ -62,11 +62,15 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   const [expandedDependants, setExpandedDependants] = useState<string | null>(null);
   const [localInvestors, setLocalInvestors] = useState<any[]>([]);
   const [originalInvestors, setOriginalInvestors] = useState<any[]>([]);
+  const [hasLocalChanges, setHasLocalChanges] = useState(false);
 
+  // Only reset localInvestors when investors prop changes AND there are no local changes
   useEffect(() => {
-    setLocalInvestors(investors);
-    setOriginalInvestors(investors);
-  }, [investors]);
+    if (!hasLocalChanges) {
+      setLocalInvestors(investors);
+      setOriginalInvestors(investors);
+    }
+  }, [investors, hasLocalChanges]);
 
   const handleToggle = () => {
     const newVisible = !localVisible;
@@ -94,6 +98,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     const updated = [...localInvestors];
     updated[index] = { ...updated[index], [field]: value };
     setLocalInvestors(updated);
+    setHasLocalChanges(true);
   };
 
   const addIncomeEvent = (investorIndex: number) => {
@@ -106,6 +111,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
       type: "increase",
     });
     setLocalInvestors(updated);
+    setHasLocalChanges(true);
   };
 
   const addDependantsEvent = (investorIndex: number) => {
@@ -117,6 +123,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
       dependants: 0,
     });
     setLocalInvestors(updated);
+    setHasLocalChanges(true);
   };
 
   const updateIncomeEvent = (
@@ -131,6 +138,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
       [field]: value,
     };
     setLocalInvestors(updated);
+    setHasLocalChanges(true);
   };
 
   const updateDependantsEvent = (
@@ -145,24 +153,28 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
       [field]: value,
     };
     setLocalInvestors(updated);
+    setHasLocalChanges(true);
   };
 
   const deleteIncomeEvent = (investorIndex: number, eventIndex: number) => {
     const updated = [...localInvestors];
     updated[investorIndex].income_events.splice(eventIndex, 1);
     setLocalInvestors(updated);
+    setHasLocalChanges(true);
   };
 
   const deleteDependantsEvent = (investorIndex: number, eventIndex: number) => {
     const updated = [...localInvestors];
     updated[investorIndex].dependants_events.splice(eventIndex, 1);
     setLocalInvestors(updated);
+    setHasLocalChanges(true);
   };
 
   const deleteInvestor = (index: number) => {
     const updated = [...localInvestors];
     updated.splice(index, 1);
     setLocalInvestors(updated);
+    setHasLocalChanges(true);
   };
 
   const addInvestor = () => {
@@ -182,6 +194,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
       };
     }
     setLocalInvestors([...localInvestors, newInvestor]);
+    setHasLocalChanges(true);
   };
 
   if (!localVisible) {
@@ -589,6 +602,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                     () => {
                       // Success callback - show success message
                       setOriginalInvestors([...localInvestors]);
+                      setHasLocalChanges(false);
                       saveToCache();
                     },
                     () => {

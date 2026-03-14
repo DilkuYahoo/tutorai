@@ -29,7 +29,7 @@ export interface ConfigApiResponse {
 }
 
 export async function fetchDashboardData(): Promise<DashboardApiResponse> {
-  const response = await fetch(`${FINANCE_URL}/read-table`, {
+  const response = await fetch(`${FINANCE_URL}/read-table?t=${Date.now()}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -75,7 +75,7 @@ export async function updateDashboardData(
     attributes.investment_years = investmentYears;
   }
 
-  const response = await fetch(`${FINANCE_URL}/update-table`, {
+  const response = await fetch(`${FINANCE_URL}/update-table?t=${Date.now()}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

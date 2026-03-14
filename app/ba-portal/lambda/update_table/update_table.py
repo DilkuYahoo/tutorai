@@ -373,41 +373,64 @@ class DynamoDBUpdater:
         try:
             # First, load config params from DynamoDB
             config_params = self.get_config_params()
+            self.log(f"DEBUG: Loaded config params from DynamoDB: {config_params}")
             
             # Apply config to superchart1 library
             if config_params:
                 set_config_params(config_params)
+                self.log(f"DEBUG: Applied config params to superchart1: {config_params}")
             else:
                 reset_config_to_defaults()
+                self.log("DEBUG: No config found, using defaults")
             
             # Check if both investors and properties are in the attributes
             if 'investors' in attributes and 'properties' in attributes:
+                self.log(f"DEBUG: Investors count: {len(attributes['investors'])}")
+                self.log(f"DEBUG: Properties count: {len(attributes['properties'])}")
+                
                 # Create deep copies to avoid modifying the original data
                 import copy
                 investors = copy.deepcopy(attributes['investors'])
                 properties = copy.deepcopy(attributes['properties'])
 
+                self.log(f"DEBUG: Processing {len(investors)} investors")
+                for inv in investors:
+                    self.log(f"DEBUG: Investor: {inv.get('name', 'unknown')}, income: {inv.get('base_income')}, dependants: {inv.get('dependants')}")
+
+                self.log(f"DEBUG: Processing {len(properties)} properties")
+                for prop in properties:
+                    self.log(f"DEBUG: Property: {prop.get('name', 'unknown')}, value: {prop.get('property_value')}, loan: {prop.get('loan_amount')}")
+
                 # Convert integer rates back to floats for the calculation
                 # (since DynamoDB doesn't support floats, we store as integers but need floats for calculation)
                 for investor in investors:
                     if 'annual_growth_rate' in investor:
+                        original_rate = investor['annual_growth_rate']
                         investor['annual_growth_rate'] = investor['annual_growth_rate'] / 100.0
+                        self.log(f"DEBUG: Converted investor {investor.get('name')} growth rate: {original_rate} -> {investor['annual_growth_rate']}")
 
                 for property_data in properties:
                     if 'interest_rate' in property_data:
+                        original_rate = property_data['interest_rate']
                         property_data['interest_rate'] = property_data['interest_rate'] / 100.0
+                        self.log(f"DEBUG: Converted property {property_data.get('name')} interest rate: {original_rate} -> {property_data['interest_rate']}")
                     if 'growth_rate' in property_data:
+                        original_rate = property_data['growth_rate']
                         property_data['growth_rate'] = property_data['growth_rate'] / 100.0
+                        self.log(f"DEBUG: Converted property {property_data.get('name')} growth rate: {original_rate} -> {property_data['growth_rate']}")
 
                 # Get investment_years from attributes, default to 30 if not provided
                 investment_years = attributes.get('investment_years', 30)
+                self.log(f"DEBUG: Using investment_years: {investment_years}")
                 
                 # Calculate the chart using user-specified years forecast
+                self.log("DEBUG: Calling borrowing_capacity_forecast_investor_blocks...")
                 chart1_value = borrowing_capacity_forecast_investor_blocks(
                     investors=investors,
                     properties=properties,
                     years=investment_years
                 )
+                self.log(f"DEBUG: Calculation returned {len(chart1_value) if chart1_value else 0} years of data")
 
                 # Convert all float values to integers for DynamoDB compatibility
                 # DynamoDB doesn't support float types, so we need to convert them

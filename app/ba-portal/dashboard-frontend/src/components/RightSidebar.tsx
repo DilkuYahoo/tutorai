@@ -64,6 +64,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   const [expandedProperty, setExpandedProperty] = useState<string | null>(null);
   const [localProperties, setLocalProperties] = useState<any[]>([]);
   const [originalProperties, setOriginalProperties] = useState<any[]>([]);
+  const [hasLocalChanges, setHasLocalChanges] = useState(false);
   const [isAddingProperty, setIsAddingProperty] = useState(false);
 
   // Get latest property values from chartData (end of investment period)
@@ -73,10 +74,13 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
     return latestData?.property_values || {};
   }, [chartData]);
 
+  // Only reset localProperties when properties change AND there are no local changes
   useEffect(() => {
-    setLocalProperties(properties);
-    setOriginalProperties(properties);
-  }, [properties]);
+    if (!hasLocalChanges) {
+      setLocalProperties(properties);
+      setOriginalProperties(properties);
+    }
+  }, [properties, hasLocalChanges]);
 
   const handleToggle = () => {
     const newVisible = !localVisible;
@@ -98,6 +102,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
     const updated = [...localProperties];
     updated[index] = { ...updated[index], [field]: value };
     setLocalProperties(updated);
+    setHasLocalChanges(true);
   };
 
   const addInvestorSplit = (propertyIndex: number) => {
@@ -106,6 +111,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
       updated[propertyIndex].investor_splits = [];
     updated[propertyIndex].investor_splits.push({ name: "", percentage: 0 });
     setLocalProperties(updated);
+    setHasLocalChanges(true);
   };
 
   const updateInvestorSplit = (
@@ -120,18 +126,21 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
       [field]: value,
     };
     setLocalProperties(updated);
+    setHasLocalChanges(true);
   };
 
   const deleteInvestorSplit = (propertyIndex: number, splitIndex: number) => {
     const updated = [...localProperties];
     updated[propertyIndex].investor_splits.splice(splitIndex, 1);
     setLocalProperties(updated);
+    setHasLocalChanges(true);
   };
 
   const deleteProperty = (index: number) => {
     const updated = [...localProperties];
     updated.splice(index, 1);
     setLocalProperties(updated);
+    setHasLocalChanges(true);
   };
 
   const addProperty = async () => {
@@ -139,6 +148,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
     try {
       const newProperty = await addPropertyWithBaAgent();
       setLocalProperties([...localProperties, newProperty]);
+      setHasLocalChanges(true);
     } catch (error) {
       console.error("Error adding property with ba_agent:", error);
       // Fallback to local property creation if API fails
@@ -162,6 +172,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
         };
       }
       setLocalProperties([...localProperties, fallbackProperty]);
+      setHasLocalChanges(true);
     } finally {
       setIsAddingProperty(false);
     }
@@ -197,268 +208,270 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
 
       {loading ? (
         <div className="text-center" style={{ color: 'var(--text-tertiary)' }}>Loading properties...</div>
-      ) : !properties || properties.length === 0 ? (
-        <div className="text-center" style={{ color: 'var(--text-tertiary)' }}>
-          No property data available
-        </div>
       ) : (
         <div className="flex-1 overflow-y-auto">
           <div className="space-y-3">
-            {localProperties.map((prop: any, index: number) => (
-              <div
-                key={index}
-                className="rounded-lg p-4 border hover:border-cyan-500 transition-all duration-300"
-                style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border-color)' }}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={prop?.name || ""}
-                      onChange={(e) =>
-                        updateProperty(index, "name", e.target.value)
-                      }
-                      className="rounded px-2 py-1 w-full text-xs uppercase font-semibold mb-1"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                      placeholder="Property Name"
-                    />
-                    <span
-                      className="rounded px-2 py-1 w-full text-2xl font-bold block"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                    >
-                      ${(latestPropertyValues[prop?.name] ?? prop?.property_value ?? 0).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => deleteProperty(index)}
-                      className="text-red-400 hover:text-red-300"
-                      title="Delete Property"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-1 text-xs border-t pt-3" style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-color)' }}>
-                  <div className="flex justify-between">
-                    <span>Purchase Year:</span>
-                    <input
-                      type="number"
-                      value={prop?.purchase_year || 0}
-                      onChange={(e) =>
-                        updateProperty(
-                          index,
-                          "purchase_year",
-                          parseInt(e.target.value),
-                        )
-                      }
-                      className="rounded px-1 py-0 w-16 text-xs text-right"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                    />
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Initial Value:</span>
-                    <input
-                      type="text"
-                      value={formatInThousands(prop?.initial_value || 0)}
-                      onChange={(e) =>
-                        updateProperty(
-                          index,
-                          "initial_value",
-                          parseThousandsInput(e.target.value),
-                        )
-                      }
-                      className="rounded px-1 py-0 w-20 text-xs text-right"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                    />
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Loan Amount:</span>
-                    <input
-                      type="text"
-                      value={formatInThousands(prop?.loan_amount || 0)}
-                      onChange={(e) =>
-                        updateProperty(
-                          index,
-                          "loan_amount",
-                          parseThousandsInput(e.target.value),
-                        )
-                      }
-                      className="rounded px-1 py-0 w-20 text-xs text-right"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                    />
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Interest Rate:</span>
-                    <input
-                      type="number"
-                      value={prop?.interest_rate || 0}
-                      onChange={(e) =>
-                        updateProperty(
-                          index,
-                          "interest_rate",
-                          parseFloat(e.target.value),
-                        )
-                      }
-                      className="rounded px-1 py-0 w-16 text-xs text-right"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                    />
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Annual Rent:</span>
-                    <input
-                      type="text"
-                      value={formatInThousands(prop?.rent || 0)}
-                      onChange={(e) =>
-                        updateProperty(
-                          index,
-                          "rent",
-                          parseThousandsInput(e.target.value),
-                        )
-                      }
-                      className="rounded px-1 py-0 w-20 text-xs text-right"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                    />
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Growth Rate:</span>
-                    <input
-                      type="number"
-                      value={prop?.growth_rate || 0}
-                      onChange={(e) =>
-                        updateProperty(
-                          index,
-                          "growth_rate",
-                          parseFloat(e.target.value),
-                        )
-                      }
-                      className="rounded px-1 py-0 w-16 text-xs text-right"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                    />
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Other Expenses:</span>
-                    <input
-                      type="text"
-                      value={formatInThousands(prop?.other_expenses || 0)}
-                      onChange={(e) =>
-                        updateProperty(
-                          index,
-                          "other_expenses",
-                          parseThousandsInput(e.target.value),
-                        )
-                      }
-                      className="rounded px-1 py-0 w-20 text-xs text-right"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                    />
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Annual Principal Change:</span>
-                    <input
-                      type="text"
-                      value={formatInThousands(prop?.annual_principal_change || 0)}
-                      onChange={(e) =>
-                        updateProperty(
-                          index,
-                          "annual_principal_change",
-                          parseThousandsInput(e.target.value),
-                        )
-                      }
-                      className="rounded px-1 py-0 w-20 text-xs text-right"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                    />
-                  </div>
-                </div>
-
-                {/* Investor Splits Dropdown */}
-                <div className="mt-4 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <button
-                      onClick={() => togglePropertyExpand(prop?.name || "")}
-                      className="flex items-center justify-between text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors flex-1"
-                    >
-                      <span>Investor Splits</span>
-                      <span>
-                        {expandedProperty === prop?.name ? (
-                          <ChevronDown size={16} />
-                        ) : (
-                          <ChevronRight size={16} />
-                        )}
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => addInvestorSplit(index)}
-                      className="text-green-400 hover:text-green-300 ml-2"
-                      title="Add Investor Split"
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
-
-                  {expandedProperty === prop?.name && (
-                    <div className="mt-3 space-y-2">
-                      {prop.investor_splits && prop.investor_splits.length > 0 ? (
-                        prop.investor_splits.map((split: any, sIdx: number) => (
-                          <div
-                            key={sIdx}
-                            className="rounded p-2 text-xs flex justify-between items-center"
-                            style={{ backgroundColor: 'var(--bg-secondary)' }}
-                          >
-                            <div className="flex-1">
-                                <div className="flex gap-2 items-center">
-                                  <input
-                                    type="text"
-                                    value={split.name || ""}
-                                    onChange={(e) =>
-                                      updateInvestorSplit(
-                                        index,
-                                        sIdx,
-                                        "name",
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="rounded px-1 py-0 flex-1 text-xs"
-                                    style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-                                    placeholder="Investor Name"
-                                  />
-                                  <input
-                                    type="number"
-                                    value={split.percentage || 0}
-                                    onChange={(e) =>
-                                      updateInvestorSplit(
-                                        index,
-                                        sIdx,
-                                        "percentage",
-                                        parseFloat(e.target.value),
-                                      )
-                                    }
-                                    className="rounded px-1 py-0 w-16 text-xs text-right"
-                                    style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-                                    placeholder="%"
-                                  />
-                                  <span style={{ color: 'var(--text-primary)' }}>%</span>
-                                </div>
-                            </div>
-                            <button
-                              onClick={() => deleteInvestorSplit(index, sIdx)}
-                              className="text-red-400 hover:text-red-300 ml-2"
-                              title="Delete Investor Split"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                          No investor splits available
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
+            {localProperties.length === 0 ? (
+              <div className="text-center py-4" style={{ color: 'var(--text-tertiary)' }}>
+                No property data available
               </div>
-            ))}
+            ) : (
+              localProperties.map((prop: any, index: number) => (
+                <div
+                  key={index}
+                  className="rounded-lg p-4 border hover:border-cyan-500 transition-all duration-300"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border-color)' }}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={prop?.name || ""}
+                        onChange={(e) =>
+                          updateProperty(index, "name", e.target.value)
+                        }
+                        className="rounded px-2 py-1 w-full text-xs uppercase font-semibold mb-1"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                        placeholder="Property Name"
+                      />
+                      <span
+                        className="rounded px-2 py-1 w-full text-2xl font-bold block"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                      >
+                        ${(latestPropertyValues[prop?.name] ?? prop?.property_value ?? 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => deleteProperty(index)}
+                        className="text-red-400 hover:text-red-300"
+                        title="Delete Property"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 text-xs border-t pt-3" style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-color)' }}>
+                    <div className="flex justify-between">
+                      <span>Purchase Year:</span>
+                      <input
+                        type="number"
+                        value={prop?.purchase_year || 0}
+                        onChange={(e) =>
+                          updateProperty(
+                            index,
+                            "purchase_year",
+                            parseInt(e.target.value),
+                          )
+                        }
+                        className="rounded px-1 py-0 w-16 text-xs text-right"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                      />
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Initial Value:</span>
+                      <input
+                        type="text"
+                        value={formatInThousands(prop?.initial_value || 0)}
+                        onChange={(e) =>
+                          updateProperty(
+                            index,
+                            "initial_value",
+                            parseThousandsInput(e.target.value),
+                          )
+                        }
+                        className="rounded px-1 py-0 w-20 text-xs text-right"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                      />
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Loan Amount:</span>
+                      <input
+                        type="text"
+                        value={formatInThousands(prop?.loan_amount || 0)}
+                        onChange={(e) =>
+                          updateProperty(
+                            index,
+                            "loan_amount",
+                            parseThousandsInput(e.target.value),
+                          )
+                        }
+                        className="rounded px-1 py-0 w-20 text-xs text-right"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                      />
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Interest Rate:</span>
+                      <input
+                        type="number"
+                        value={prop?.interest_rate || 0}
+                        onChange={(e) =>
+                          updateProperty(
+                            index,
+                            "interest_rate",
+                            parseFloat(e.target.value),
+                          )
+                        }
+                        className="rounded px-1 py-0 w-16 text-xs text-right"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                      />
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Annual Rent:</span>
+                      <input
+                        type="text"
+                        value={formatInThousands(prop?.rent || 0)}
+                        onChange={(e) =>
+                          updateProperty(
+                            index,
+                            "rent",
+                            parseThousandsInput(e.target.value),
+                          )
+                        }
+                        className="rounded px-1 py-0 w-20 text-xs text-right"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                      />
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Growth Rate:</span>
+                      <input
+                        type="number"
+                        value={prop?.growth_rate || 0}
+                        onChange={(e) =>
+                          updateProperty(
+                            index,
+                            "growth_rate",
+                            parseFloat(e.target.value),
+                          )
+                        }
+                        className="rounded px-1 py-0 w-16 text-xs text-right"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                      />
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Other Expenses:</span>
+                      <input
+                        type="text"
+                        value={formatInThousands(prop?.other_expenses || 0)}
+                        onChange={(e) =>
+                          updateProperty(
+                            index,
+                            "other_expenses",
+                            parseThousandsInput(e.target.value),
+                          )
+                        }
+                        className="rounded px-1 py-0 w-20 text-xs text-right"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                      />
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Annual Principal Change:</span>
+                      <input
+                        type="text"
+                        value={formatInThousands(prop?.annual_principal_change || 0)}
+                        onChange={(e) =>
+                          updateProperty(
+                            index,
+                            "annual_principal_change",
+                            parseThousandsInput(e.target.value),
+                          )
+                        }
+                        className="rounded px-1 py-0 w-20 text-xs text-right"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Investor Splits Dropdown */}
+                  <div className="mt-4 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <button
+                        onClick={() => togglePropertyExpand(prop?.name || "")}
+                        className="flex items-center justify-between text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors flex-1"
+                      >
+                        <span>Investor Splits</span>
+                        <span>
+                          {expandedProperty === prop?.name ? (
+                            <ChevronDown size={16} />
+                          ) : (
+                            <ChevronRight size={16} />
+                          )}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => addInvestorSplit(index)}
+                        className="text-green-400 hover:text-green-300 ml-2"
+                        title="Add Investor Split"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+
+                    {expandedProperty === prop?.name && (
+                      <div className="mt-3 space-y-2">
+                        {prop.investor_splits && prop.investor_splits.length > 0 ? (
+                          prop.investor_splits.map((split: any, sIdx: number) => (
+                            <div
+                              key={sIdx}
+                              className="rounded p-2 text-xs flex justify-between items-center"
+                              style={{ backgroundColor: 'var(--bg-secondary)' }}
+                            >
+                              <div className="flex-1">
+                                  <div className="flex gap-2 items-center">
+                                    <input
+                                      type="text"
+                                      value={split.name || ""}
+                                      onChange={(e) =>
+                                        updateInvestorSplit(
+                                          index,
+                                          sIdx,
+                                          "name",
+                                          e.target.value,
+                                        )
+                                      }
+                                      className="rounded px-1 py-0 flex-1 text-xs"
+                                      style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                                      placeholder="Investor Name"
+                                    />
+                                    <input
+                                      type="number"
+                                      value={split.percentage || 0}
+                                      onChange={(e) =>
+                                        updateInvestorSplit(
+                                          index,
+                                          sIdx,
+                                          "percentage",
+                                          parseFloat(e.target.value),
+                                        )
+                                      }
+                                      className="rounded px-1 py-0 w-16 text-xs text-right"
+                                      style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                                      placeholder="%"
+                                    />
+                                    <span style={{ color: 'var(--text-primary)' }}>%</span>
+                                  </div>
+                              </div>
+                              <button
+                                onClick={() => deleteInvestorSplit(index, sIdx)}
+                                className="text-red-400 hover:text-red-300 ml-2"
+                                title="Delete Investor Split"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                            No investor splits available
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
             <button
               onClick={addProperty}
               disabled={isAddingProperty}
@@ -478,6 +491,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
                     () => {
                       // Success callback
                       setOriginalProperties([...localProperties]);
+                      setHasLocalChanges(false);
                       saveToCache();
                     },
                     () => {

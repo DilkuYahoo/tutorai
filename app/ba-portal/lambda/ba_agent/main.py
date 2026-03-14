@@ -214,13 +214,26 @@ Consider the following financial factors:
 1. Debt-to-Income (DTI) Ratio: Target ≤ 30% for sustainable borrowing
 2. Borrowing Power: Maximum loan amount based on income and existing debt
 3. Loan-to-Value Ratio (LVR): Target ≤ 80% to avoid LMI
-4. Cash Flow: Rental income should cover expenses with buffer
+4. Surplus Cashflow: Positive cashflow after expenses.
 5. Equity Position: Accessible equity determines deposit capacity
+6. Timimg : Best time to buy
 
 Output ONLY valid JSON matching the specified schema. No additional text."""
     
     # User prompt based on action
     if property_action == "add":
+        # Generate next property name based on existing properties
+        existing_names = [p.get('name', '') for p in existing_properties]
+        max_num = 0
+        for name in existing_names:
+            if name.startswith('Property '):
+                try:
+                    num = int(name.split()[-1])
+                    max_num = max(max_num, num)
+                except:
+                    pass
+        next_property_name = f"Property {chr(ord('A') + len(existing_properties))}"  # Property B, C, etc.
+        
         user_prompt = f"""FINANCIAL ANALYSIS FOR PROPERTY ATTRIBUTE GENERATION:
 
 EXISTING CHART1 TIMELINE DATA:
@@ -234,6 +247,7 @@ CURRENT PORTFOLIO STATUS:
 
 CURRENT FINANCIAL METRICS (Year 1):
 - DTI Ratio: {chart1_metrics.get('current_dti', 0):.1f}%
+- Borrowing Power: ${chart1_metrics.get('borrowing_capacity', 0):,.2f}
 - Accessible Equity: ${chart1_metrics.get('max_accessible_equity', 0):,.2f}
 - Household Surplus: ${chart1_metrics.get('household_surplus', 0):,.2f}
 - Property Cashflow: ${chart1_metrics.get('property_cashflow', 0):,.2f}
@@ -245,8 +259,13 @@ PEAK FINANCIAL METRICS (Over Timeline):
 EXISTING PROPERTIES:
 {format_existing_properties(existing_properties)}
 
+INVESTOR BORROWING CAPACITIES:
+{json.dumps(chart1_metrics.get('investor_borrowing_capacities', {}), indent=2)}
+
 INVESTOR DETAILS:
 {format_investor_details(investors)}
+
+IMPORTANT: The new property name must be "{next_property_name}". Do not use any other name.
 
 Based on this financial analysis, recommend property attributes for the NEXT investment property.
 Consider:
@@ -258,7 +277,7 @@ Consider:
 
 Respond with a JSON object containing:
 {{
-  "name": "Property X",
+  "name": "{next_property_name}",
   "purchase_year": <year>,
   "loan_amount": <amount>,
   "annual_principal_change": 0,

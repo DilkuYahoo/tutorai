@@ -1,5 +1,10 @@
 from typing import List, Dict, Optional
+import sys
 
+# Add debug print function for CloudWatch logging
+def debug_print(msg):
+    """Print debug messages to stdout for CloudWatch logs."""
+    print(f"[SUPERCHART1 DEBUG] {msg}", file=sys.stdout)
 
 
 # --- Default Tax configuration (Australia - simplified) ---
@@ -242,14 +247,20 @@ def borrowing_capacity_forecast_investor_blocks(
     years : int
         Number of forecast years
     """
+    debug_print(f"Starting calculation with {len(investors)} investors, {len(properties)} properties, {years} years")
+    debug_print(f"Config: CPI_RATE={CPI_RATE}, MEDICARE_LEVY_RATE={MEDICARE_LEVY_RATE}, ACCESSIBLE_EQUITY_RATE={ACCESSIBLE_EQUITY_RATE}")
+    debug_print(f"Config: BORROWING_POWER_MULTIPLIER_MIN={BORROWING_POWER_MULTIPLIER_MIN}, BASE={BORROWING_POWER_MULTIPLIER_BASE}")
+    
     # Validate that all investors have dependants
     for inv in investors:
         if "dependants" not in inv:
+            debug_print(f"ERROR: Investor {inv.get('name', 'unknown')} is missing 'dependants'")
             raise ValueError(f"Investor {inv.get('name', 'unknown')} is missing 'dependants'")
 
     # Validate that all properties have purchase_year to handle missing data gracefully
     for prop in properties:
         if "purchase_year" not in prop:
+            debug_print(f"ERROR: Property {prop.get('name', 'unknown')} is missing 'purchase_year'")
             raise ValueError(f"Property {prop.get('name', 'unknown')} is missing 'purchase_year'")
 
     results = {"yearly_forecast": []}
@@ -297,6 +308,7 @@ def borrowing_capacity_forecast_investor_blocks(
     investor_dependants = {inv["name"]: inv["dependants"] for inv in investors}
 
     for year in range(1, years + 1):
+        debug_print(f"Processing year {year}/{years}")
 
         # ---- handle investor incomes ----
         combined_income = 0
@@ -486,4 +498,5 @@ def borrowing_capacity_forecast_investor_blocks(
         })
 
     # Return just the yearly_forecast
+    debug_print(f"Calculation complete. Returning {len(results['yearly_forecast'])} years of data")
     return results["yearly_forecast"]

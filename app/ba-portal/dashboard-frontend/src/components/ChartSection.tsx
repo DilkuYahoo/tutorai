@@ -5,10 +5,11 @@ import ReactECharts from 'echarts-for-react';
 
 interface ChartSectionProps {
   chartData: any[];
+  properties?: any[];
   loading: boolean;
 }
 
-const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
+const ChartSection: React.FC<ChartSectionProps> = ({ chartData, properties, loading }) => {
   const [executiveSummary, setExecutiveSummary] = useState<string>('');
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -111,7 +112,16 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
   const latestData =
     chartData && chartData.length > 0 ? chartData[chartData.length - 1] : {};
   const investorNames = Object.keys(latestData?.investor_net_incomes || {});
-  const propertyNames = Object.keys(latestData?.property_values || {});
+  
+  // Get current property names from the properties prop (only show properties that exist)
+  const currentPropertyNames = properties ? properties.map((p: any) => p.name).filter(Boolean) : [];
+  
+  // Filter chart property names to only include properties that currently exist
+  const chartPropertyNames = Object.keys(latestData?.property_values || {});
+  const propertyNames = currentPropertyNames.length > 0 
+    ? chartPropertyNames.filter((name: string) => currentPropertyNames.includes(name))
+    : chartPropertyNames;
+  
   const colors = ['#06b6d4', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'];
 
   // ECharts options - Portfolio Growth vs Debt
@@ -181,82 +191,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
         lineStyle: { color: '#10b981', width: 3 },
         itemStyle: { color: '#10b981' },
         smooth: true
-      }
-    ]
-  };
-
-  // LVR & Risk Compression Chart
-  const lvrOption = {
-    tooltip: {
-      trigger: 'axis',
-      backgroundColor: isDarkMode ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-      borderColor: isDarkMode ? '#475569' : '#e5e7eb',
-      textStyle: { color: isDarkMode ? '#f1f5f9' : '#1f2937' },
-      formatter: (params: any) => {
-        let result = `<div style="font-weight: 600; margin-bottom: 8px;">${params[0].name}</div>`;
-        params.forEach((param: any) => {
-          if (param.seriesName.includes('LVR')) {
-            result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
-              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${param.color};"></span>
-              ${param.seriesName}: ${param.value.toFixed(1)}%
-            </div>`;
-          } else {
-            result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
-              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${param.color};"></span>
-              ${param.seriesName}: $${param.value.toLocaleString()}
-            </div>`;
-          }
-        });
-        return result;
-      }
-    },
-    legend: { 
-      textStyle: { color: chartColors.legend },
-      top: 0
-    },
-    grid: { left: 40 },
-    xAxis: {
-      type: 'category',
-      data: transformedData.map((d: any) => d.year),
-      axisLabel: { 
-        interval: Math.floor(transformedData.length / 10) || 0, 
-        color: chartColors.axisLabel, 
-        fontSize: 12 
-      },
-      axisLine: { lineStyle: { color: isDarkMode ? '#475569' : '#d1d5db' } }
-    },
-    yAxis: {
-      type: 'value',
-      axisLabel: { formatter: '{value}%', color: chartColors.axisLabel, fontSize: 12 },
-      splitLine: { lineStyle: { color: isDarkMode ? '#334155' : '#e5e7eb', type: 'dashed' } }
-    },
-    series: [
-      ...propertyNames.map((name: string, index: number) => ({
-        name: `LVR: ${name}`,
-        type: 'bar',
-        data: transformedData.map((d: any) => (((d.loanBalances[name] || 0) / ((d.property_values && d.property_values[name]) || 1)) * 100)),
-        itemStyle: { 
-          color: colors[index % colors.length],
-          borderRadius: [4, 4, 0, 0]
-        }
-      })),
-      {
-        name: 'Portfolio LVR',
-        type: 'line',
-        data: transformedData.map((d: any) => d.lvr),
-        lineStyle: { color: '#ef4444', width: 3 },
-        itemStyle: { color: '#ef4444' },
-        symbol: 'circle',
-        symbolSize: 6,
-        markLine: {
-          data: [
-            { yAxis: 80, name: '80% Bank Comfort' },
-            { yAxis: 70, name: '70% Bank Comfort' },
-            { yAxis: 60, name: '60% Bank Comfort' }
-          ],
-          lineStyle: { color: chartColors.markLine, type: 'dashed', width: 2 },
-          label: { color: chartColors.markLineLabel, fontSize: 10 }
-        }
       }
     ]
   };
@@ -389,7 +323,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
       formatter: (params: any) => {
         let result = `<div style="font-weight: 600; margin-bottom: 8px;">${params[0].name}</div>`;
         params.forEach((param: any) => {
-          if (param.seriesName === 'Total Borrowing Capacity' || param.seriesName === 'Max Purchase Price') {
+          if (param.seriesName === 'Total Borrowing Capacity') {
             result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
               <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${param.color};"></span>
               ${param.seriesName}: <strong>${param.value.toLocaleString()}</strong>
@@ -463,18 +397,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
         lineStyle: { color: '#06b6d4', width: 3, type: 'dashed' },
         itemStyle: { color: '#06b6d4' },
         areaStyle: { color: '#06b6d4', opacity: 0.1 }
-      },
-      {
-        name: 'Max Purchase Price',
-        type: 'line',
-        smooth: true,
-        symbol: 'triangle',
-        symbolSize: 10,
-        yAxisIndex: 1,
-        data: transformedData.map((d: any) => d.max_purchase_price || 0),
-        lineStyle: { color: '#8b5cf6', width: 3 },
-        itemStyle: { color: '#8b5cf6' },
-        areaStyle: { color: '#8b5cf6', opacity: 0.1 }
       }
     ]
   };
@@ -509,24 +431,47 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
       axisLabel: { color: chartColors.axisLabel, fontSize: 12 },
       axisLine: { lineStyle: { color: isDarkMode ? '#475569' : '#d1d5db' } }
     },
-    yAxis: {
-      type: 'value',
-      name: 'Net Income ($)',
-      nameTextStyle: { color: chartColors.text },
-      axisLabel: { formatter: (value: number) => `$${(value / 1000).toFixed(0)}k`, color: chartColors.axisLabel, fontSize: 12 },
-      splitLine: { lineStyle: { color: isDarkMode ? '#334155' : '#e5e7eb', type: 'dashed' } }
-    },
-    series: investorNames.map((name: string, index: number) => ({
-      name: name,
-      type: 'line',
-      smooth: true,
-      symbol: 'circle',
-      symbolSize: 6,
-      data: transformedData.map((d: any) => d.investor_net_incomes?.[name] || 0),
-      areaStyle: { opacity: 0.1, color: colors[index % colors.length] },
-      lineStyle: { width: 2 },
-      itemStyle: { color: colors[index % colors.length] }
-    }))
+    yAxis: [
+      {
+        type: 'value',
+        name: 'Net Income ($)',
+        nameTextStyle: { color: chartColors.text },
+        axisLabel: { formatter: (value: number) => `${(value / 1000).toFixed(0)}k`, color: chartColors.axisLabel, fontSize: 12 },
+        splitLine: { lineStyle: { color: isDarkMode ? '#334155' : '#e5e7eb', type: 'dashed' } }
+      },
+      {
+        type: 'value',
+        name: 'Purchase Price ($)',
+        nameTextStyle: { color: chartColors.text },
+        axisLabel: { formatter: (value: number) => `${(value / 1000).toFixed(0)}k`, color: chartColors.axisLabel, fontSize: 12 },
+        splitLine: { show: false }
+      }
+    ],
+    series: [
+      ...investorNames.map((name: string, index: number) => ({
+        name: name,
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        data: transformedData.map((d: any) => d.investor_net_incomes?.[name] || 0),
+        areaStyle: { opacity: 0.1, color: colors[index % colors.length] },
+        lineStyle: { width: 2 },
+        itemStyle: { color: colors[index % colors.length] }
+      })),
+      {
+        name: 'Max Purchase Price',
+        type: 'line',
+        smooth: true,
+        symbol: 'triangle',
+        symbolSize: 10,
+        yAxisIndex: 1,
+        data: transformedData.map((d: any) => d.max_purchase_price || 0),
+        lineStyle: { color: '#8b5cf6', width: 3 },
+        itemStyle: { color: '#8b5cf6' },
+        areaStyle: { color: '#8b5cf6', opacity: 0.1 }
+      }
+    ]
   };
 
   const totalPropertyValues = Object.values(latestData?.property_values || {}).reduce((sum: number, val: any) => sum + (val || 0), 0);
@@ -652,41 +597,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
               <ReactECharts option={portfolioOption} style={{ height: '300px' }} />
             </div>
 
-            {/* LVR & Risk Compression */}
-            <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-xl font-bold" style={{ color: cardText }}>
-                  LVR & Risk Compression
-                </h2>
-                <button
-                  onClick={() => toggleSection('lvr')}
-                  className="transition-colors"
-                  style={{ color: cardTextSecondary }}
-                  title="Learn more about this chart"
-                >
-                  <svg className={`w-6 h-6 transform transition-transform ${expandedSection === 'lvr' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </button>
-              </div>
-              {expandedSection === 'lvr' && (
-                <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}>
-                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> LVR trends for each property and the overall portfolio, with bank comfort zone indicators.</p>
-                  <p className="mb-2"><strong style={{ color: cardText }}>Data sources:</strong></p>
-                  <ul className="list-disc list-inside ml-2 space-y-1">
-                    <li><span style={{ color: '#06b6d4' }}>Property LVR bars</span> - Individual property LVR (loan ÷ value)</li>
-                    <li><span style={{ color: '#ef4444' }}>Portfolio LVR line</span> - Overall portfolio weighted average LVR</li>
-                    <li>Dashed lines show bank comfort thresholds (80%, 70%, 60%)</li>
-                  </ul>
-                  <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: Banks typically get concerned when LVR exceeds 80%. Staying below 70% provides buffer for market fluctuations.</p>
-                </div>
-              )}
-              <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
-                Displays LVR trends for individual properties and portfolio, with bank comfort zones.
-              </p>
-              <ReactECharts option={lvrOption} style={{ height: '300px' }} />
-            </div>
-
             {/* Cashflow */}
             <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
               <div className="flex justify-between items-center mb-2">
@@ -745,13 +655,12 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
               </div>
               {expandedSection === 'dti' && (
                 <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}>
-                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Debt-to-Income (DTI) ratio showing the proportion of gross household income used to service debt, along with total borrowing capacity and max purchase price.</p>
+                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Debt-to-Income (DTI) ratio showing the proportion of gross household income used to service debt, along with total borrowing capacity.</p>
                   <p className="mb-2"><strong style={{ color: cardText }}>Formula:</strong></p>
                   <ul className="list-disc list-inside ml-2 space-y-1">
                     <li><strong>DTI Ratio = Total Debt / Combined Income</strong></li>
                     <li><span style={{ color: '#f59e0b' }}>DTI Ratio</span> - Proportion of income going to debt repayment</li>
                     <li><span style={{ color: '#06b6d4' }}>Total Borrowing Capacity</span> - Sum of all investors' borrowing capacities (secondary axis)</li>
-                    <li><span style={{ color: '#8b5cf6' }}>Max Purchase Price</span> - Maximum property price affordable based on borrowing capacity</li>
                   </ul>
                   <p className="mt-2 text-sm"><strong style={{ color: cardText }}>Interpretation:</strong></p>
                   <ul className="list-disc list-inside ml-2 space-y-1">
@@ -759,11 +668,11 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
                     <li>DTI 0.30-0.43: Caution - may affect borrowing capacity</li>
                     <li>DTI &gt; 0.43: High risk - likely to struggle with additional debt</li>
                   </ul>
-                  <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: The Total Borrowing Capacity and Max Purchase Price lines show your purchasing power. Higher values with lower DTI indicate room for additional investment.</p>
+                  <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: The Total Borrowing Capacity line shows your purchasing power. Higher values with lower DTI indicate room for additional investment.</p>
                 </div>
               )}
               <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
-                Shows Debt-to-Income ratio, total borrowing capacity, and max purchase price over time. Lower DTI indicates healthier debt position. The dashed cyan line shows cumulative borrowing capacity, and the purple line shows max purchase price.
+                Shows Debt-to-Income ratio and total borrowing capacity over time. Lower DTI indicates healthier debt position.
               </p>
               <ReactECharts option={dtiRatioOption} style={{ height: '300px' }} />
             </div>
@@ -787,16 +696,17 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
               </div>
               {expandedSection === 'investorNetIncome' && (
                 <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}>
-                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Net income trends for each investor over time.</p>
+                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Net income trends for each investor and maximum purchase price over time.</p>
                   <p className="mb-2"><strong style={{ color: cardText }}>Data sources:</strong></p>
                   <ul className="list-disc list-inside ml-2 space-y-1">
                     <li>Individual investor net income lines showing income progression</li>
+                    <li><span style={{ color: '#8b5cf6' }}>Max Purchase Price</span> - Maximum property price affordable based on borrowing capacity (secondary axis)</li>
                   </ul>
                   <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: Rising net income indicates improving financial position for each investor.</p>
                 </div>
               )}
               <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
-                Shows net income trends for each investor over time.
+                Shows net income trends for each investor and max purchase price over time.
               </p>
               <ReactECharts option={investorNetIncomeOption} style={{ height: '300px' }} />
             </div>
