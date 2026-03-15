@@ -7,6 +7,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Plus,
+  Sparkles,
   Trash2,
   Upload,
   Loader2,
@@ -477,7 +478,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
               disabled={isAddingProperty}
               className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-2 rounded mt-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isAddingProperty ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              {isAddingProperty ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
               {isAddingProperty ? "Adding Property..." : "Add Property"}
             </button>
 
@@ -504,7 +505,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
               className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white text-xs px-3 py-2 rounded mt-4 block transition-colors w-full"
             >
               <Upload size={14} />
-              Update Data
+              Refresh Data
             </button>
           </div>
         </div>

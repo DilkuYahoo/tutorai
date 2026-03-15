@@ -38,7 +38,7 @@ const Footer: React.FC = () => {
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-2">
           <span style={{ color: textSecondary }}>©</span>
-          <span style={{ color: textColor, fontWeight: 500 }}>Dashboard Inc.</span>
+          <span style={{ color: textColor, fontWeight: 500 }}>AdviceGenie Pty Ltd</span>
           <span style={{ color: textSecondary }}>|</span>
           <span style={{ color: textSecondary }}>All rights reserved</span>
         </div>

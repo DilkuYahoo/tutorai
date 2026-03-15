@@ -254,7 +254,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                         onChange={(e) =>
                           updateInvestor(index, "name", e.target.value)
                         }
-                        className="bg-slate-600 text-white rounded px-2 py-1 w-full"
+                        disabled={investor?.name === "Bob" || investor?.name === "Alice"}
+                        className="bg-slate-600 text-white rounded px-2 py-1 w-full disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                       />
                       <p className="text-xs text-gray-300">Investor</p>
@@ -583,15 +584,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
               </div>
             ))}
           </div>
-          <button
-            onClick={addInvestor}
-            className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-2 rounded mt-4 transition-colors"
-          >
-            <Plus size={14} />
-            Add Investor
-          </button>
+          {/* Add Investor button hidden - users cannot add more investors */}
 
-          {/* Update Button - Always Visible */}
+          {/* Refresh Button - Always Visible */}
           <div className="flex gap-2 mt-4">
             <button
               onClick={() => {
@@ -615,7 +610,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
               className="flex-1 flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white text-sm px-4 py-2 rounded transition-colors font-medium"
             >
               <Upload size={16} />
-              Update Data
+              Refresh Data
             </button>
           </div>
         </div>

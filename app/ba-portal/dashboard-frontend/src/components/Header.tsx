@@ -181,8 +181,8 @@ const Header: React.FC<HeaderProps> = ({
           <span className="text-white font-bold text-lg">D</span>
         </div>
         <div>
-          <h1 className="text-xl font-bold" style={{ color: textColor }}>Dashboard</h1>
-          <p className="text-xs" style={{ color: textSecondary }}>Financial Analytics Platform</p>
+          <h1 className="text-xl font-bold" style={{ color: textColor }}>AdviceGenie</h1>
+          <p className="text-xs" style={{ color: textSecondary }}>your AI assisted Wealth Adviser</p>
         </div>
       </div>
       

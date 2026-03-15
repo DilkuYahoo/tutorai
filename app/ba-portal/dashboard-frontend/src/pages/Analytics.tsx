@@ -10,9 +10,9 @@ const Analytics: React.FC = () => {
           <p className="text-gray-300">Analytics data will be displayed here</p>
         </div>
         <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
-          <h2 className="text-xl font-bold mb-4">User Behavior</h2>
+          <h2 className="text-xl font-bold mb-4">User Behaviour</h2>
           <p className="text-gray-300">
-            User behavior metrics will be displayed here
+            User behaviour metrics will be displayed here
           </p>
         </div>
       </div>

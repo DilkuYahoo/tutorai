@@ -497,7 +497,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
         {/* Header */}
         <div>
           <h1 className="text-4xl font-bold mb-2" style={{ color: cardText }}>
-            Investor Dashboard
+            WealthPulse Dashboard
           </h1>
           <p style={{ color: cardTextSecondary }}>
             Comprehensive financial dashboard providing insights into portfolio growth, risk management, and cashflow analysis over time.
@@ -546,7 +546,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
             {/* AI Recommendations Card */}
             <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold" style={{ color: cardText }}>AI Recommendations</h2>
+                <h2 className="text-xl font-bold" style={{ color: cardText }}>AI Advice and Insights</h2>
                 <div className="flex items-center gap-2">
                   {aiRecommendations && (
                     <button
@@ -565,7 +565,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
                     style={{ backgroundColor: '#8b5cf6', color: 'white' }}
                   >
                     <Sparkles className="w-5 h-5" />
-                    {isGeneratingAI ? 'Generating...' : 'Generate AI Recommendations'}
+                    {isGeneratingAI ? 'Generating...' : 'Get AI Advice'}
                   </button>
                 </div>
               </div>
