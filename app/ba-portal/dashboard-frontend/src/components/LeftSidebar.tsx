@@ -177,26 +177,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     setHasLocalChanges(true);
   };
 
-  const addInvestor = () => {
-    let newInvestor;
-    if (localInvestors.length > 0) {
-      newInvestor = JSON.parse(JSON.stringify(localInvestors[0]));
-      newInvestor.name = `Investor ${localInvestors.length + 1}`;
-    } else {
-      newInvestor = {
-        name: "Investor 1",
-        base_income: 0,
-        annual_growth_rate: 0,
-        income_events: [],
-        dependants_events: [],
-        essential_expenditure: 0,
-        nonessential_expenditure: 0,
-      };
-    }
-    setLocalInvestors([...localInvestors, newInvestor]);
-    setHasLocalChanges(true);
-  };
-
   if (!localVisible) {
     return (
       <div className="flex items-center justify-center w-16 p-4" style={{ backgroundColor: 'var(--bg-sidebar)', borderRight: '1px solid var(--border-color)' }}>
@@ -571,7 +551,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                       )}
                     </div>
                   )}
-                {!investor?.income_events || investor.income_events.length === 0 && (
+                {!(investor?.income_events && investor.income_events.length > 0) && (
                       <div className="mt-4 pt-4 border-t border-slate-500">
                         <button
                           onClick={() => addIncomeEvent(index)}
