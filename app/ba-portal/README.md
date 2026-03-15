@@ -4,6 +4,7 @@ A comprehensive financial analytics platform for property investment advisors, b
 
 ## Table of Contents
 
+- [Generate AI Recommendations](#generate-ai-recommendations)
 - [Purpose](#purpose)
 - [Architecture](#architecture)
 - [Features](#features)
@@ -16,6 +17,305 @@ A comprehensive financial analytics platform for property investment advisors, b
 - [Deployment](#deployment)
 - [Development](#development)
 - [Troubleshooting](#troubleshooting)
+
+---
+
+## Generate AI Recommendations
+
+The **Generate AI Recommendations** feature allows users to analyze their Property Portfolio and receive AI-powered insights on bottlenecks, optimization opportunities, and strategies to maximize portfolio performance using the **optimize** property action.
+
+This feature **replaces the existing "Executive Summary of the Portfolio"** section in the main dashboard's ChartSection component.
+
+### How It Works
+
+1. **Click the Button** - Users click the "Generate AI Recommendations" button on the dashboard (in the Executive Summary card)
+2. **Connect to BA Agent** - The button triggers a call to the [`ba_agent`](app/ba-portal/lambda/ba_agent/main.py) Lambda function with `property_action: "optimize"`
+3. **Portfolio Analysis** - The system analyzes the current portfolio's Chart1 financial data including:
+   - Debt-to-Income (DTI) ratio
+   - Borrowing capacity
+   - Accessible equity
+   - Property cashflow
+   - Loan-to-Value Ratio (LVR)
+4. **AI Processing** - AWS Bedrock (Claude) processes the data and generates recommendations
+5. **Recommendations Displayed** - Results are shown to the user with actionable insights
+
+### Implementation Steps
+
+Building the "Generate AI Recommendations" feature requires modifying the **ChartSection.tsx** component in the main dashboard (NOT the RightSidebar).
+
+#### Step 1: Add API Function in dashboardService.ts
+
+Add a new function to call the `/ba-agent` endpoint with the "optimize" action.
+
+**File:** [`dashboardService.ts`](app/ba-portal/dashboard-frontend/src/services/dashboardService.ts)
+
+```typescript
+export async function generateAiRecommendations(
+  portfolioId: string,
+  tableName: string = "BA-PORTAL-BASETABLE",
+  region: string = "ap-southeast-2"
+): Promise<any> {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  
+  const response = await axios.post(`${apiUrl}/ba-agent`, {
+    table_name: tableName,
+    id: portfolioId,
+    property_action: "optimize",
+    region: region
+  });
+  
+  return response.data;
+}
+```
+
+#### Step 2: Modify ChartSection.tsx - Replace Executive Summary Button
+
+The button should replace the existing "Generate Summary" button in the Executive Summary card.
+
+**File:** [`ChartSection.tsx`](app/ba-portal/dashboard-frontend/src/components/ChartSection.tsx:546)
+
+**Current location (lines 546-563):**
+```tsx
+{/* Executive Summary Card */}
+<div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
+  <div className="flex justify-between items-center mb-4">
+    <h2 className="text-xl font-bold" style={{ color: cardText }}>Executive Summary of the Portfolio</h2>
+    <button
+      onClick={generateSummary}
+      className="px-4 py-2 rounded-lg font-medium transition-colors"
+      style={{ backgroundColor: '#06b6d4', color: 'white' }}
+    >
+      Generate Summary
+    </button>
+  </div>
+  {executiveSummary && (
+    <div style={{ color: cardTextSecondary, whiteSpace: 'pre-line' }}>
+      {executiveSummary}
+    </div>
+  )}
+</div>
+```
+
+**Replace with:**
+```tsx
+// Add state for AI recommendations
+const [aiRecommendations, setAiRecommendations] = useState<any>(null);
+const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+
+// Add handler function
+const generateAIRecommendations = async () => {
+  setIsGeneratingAI(true);
+  try {
+    const result = await generateAiRecommendations(id);
+    setAiRecommendations(result.analysis);
+  } catch (error) {
+    console.error("Failed to generate AI recommendations:", error);
+  } finally {
+    setIsGeneratingAI(false);
+  }
+};
+
+// Replace the button in the Executive Summary card
+<button
+  onClick={generateAIRecommendations}
+  disabled={isGeneratingAI}
+  className="px-4 py-2 rounded-lg font-medium transition-colors"
+  style={{ backgroundColor: '#8b5cf6', color: 'white' }}
+>
+  {isGeneratingAI ? 'Generating...' : 'Generate AI Recommendations'}
+</button>
+```
+
+#### Step 3: Add Recommendations Display Section
+
+Add a section to display the AI-generated recommendations in the same card.
+
+**File:** [`ChartSection.tsx`](app/ba-portal/dashboard-frontend/src/components/ChartSection.tsx)
+
+```tsx
+{aiRecommendations && (
+  <div className="mt-4 space-y-3">
+    <div>
+      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Bottlenecks</h4>
+      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.bottlenecks}</p>
+    </div>
+    <div>
+      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Recommendations</h4>
+      <ul className="list-disc list-inside text-sm" style={{ color: cardTextSecondary }}>
+        {aiRecommendations.recommendations?.map((rec: string, i: number) => (
+          <li key={i}>{rec}</li>
+        ))}
+      </ul>
+    </div>
+    <div>
+      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Optimal Timing</h4>
+      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.optimal_timing}</p>
+    </div>
+    <div>
+      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Max Purchase Price</h4>
+      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.max_purchase_price}</p>
+    </div>
+  </div>
+)}
+```
+
+#### Step 4: BA Agent Lambda (Already Implemented)
+
+The backend Lambda function is already implemented. It handles the "optimize" action:
+
+**File:** [`ba_agent/main.py`](app/ba-portal/lambda/ba_agent/main.py)
+
+- [`build_property_prompt()`](app/ba-portal/lambda/ba_agent/main.py:293) - Creates AI prompt with action="optimize"
+- [`extract_metrics_from_chart1()`](app/ba-portal/lambda/ba_agent/main.py:96) - Extracts portfolio metrics
+- [`invoke_bedrock()`](app/ba-portal/lambda/ba_agent/lib/bedrock_client.py:30) - Calls AWS Bedrock
+
+#### Step 5: API Endpoint (Already Configured)
+
+The `/ba-agent` endpoint is already configured in API Gateway.
+
+**File:** [`IaC/api-config.json`](app/ba-portal/IaC/api-config.json)
+
+No changes needed - the endpoint accepts `property_action: "optimize"`.
+
+### Implementation Checklist
+
+| Step | Component | Status |
+|------|-----------|--------|
+| 1 | Add `generateAiRecommendations()` to dashboardService.ts | ⬜ Not Started |
+| 2 | Replace "Generate Summary" button in ChartSection.tsx | ⬜ Not Started |
+| 3 | Add recommendations display section in ChartSection.tsx | ⬜ Not Started |
+| 4 | BA Agent Lambda (optimize action) | ✅ Already Implemented |
+| 5 | API Gateway endpoint | ✅ Already Configured |
+
+### Frontend Dashboard Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  HEADER                                                                        │
+├────────────┬─────────────────────────────────────────────────┬───────────────┤
+│  LEFT      │  MAIN CONTENT AREA (ChartSection.tsx)         │  RIGHT        │
+│  SIDEBAR   │                                                 │  SIDEBAR      │
+│            │  ┌─────────────────────────────────────────────┐ │               │
+│            │  │         EXECUTIVE SUMMARY CARD             │ │               │
+│            │  │  - Title: Executive Summary of Portfolio  │ │               │
+│            │  │  - Button: Generate AI Recommendations    │ │               │
+│            │  │  - AI Recommendations Display             │ │               │
+│            │  └─────────────────────────────────────────────┘ │               │
+│            │                                                 │               │
+│            │  ┌─────────────────────────────────────────────┐ │               │
+│            │  │           30-Year Financial Projection     │ │               │
+│            │  └─────────────────────────────────────────────┘ │               │
+└────────────┴─────────────────────────────────────────────────┴───────────────┘
+```
+
+### BA Agent Integration
+
+The "Generate AI Recommendations" button calls the [`ba_agent`](app/ba-portal/lambda/ba_agent/main.py) Lambda with the **`optimize`** property action:
+
+| Property Action | Function Called | Purpose |
+|-----------------|-----------------|---------|
+| **`optimize`** | [`build_property_prompt()`](app/ba-portal/lambda/ba_agent/main.py:293) with action="optimize" | Analyzes EXISTING properties for bottlenecks and optimization opportunities |
+
+#### Request Payload
+
+```json
+{
+  "table_name": "BA-PORTAL-BASETABLE",
+  "id": "B57153AB-B66E-4085-A4C1-929EC158FC3E",
+  "property_action": "optimize"
+}
+```
+
+#### Response
+
+```json
+{
+  "status": "success",
+  "action": "optimize",
+  "analysis": {
+    "bottlenecks": "High DTI ratio of 45% limits borrowing capacity",
+    "recommendations": [
+      "Consider paying down debt to reduce DTI below 30%",
+      "Accessible equity of $150,000 available for next purchase",
+      "Property cashflow is negative, consider increasing rent"
+    ],
+    "optimal_timing": "Year 3 - when DTI drops below 30%",
+    "max_purchase_price": "$600,000 based on accessible equity"
+  }
+}
+```
+
+### What It Analyzes
+
+The AI recommendations analyze your portfolio to identify:
+
+| Metric | Description |
+|--------|-------------|
+| **Bottlenecks** | Areas limiting portfolio growth (high DTI, low equity, negative cashflow) |
+| **Borrowing Capacity** | How much additional debt the portfolio can sustain |
+| **LVR Analysis** | Loan-to-Value ratios and LMI implications |
+| **Cashflow Health** | Rental income vs expenses and surplus projections |
+| **Equity Position** | Total and accessible equity for future purchases |
+| **Optimization Opportunities** | Adjustments to align with market benchmarks |
+
+### Recommended Actions
+
+Based on the analysis, the BA Agent provides recommendations for:
+
+1. **Property Acquisition** - When and what property to buy next based on financial capacity
+2. **Portfolio Optimization** - Adjust rent, expenses, and interest rates to align with market benchmarks:
+   - Rent should be 4-6% of property value annually
+   - Expenses should be 1-2% of property value annually
+   - Growth rates should align with historical averages (3-7%)
+   - Interest rates should reflect current market (5-7%)
+3. **Sell/Hold Strategy** - Recommendations on existing properties
+4. **Timing Decisions** - Best time to make moves based on financial projections
+
+### API Integration
+
+The "Generate AI Recommendations" feature uses the `/ba-agent` endpoint with the **`optimize`** action:
+
+| Action | Description |
+|--------|-------------|
+| `optimize` | Analyze and optimize existing properties with market benchmarks - identifies bottlenecks, provides recommendations to maximize portfolio performance |
+
+#### Example Request
+
+```json
+{
+  "table_name": "BA-PORTAL-BASETABLE",
+  "id": "B57153AB-B66E-4085-A4C1-929EC158FC3E",
+  "property_action": "optimize"
+}
+```
+
+#### Example Response
+
+```json
+{
+  "status": "success",
+  "action": "optimize",
+  "analysis": {
+    "bottlenecks": "High DTI ratio of 45% limits borrowing capacity",
+    "recommendations": [
+      "Consider paying down debt to reduce DTI below 30%",
+      "Accessible equity of $150,000 available for next purchase",
+      "Property cashflow is negative, consider increasing rent"
+    ],
+    "optimal_timing": "Year 3 - when DTI drops below 30%",
+    "max_purchase_price": "$600,000 based on accessible equity"
+  }
+}
+```
+
+### Frontend Integration
+
+The "Generate AI Recommendations" button is integrated into the dashboard interface. When clicked, it:
+
+1. Shows a loading state while processing
+2. Calls the BA Agent API endpoint
+3. Displays the AI-generated recommendations in a user-friendly format
+4. Allows users to apply recommendations directly to their portfolio
 
 ---
 
@@ -410,19 +710,31 @@ DTI Ratio = Total Debt / Annual Gross Income
 
 **Components:**
 - **Total Debt:** Sum of all property loan balances (`total_debt`)
-- **Annual Gross Income:** Combined gross income of all investors (before tax)
+- **Annual Gross Income:** Combined **gross** income of all investors (before tax)
 
-**Important Note:** The DTI ratio is stored as a **decimal** (e.g., 0.35 for 35%), not as a percentage. The frontend divides by 100 when displaying.
+**Important Note:** The DTI ratio is calculated using **GROSS INCOME** (before taxes), not net income. This is consistent with how lenders typically assess borrowing capacity.
+
+The DTI ratio is stored as a **decimal** (e.g., 5.0 for 500%), not as a percentage. The frontend displays the raw decimal value.
 
 **Example:**
 - Total Debt: $600,000
 - Annual Gross Income: $120,000
 - DTI = 600,000 / 120,000 = 5.0 (stored as 5.0, displayed as 500%)
 
+**Source Code (superchart1.py:392-398):**
+```python
+# Calculate DTI using gross income
+gross_income = sum(investor_income_snapshot.values())
+dti_result = calculate_dti(
+    total_debt=total_debt,
+    annual_income=gross_income
+)
+```
+
 **Frontend Display (ChartSection.tsx):**
 ```typescript
-// Line 377: Converts decimal to percentage for display
-data: transformedData.map((d: any) => (d.dti_ratio || 0) / 100),
+// Displays the raw decimal DTI ratio (e.g., 5.0 = 500%)
+data: transformedData.map((d: any) => d.dti_ratio || 0),
 ```
 
 **Note:** A lower DTI indicates healthier borrowing capacity. Typically, lenders prefer DTI below 0.30-0.40 (30-40%). A DTI above 1.0 (100%) means debt exceeds annual income.
