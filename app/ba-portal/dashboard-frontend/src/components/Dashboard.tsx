@@ -314,7 +314,7 @@ const Dashboard: React.FC = () => {
         onUpdate={handleUpdate}
       />
 
-      <ChartSection chartData={data.chartData} properties={data.properties} loading={data.loading} />
+      <ChartSection chartData={data.chartData} loading={data.loading} />
 
       <RightSidebar
         investors={data.investors}

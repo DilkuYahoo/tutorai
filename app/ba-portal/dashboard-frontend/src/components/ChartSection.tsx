@@ -3,16 +3,17 @@
 import React, { useState, useEffect } from "react";
 import ReactECharts from 'echarts-for-react';
 import { generateAiRecommendations, type AiRecommendationAnalysis } from '../services/dashboardService';
+import { Sparkles, ChevronDown } from 'lucide-react';
 
 interface ChartSectionProps {
   chartData: any[];
-  properties?: any[];
   loading: boolean;
 }
 
-const ChartSection: React.FC<ChartSectionProps> = ({ chartData, properties, loading }) => {
+const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
   const [aiRecommendations, setAiRecommendations] = useState<AiRecommendationAnalysis | null>(null);
   const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
+  const [aiSectionExpanded, setAiSectionExpanded] = useState<boolean>(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
 
@@ -114,16 +115,10 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, properties, load
   const latestData =
     chartData && chartData.length > 0 ? chartData[chartData.length - 1] : {};
   const investorNames = Object.keys(latestData?.investor_net_incomes || {});
+
   
-  // Get current property names from the properties prop (only show properties that exist)
-  const currentPropertyNames = properties ? properties.map((p: any) => p.name).filter(Boolean) : [];
-  
-  // Filter chart property names to only include properties that currently exist
-  const chartPropertyNames = Object.keys(latestData?.property_values || {});
-  const propertyNames = currentPropertyNames.length > 0 
-    ? chartPropertyNames.filter((name: string) => currentPropertyNames.includes(name))
-    : chartPropertyNames;
-  
+
+
   const colors = ['#06b6d4', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'];
 
   // ECharts options - Portfolio Growth vs Debt
@@ -548,20 +543,33 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, properties, load
               </div>
             </div>
 
-            {/* Executive Summary Card */}
+            {/* AI Recommendations Card */}
             <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold" style={{ color: cardText }}>AI Recommendations</h2>
-                <button
-                  onClick={generateAIRecommendations}
-                  disabled={isGeneratingAI}
-                  className="px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
-                  style={{ backgroundColor: '#8b5cf6', color: 'white' }}
-                >
-                  {isGeneratingAI ? 'Generating...' : 'Generate AI Recommendations'}
-                </button>
+                <div className="flex items-center gap-2">
+                  {aiRecommendations && (
+                    <button
+                      onClick={() => setAiSectionExpanded(!aiSectionExpanded)}
+                      className="p-2 rounded-lg transition-colors"
+                      style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}
+                      title={aiSectionExpanded ? 'Collapse details' : 'Expand details'}
+                    >
+                      <ChevronDown className={`w-5 h-5 transform transition-transform ${aiSectionExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
+                  <button
+                    onClick={generateAIRecommendations}
+                    disabled={isGeneratingAI}
+                    className="px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                    style={{ backgroundColor: '#8b5cf6', color: 'white' }}
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    {isGeneratingAI ? 'Generating...' : 'Generate AI Recommendations'}
+                  </button>
+                </div>
               </div>
-              {aiRecommendations && (
+              {aiRecommendations && aiSectionExpanded && (
                 <div className="space-y-4">
                   <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
                     <h4 className="text-sm font-semibold mb-2" style={{ color: cardText }}>Bottlenecks</h4>
@@ -585,6 +593,11 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, properties, load
                       <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.max_purchase_price}</p>
                     </div>
                   </div>
+                </div>
+              )}
+              {aiRecommendations && !aiSectionExpanded && (
+                <div className="text-sm" style={{ color: cardTextSecondary }}>
+                  <p>Click the expand button to view AI analysis details including bottlenecks, recommendations, optimal timing, and max purchase price.</p>
                 </div>
               )}
             </div>
