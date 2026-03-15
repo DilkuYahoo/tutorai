@@ -193,6 +193,19 @@ export interface BaAgentResponse {
   property: BaAgentProperty;
 }
 
+export interface AiRecommendationAnalysis {
+  bottlenecks: string;
+  recommendations: string[];
+  optimal_timing: string;
+  max_purchase_price: string;
+}
+
+export interface AiRecommendationResponse {
+  status: string;
+  action: string;
+  analysis: AiRecommendationAnalysis;
+}
+
 export async function addPropertyWithBaAgent(): Promise<BaAgentProperty> {
   const response = await fetch(`${FINANCE_URL}/ba-agent`, {
     method: "POST",
@@ -215,4 +228,28 @@ export async function addPropertyWithBaAgent(): Promise<BaAgentProperty> {
   }
 
   return result.property;
+}
+
+export async function generateAiRecommendations(): Promise<AiRecommendationAnalysis> {
+  const response = await fetch(`${FINANCE_URL}/ba-agent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      table_name: "BA-PORTAL-BASETABLE",
+      id: "B57153AB-B66E-4085-A4C1-929EC158FC3E",
+      property_action: "optimize",
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.statusText}`);
+  }
+
+  const result: AiRecommendationResponse = await response.json();
+
+  if (result.status !== "success") {
+    throw new Error(result.analysis ? "Failed to generate recommendations" : "API returned error status");
+  }
+
+  return result.analysis;
 }

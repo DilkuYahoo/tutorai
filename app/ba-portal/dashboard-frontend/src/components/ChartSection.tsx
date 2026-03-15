@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import ReactECharts from 'echarts-for-react';
+import { generateAiRecommendations, type AiRecommendationAnalysis } from '../services/dashboardService';
 
 interface ChartSectionProps {
   chartData: any[];
@@ -10,7 +11,8 @@ interface ChartSectionProps {
 }
 
 const ChartSection: React.FC<ChartSectionProps> = ({ chartData, properties, loading }) => {
-  const [executiveSummary, setExecutiveSummary] = useState<string>('');
+  const [aiRecommendations, setAiRecommendations] = useState<AiRecommendationAnalysis | null>(null);
+  const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
 
@@ -374,7 +376,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, properties, load
         smooth: true,
         symbol: 'circle',
         symbolSize: 8,
-        data: transformedData.map((d: any) => (d.dti_ratio || 0) / 100),
+        data: transformedData.map((d: any) => d.dti_ratio || 0),
         lineStyle: { color: '#f59e0b', width: 3 },
         itemStyle: { color: '#f59e0b' },
         areaStyle: { color: '#f59e0b', opacity: 0.2 },
@@ -476,13 +478,16 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, properties, load
 
   const totalPropertyValues = Object.values(latestData?.property_values || {}).reduce((sum: number, val: any) => sum + (val || 0), 0);
   const totalEquity = totalPropertyValues - (Object.values(latestData?.property_loan_balances || {}).reduce((sum: number, val: any) => sum + (val || 0), 0));
-  const generateSummary = () => {
-    const totalValue = totalPropertyValues;
-    const totalDebt = latestData?.property_cashflow || 0;
-    const equity = totalValue - totalDebt;
-    const lvr = totalValue > 0 ? (totalDebt / totalValue) * 100 : 0;
-    const summary = `Portfolio Executive Summary:\n\nTotal Property Value: ${totalValue.toLocaleString()}\nTotal Debt: ${totalDebt.toLocaleString()}\nEquity: ${equity.toLocaleString()}\nLoan-to-Value Ratio: ${lvr.toFixed(1)}%\n\nThe portfolio shows strong growth potential with current equity position.`;
-    setExecutiveSummary(summary);
+  const generateAIRecommendations = async () => {
+    setIsGeneratingAI(true);
+    try {
+      const result = await generateAiRecommendations();
+      setAiRecommendations(result);
+    } catch (error) {
+      console.error("Failed to generate AI recommendations:", error);
+    } finally {
+      setIsGeneratingAI(false);
+    }
   };
 
   // Card background color
@@ -546,18 +551,40 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, properties, load
             {/* Executive Summary Card */}
             <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold" style={{ color: cardText }}>Executive Summary of the Portfolio</h2>
+                <h2 className="text-xl font-bold" style={{ color: cardText }}>AI Recommendations</h2>
                 <button
-                  onClick={generateSummary}
-                  className="px-4 py-2 rounded-lg font-medium transition-colors"
-                  style={{ backgroundColor: '#06b6d4', color: 'white' }}
+                  onClick={generateAIRecommendations}
+                  disabled={isGeneratingAI}
+                  className="px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  style={{ backgroundColor: '#8b5cf6', color: 'white' }}
                 >
-                  Generate Summary
+                  {isGeneratingAI ? 'Generating...' : 'Generate AI Recommendations'}
                 </button>
               </div>
-              {executiveSummary && (
-                <div style={{ color: cardTextSecondary, whiteSpace: 'pre-line' }}>
-                  {executiveSummary}
+              {aiRecommendations && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
+                    <h4 className="text-sm font-semibold mb-2" style={{ color: cardText }}>Bottlenecks</h4>
+                    <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.bottlenecks}</p>
+                  </div>
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
+                    <h4 className="text-sm font-semibold mb-2" style={{ color: cardText }}>Recommendations</h4>
+                    <ul className="list-disc list-inside text-sm space-y-1" style={{ color: cardTextSecondary }}>
+                      {aiRecommendations.recommendations?.map((rec: string, i: number) => (
+                        <li key={i}>{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
+                      <h4 className="text-sm font-semibold mb-1" style={{ color: cardText }}>Optimal Timing</h4>
+                      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.optimal_timing}</p>
+                    </div>
+                    <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
+                      <h4 className="text-sm font-semibold mb-1" style={{ color: cardText }}>Max Purchase Price</h4>
+                      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.max_purchase_price}</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

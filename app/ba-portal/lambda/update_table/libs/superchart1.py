@@ -267,7 +267,7 @@ def borrowing_capacity_forecast_investor_blocks(
 
     # track current investor incomes
     investor_current_income = {
-        inv["name"]: inv["base_income"] for inv in investors
+        inv["name"]: inv.get("base_income", 0) or 0 for inv in investors
     }
 
     # track current essential and nonessential expenditures (grow with CPI)
@@ -295,8 +295,8 @@ def borrowing_capacity_forecast_investor_blocks(
     property_values = {}
 
     # track current property rent and other_expenses (grow with CPI)
-    property_rent_current = {prop["name"]: prop["rent"] for prop in properties}
-    property_other_expenses_current = {prop["name"]: prop["other_expenses"] for prop in properties}
+    property_rent_current = {prop["name"]: prop.get("rent", 0) or 0 for prop in properties}
+    property_other_expenses_current = {prop["name"]: prop.get("other_expenses", 0) or 0 for prop in properties}
 
     # Create a dict for quick lookup of purchase years
     purchase_years = {prop["name"]: prop["purchase_year"] for prop in properties}
@@ -321,9 +321,10 @@ def borrowing_capacity_forecast_investor_blocks(
             for ev in investor_events[name]:
                 if ev["year"] == year:
                     if ev["type"] == "increase":
-                        investor_current_income[name] += ev["amount"]
+                        amount = ev.get("amount") or 0
+                        investor_current_income[name] += amount
                     elif ev["type"] == "set":
-                        investor_current_income[name] = ev["amount"]
+                        investor_current_income[name] = ev.get("amount", 0)
 
             # apply scheduled dependants events
             for ev in investor_dependants_events[name]:
@@ -332,29 +333,34 @@ def borrowing_capacity_forecast_investor_blocks(
 
             # apply annual growth (after year 1)
             if year > 1:
-                investor_current_income[name] *= (1 + inv["annual_growth_rate"])
+                growth_rate = inv.get("annual_growth_rate") or 0
+                investor_current_income[name] *= (1 + growth_rate)
                 investor_essential_current[name] *= (1 + CPI_RATE)
                 investor_nonessential_current[name] *= (1 + CPI_RATE)
 
-            income_val = investor_current_income[name]
+            income_val = investor_current_income.get(name, 0) or 0
             combined_income += income_val
             investor_income_snapshot[name] = round(income_val, 2)
 
         # ---- handle properties ----
         for prop in properties:
             if prop["purchase_year"] == year:
-                property_balances[prop["name"]] = prop["loan_amount"]
+                loan_amount = prop.get("loan_amount") or 0
+                property_balances[prop["name"]] = loan_amount
                 # Initialize property value when purchased
-                property_values[prop["name"]] = prop.get("initial_value", prop["loan_amount"])
+                property_values[prop["name"]] = prop.get("initial_value", loan_amount)
                 for split in prop.get("investor_splits", []):
-                    investor_debt[split["name"]] += prop["loan_amount"] * split["percentage"] / 100
+                    pct = (split.get("percentage") or 0) / 100
+                    investor_debt[split["name"]] += loan_amount * pct
 
         for prop in properties:
             name = prop["name"]
             if name in property_balances and year >= prop["purchase_year"]:
-                property_balances[name] += prop["annual_principal_change"]
+                annual_change = prop.get("annual_principal_change") or 0
+                property_balances[name] += annual_change
                 for split in prop.get("investor_splits", []):
-                    investor_debt[split["name"]] += prop["annual_principal_change"] * split["percentage"] / 100
+                    pct = (split.get("percentage") or 0) / 100
+                    investor_debt[split["name"]] += annual_change * pct
 
         total_debt = sum(property_balances.values())
 
@@ -362,7 +368,8 @@ def borrowing_capacity_forecast_investor_blocks(
         for name in list(property_values.keys()):
             prop = next((p for p in properties if p["name"] == name), None)
             if prop and year >= prop.get("purchase_year", 1):
-                property_values[name] *= (1 + prop["growth_rate"])
+                growth = prop.get("growth_rate") or 0
+                property_values[name] *= (1 + growth)
 
         # apply annual CPI growth to property rent and other expenses (after year 1)
         if year > 1:
@@ -414,14 +421,14 @@ def borrowing_capacity_forecast_investor_blocks(
 
         for prop in properties:
             if year >= prop["purchase_year"]:
-                interest = property_balances.get(prop["name"], 0) * prop["interest_rate"]
-                rent = property_rent_current[prop["name"]]
-                other = property_other_expenses_current[prop["name"]]
+                interest = property_balances.get(prop["name"], 0) * (prop.get("interest_rate") or 0)
+                rent = property_rent_current.get(prop["name"], 0)
+                other = property_other_expenses_current.get(prop["name"], 0)
                 for split in prop.get("investor_splits", []):
-                    pct = split["percentage"] / 100
-                    investor_interest_cost[split["name"]] += interest * pct
-                    investor_rent[split["name"]] += rent * pct
-                    investor_other_expenses[split["name"]] += other * pct
+                    pct = (split.get("percentage") or 0) / 100
+                    investor_interest_cost[split["name"]] = (investor_interest_cost.get(split["name"], 0) or 0) + interest * pct
+                    investor_rent[split["name"]] = (investor_rent.get(split["name"], 0) or 0) + rent * pct
+                    investor_other_expenses[split["name"]] = (investor_other_expenses.get(split["name"], 0) or 0) + other * pct
 
         # ---- investor net incomes ----
         investor_net_income = {}
@@ -433,7 +440,7 @@ def borrowing_capacity_forecast_investor_blocks(
             net_after_tax = result["net_income"]
             net = net_after_tax - investor_essential_current[name] - investor_nonessential_current[name] + investor_rent[name] - investor_interest_cost[name] - investor_other_expenses[name]
             investor_net_income[name] = round(net, 2)
-            combined_income += net_after_tax
+            combined_income += (net_after_tax or 0)
 
         # combined_income is sum of net incomes after tax
         investor_income_snapshot = investor_net_income

@@ -206,17 +206,24 @@ def build_property_prompt(
         Tuple of (system_prompt, user_prompt)
     """
     
-    # System prompt
+    # System prompt - Updated for Australian lending standards
     system_prompt = """You are a professional Australian property investment analyst specializing in property acquisition strategy.
 Your role is to analyze investor financial capacity and recommend optimal property attributes for investment.
 
-Consider the following financial factors:
-1. Debt-to-Income (DTI) Ratio: Target ≤ 30% for sustainable borrowing
+IMPORTANT: Australian Lending Standards:
+- DTI (Debt-to-Income) ratio is expressed as a MULTIPLE (e.g., 1.5 = 150% = debt is 1.5x annual income)
+- Australian lenders typically accept DTI up to 5-6x (500-600%)
+- DTI below 3.0 (300%) is considered SAFE - comfortable borrowing capacity
+- DTI 3.0-5.0 (300-500%) is CAUTION - still acceptable but reducing
+- DTI above 5.0 (500%) is HIGH RISK - may struggle with additional borrowing
+
+Consider these financial factors:
+1. Debt-to-Income (DTI) Ratio: Target < 5.0 for Australian lending (but lower is safer)
 2. Borrowing Power: Maximum loan amount based on income and existing debt
 3. Loan-to-Value Ratio (LVR): Target ≤ 80% to avoid LMI
-4. Surplus Cashflow: Positive cashflow after expenses.
+4. Surplus Cashflow: Positive cashflow after expenses
 5. Equity Position: Accessible equity determines deposit capacity
-6. Timimg : Best time to buy
+6. Timing: Best time to buy
 
 Output ONLY valid JSON matching the specified schema. No additional text."""
     
@@ -303,7 +310,7 @@ CURRENT PORTFOLIO STATUS:
 - Total Equity: ${chart1_metrics.get('total_equity', 0):,.2f}
 
 CURRENT FINANCIAL METRICS (Year 1):
-- DTI Ratio: {chart1_metrics.get('current_dti', 0):.1f}%
+- DTI Ratio: {chart1_metrics.get('current_dti', 0):.2f}x ({chart1_metrics.get('current_dti', 0)*100:.1f}%)
 - Accessible Equity: ${chart1_metrics.get('max_accessible_equity', 0):,.2f}
 - Household Surplus: ${chart1_metrics.get('household_surplus', 0):,.2f}
 - Property Cashflow: ${chart1_metrics.get('property_cashflow', 0):,.2f}
@@ -314,46 +321,36 @@ EXISTING PROPERTIES:
 INVESTOR DETAILS:
 {format_investor_details(investors)}
 
-TASK: Analyze the existing properties and perform three key tasks:
+TASK: Analyze the existing properties and provide portfolio recommendations including:
 
-1. **VALIDATE**: Review each property and check if numbers are realistic based on Australian market benchmarks:
-   - Rent should be 4-6% of property value annually
-   - Expenses should be 1-2% of property value annually
-   - Growth rates should align with historical averages (3-7%)
-   - Interest rates should reflect current market (5-7%)
+IMPORTANT AUSTRALIAN LENDING STANDARDS:
+- DTI is expressed as a MULTIPLE (e.g., 1.5 = 150% = debt is 1.5x annual income)
+- DTI < 3.0 (300%) = SAFE ZONE - comfortable borrowing capacity
+- DTI 3.0-5.0 (300-500%) = CAUTION ZONE - still acceptable but monitor closely
+- DTI > 5.0 (500%) = HIGH RISK - may have difficulty obtaining additional credit
 
-2. **OPTIMIZE**: Adjust property numbers to be more realistic and sustainable:
-   - Suggest realistic rent based on property value and location
-   - Adjust expenses to appropriate levels
-   - Align growth rates with market expectations
-   - Update interest rates to current market rates
+1. **IDENTIFY BOTTLENECKS**: What areas are limiting portfolio growth? Consider:
+   - High DTI ratio (>5.0 indicates high risk)
+   - Low accessible equity
+   - Negative property cashflow
+   - High LVR (>80%)
 
-3. **RECOMMEND**: Determine if properties should be added or removed to maximize ROI:
-   - Consider DTI, LVR, and cashflow constraints
-   - Recommend purchase timing for new properties
-   - Or recommend selling/holding strategy
+2. **PROVIDE RECOMMENDATIONS**: Actionable steps to optimize the portfolio:
+   - Debt management strategies
+   - Property acquisition opportunities based on current capacity
+   - Rent adjustment suggestions
+   - Expense optimization
+
+3. **OPTIMAL TIMING**: When is the best time to make investment decisions based on financial projections?
+
+4. **MAX PURCHASE PRICE**: Based on accessible equity and borrowing capacity, what is the maximum property price that can be supported?
 
 Respond with JSON containing:
 {{
-  "properties": [
-    {{
-      "name": "<name>",
-      "purchase_year": <year>,
-      "loan_amount": <amount>,
-      "annual_principal_change": 0,
-      "rent": <rent>,
-      "interest_rate": <rate>,
-      "other_expenses": <expenses>,
-      "property_value": <value>,
-      "initial_value": <value>,
-      "growth_rate": <rate>,
-      "investor_splits": [{{"name": "<investor>", "percentage": <percent>}}]
-    }}
-  ],
-  "analysis": {{
-    "recommended_changes": "<description of changes>",
-    "rationale": "<explanation>"
-  }}
+  "bottlenecks": "<description of main bottlenecks limiting portfolio growth>",
+  "recommendations": ["<recommendation 1>", "<recommendation 2>", "<recommendation 3>"],
+  "optimal_timing": "<best time to make investment decisions>",
+  "max_purchase_price": "$<amount> based on accessible equity and borrowing capacity"
 }}"""
     
     return system_prompt, user_prompt
@@ -649,11 +646,77 @@ def lambda_handler(event: dict, context: any) -> dict:
             } or parsed_response
         }
     else:  # optimize
+        # Build analysis object with extracted metrics
+        current_dti = chart1_metrics.get('current_dti', 0)
+        max_equity = chart1_metrics.get('max_accessible_equity', 0)
+        borrowing_capacity = chart1_metrics.get('borrowing_capacity', 0)
+        property_cashflow = chart1_metrics.get('property_cashflow', 0)
+        
+        # Calculate max purchase price (equity / 0.25 for 25% deposit)
+        max_purchase_price = max_equity / 0.25 if max_equity > 0 else 0
+        
+        # Determine optimal timing based on Australian DTI thresholds
+        # DTI < 3.0 = SAFE, DTI 3.0-5.0 = CAUTION, DTI > 5.0 = HIGH RISK
+        if current_dti < 3.0:
+            optimal_timing = "NOW - DTI is in the safe zone (<3.0x), comfortable borrowing capacity for new investments"
+        elif current_dti < 5.0:
+            optimal_timing = "CAUTION - DTI is 3.0-5.0x range. Monitor closely, still acceptable but reducing capacity"
+        else:
+            optimal_timing = "HIGH RISK - DTI exceeds 5.0x. Focus on debt reduction before additional borrowing"
+        
+        # Build initial bottlenecks from metrics (using Australian thresholds)
+        bottlenecks_list = []
+        if current_dti > 5.0:
+            bottlenecks_list.append(f"High DTI ratio of {current_dti:.2f}x ({current_dti*100:.1f}%) exceeds recommended threshold of 5.0x")
+        elif current_dti > 3.0:
+            bottlenecks_list.append(f"DTI ratio of {current_dti:.2f}x ({current_dti*100:.1f}%) is in caution zone (3.0-5.0x)")
+        if max_equity < 100000:
+            bottlenecks_list.append("Limited accessible equity restricts new property purchases")
+        if property_cashflow < 0:
+            bottlenecks_list.append("Negative property cashflow indicates rental income not covering expenses")
+        if borrowing_capacity < 100000:
+            bottlenecks_list.append("Low borrowing capacity constrains portfolio growth")
+        
+        if not bottlenecks_list:
+            bottlenecks_list.append("Portfolio is well-positioned for growth - DTI is healthy and within acceptable range")
+        
+        bottlenecks = ". ".join(bottlenecks_list)
+        
+        # Build recommendations based on Australian lending standards
+        recommendations_list = []
+        if current_dti > 5.0:
+            recommendations_list.append("Focus on debt reduction to bring DTI below 5.0x before considering additional properties")
+        elif current_dti > 3.0:
+            recommendations_list.append("DTI is in caution zone - consider reducing debt before major investments")
+        else:
+            recommendations_list.append("DTI is in healthy range - good time to explore investment opportunities")
+        if max_equity > 0:
+            recommendations_list.append(f"Accessible equity of ${max_equity:,.0f} available for next purchase")
+        if property_cashflow < 0:
+            recommendations_list.append("Property cashflow is negative, consider increasing rent or reducing expenses")
+        if borrowing_capacity > 0:
+            recommendations_list.append(f"Borrowing capacity of ${borrowing_capacity:,.0f} available")
+        recommendations_list.append(f"Maximum purchase price of ${max_purchase_price:,.0f} based on accessible equity")
+        
+        # If Bedrock returned enhanced analysis, use it
+        if parsed_response.get('bottlenecks'):
+            bottlenecks = parsed_response.get('bottlenecks', bottlenecks)
+        if parsed_response.get('recommendations'):
+            recommendations_list = parsed_response.get('recommendations', recommendations_list)
+        if parsed_response.get('optimal_timing'):
+            optimal_timing = parsed_response.get('optimal_timing', optimal_timing)
+        if parsed_response.get('max_purchase_price'):
+            max_purchase_price = parsed_response.get('max_purchase_price', f"${max_purchase_price:,.0f}")
+        
         response_body = {
             'status': 'success',
             'action': 'optimize',
-            'properties': parsed_response.get('properties', []),
-            'analysis': parsed_response.get('analysis', {})
+            'analysis': {
+                'bottlenecks': bottlenecks,
+                'recommendations': recommendations_list,
+                'optimal_timing': optimal_timing,
+                'max_purchase_price': f"${max_purchase_price:,.0f}" if isinstance(max_purchase_price, (int, float)) else max_purchase_price
+            }
         }
     
     return create_response(200, response_body)

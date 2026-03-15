@@ -1334,6 +1334,7 @@ python test_update_table.py
 | Lambda timeout | Increase timeout in deploy.config |
 | Chart not rendering | Check Chart1 data structure in DynamoDB |
 | Environment variables not loading | Ensure `.env` file is in correct location |
+| Error calculating chart1 value: unsupported operand type(s) for += | Ensure all investor and property fields have valid numeric values (not null). Check that base_income, loan_amount, annual_principal_change, rent, interest_rate, growth_rate, etc. are all defined with numeric values in DynamoDB. |
 
 ### Checking Logs
 
