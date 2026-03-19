@@ -28,6 +28,7 @@ export interface DashboardApiResponse {
   properties: any[];
   investmentYears?: number;
   executiveSummary?: string;
+  ourAdvice?: string;
 }
 
 export interface PortfolioInfo {
@@ -81,6 +82,7 @@ export async function fetchDashboardData(): Promise<DashboardApiResponse> {
     properties: result.result.properties || [],
     investmentYears: result.result.investment_years || 30,
     executiveSummary: result.result.executive_summary || '',
+    ourAdvice: result.result.our_advice || '',
   };
 }
 
@@ -142,6 +144,7 @@ export async function fetchDashboardDataById(portfolioId: string): Promise<Dashb
     properties: result.result.properties || [],
     investmentYears: result.result.investment_years || 30,
     executiveSummary: result.result.executive_summary || '',
+    ourAdvice: result.result.our_advice || '',
   };
 }
 
@@ -151,6 +154,7 @@ export async function updateDashboardData(
   chart1?: any[],
   investmentYears?: number,
   executiveSummary?: string,
+  ourAdvice?: string,
   portfolioId?: string,
 ): Promise<void> {
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
@@ -180,6 +184,11 @@ export async function updateDashboardData(
   // Include executive_summary if provided
   if (executiveSummary !== undefined && executiveSummary !== null) {
     attributes.executive_summary = executiveSummary;
+  }
+
+  // Include our_advice if provided
+  if (ourAdvice !== undefined && ourAdvice !== null) {
+    attributes.our_advice = ourAdvice;
   }
 
   const response = await fetch(`${FINANCE_URL}/update-table?t=${Date.now()}`, {
@@ -415,6 +424,41 @@ export async function generatePortfolioSummary(portfolioId?: string): Promise<{ 
   }
 
   const result = await response.json();
+
+  if (result.status !== "success") {
+    throw new Error(result.message || "API returned error status");
+  }
+
+  return result;
+}
+
+export async function generateOurAdvice(portfolioId?: string): Promise<{ advice: string; cached?: boolean }> {
+  const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
+  
+  console.log("[DEBUG] generateOurAdvice called with portfolioId:", id);
+  console.log("[DEBUG] FINANCE_URL:", FINANCE_URL);
+  
+  const response = await fetch(`${FINANCE_URL}/ba-agent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+      id: id,
+      property_action: "advice",
+    }),
+  });
+
+  console.log("[DEBUG] generateOurAdvice response status:", response.status);
+  console.log("[DEBUG] generateOurAdvice response statusText:", response.statusText);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[DEBUG] generateOurAdvice error response:", errorText);
+    throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
+  }
+
+  const result = await response.json();
+  console.log("[DEBUG] generateOurAdvice result:", result);
 
   if (result.status !== "success") {
     throw new Error(result.message || "API returned error status");

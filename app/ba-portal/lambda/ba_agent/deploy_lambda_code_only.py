@@ -86,6 +86,8 @@ def create_lambda_deployment_package(config):
         if os.path.exists(lib_dir) and os.path.isdir(lib_dir):
             logger.info(f"Adding lib directory: {lib_dir}")
             for root, dirs, files in os.walk(lib_dir):
+                # Exclude __pycache__ directories
+                dirs[:] = [d for d in dirs if d != '__pycache__']
                 for file in files:
                     file_path = os.path.join(root, file)
                     arcname = os.path.relpath(file_path, start='.')
@@ -99,6 +101,8 @@ def create_lambda_deployment_package(config):
         if os.path.exists(libs_dir) and os.path.isdir(libs_dir):
             logger.info(f"Adding libs directory: {libs_dir}")
             for root, dirs, files in os.walk(libs_dir):
+                # Exclude __pycache__ directories
+                dirs[:] = [d for d in dirs if d != '__pycache__']
                 for file in files:
                     file_path = os.path.join(root, file)
                     arcname = os.path.relpath(file_path, start='.')

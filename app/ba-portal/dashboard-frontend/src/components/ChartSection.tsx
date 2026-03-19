@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import ReactECharts from 'echarts-for-react';
-import { generatePortfolioSummary } from '../services/dashboardService';
+import { generatePortfolioSummary, generateOurAdvice, updateDashboardData } from '../services/dashboardService';
 import { Sparkles, ChevronDown } from 'lucide-react';
 
 // Simple markdown to HTML converter
@@ -41,11 +41,13 @@ interface ChartSectionProps {
   chartData: any[];
   loading: boolean;
   executiveSummary?: string;
+  ourAdvice?: string;
   selectedPortfolioId?: string;
   onSummaryGenerated?: (summary: string) => void;
+  onAdviceGenerated?: (advice: string) => void;
 }
 
-const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executiveSummary, selectedPortfolioId, onSummaryGenerated }) => {
+const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executiveSummary, ourAdvice, selectedPortfolioId, onSummaryGenerated, onAdviceGenerated }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
   
@@ -56,6 +58,12 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executi
   const [isSnapshotExpanded, setIsSnapshotExpanded] = useState<boolean>(true);
   const [cachedPortfolioId, setCachedPortfolioId] = useState<string>('');
 
+  // Our Advice state
+  const [adviceText, setAdviceText] = useState<string>('');
+  const [adviceLoading, setAdviceLoading] = useState<boolean>(false);
+  const [adviceError, setAdviceError] = useState<string | null>(null);
+  const [isAdviceExpanded, setIsAdviceExpanded] = useState<boolean>(true);
+
   // Load executive summary from props on mount or when portfolio changes
   useEffect(() => {
     // Reset cache when portfolio changes to force refresh from backend
@@ -65,11 +73,35 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executi
       setSnapshotSummary(''); // Clear local cache
     }
     
-    // Always try to load from backend prop - if there's content in DB, use it
+    // If executiveSummary prop is empty or undefined, clear local cache
+    // This handles the case when Refresh Data is pressed
+    if (!executiveSummary || executiveSummary.trim().length === 0) {
+      console.log("[DEBUG] Executive summary prop is empty - clearing local cache");
+      setSnapshotSummary('');
+      return;
+    }
+    
+    // If there's content in the prop, use it
     if (executiveSummary && executiveSummary.trim().length > 0) {
       setSnapshotSummary(executiveSummary);
     }
   }, [executiveSummary, selectedPortfolioId, cachedPortfolioId]);
+
+  // Load our advice from props
+  useEffect(() => {
+    // Always update advice when portfolio changes OR when ourAdvice prop changes
+    if (selectedPortfolioId) {
+      setCachedPortfolioId(selectedPortfolioId);
+    }
+    
+    // If we have new advice from props, use it
+    if (ourAdvice && ourAdvice.trim().length > 0) {
+      setAdviceText(ourAdvice);
+    } else if (!ourAdvice || ourAdvice.trim().length === 0) {
+      // Clear advice if no advice in props
+      setAdviceText('');
+    }
+  }, [ourAdvice, selectedPortfolioId]);
 
   useEffect(() => {
     // Check initial dark mode state
@@ -534,6 +566,17 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executi
     try {
       const result = await generatePortfolioSummary(selectedPortfolioId);
       console.log("[DEBUG] Generated summary:", result.summary?.substring(0, 100) + "...");
+      
+      // Save summary to DynamoDB so it persists
+      if (result.summary && selectedPortfolioId) {
+        try {
+          await updateDashboardData(undefined, undefined, undefined, undefined, result.summary, undefined, selectedPortfolioId);
+          console.log("[DEBUG] Saved summary to DynamoDB");
+        } catch (saveError) {
+          console.error("[DEBUG] Failed to save summary to DynamoDB:", saveError);
+        }
+      }
+      
       setSnapshotSummary(result.summary);
       // Notify parent component that summary was generated
       if (onSummaryGenerated) {
@@ -544,6 +587,26 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executi
       setSnapshotError("Unable to generate summary. Please try again.");
     } finally {
       setSnapshotLoading(false);
+    }
+  };
+
+  const handleGenerateOurAdvice = async () => {
+    setAdviceLoading(true);
+    setAdviceError(null);
+    try {
+      console.log("[DEBUG] handleGenerateOurAdvice - calling API...");
+      const result = await generateOurAdvice(selectedPortfolioId);
+      console.log("[DEBUG] Generated advice:", result.advice?.substring(0, 100) + "...");
+      setAdviceText(result.advice);
+      if (onAdviceGenerated) {
+        onAdviceGenerated(result.advice);
+      }
+    } catch (error: any) {
+      console.error("[DEBUG] Failed to generate advice:", error);
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      setAdviceError(`Unable to generate advice: ${errorMessage}`);
+    } finally {
+      setAdviceLoading(false);
     }
   };
 
@@ -653,6 +716,59 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executi
                   {!snapshotSummary && !snapshotLoading && !snapshotError && (
                     <div className="text-sm" style={{ color: cardTextSecondary }}>
                       <p>Click the button to generate an AI summary of your portfolio.</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Our Advice Card */}
+            <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold" style={{ color: cardText }}>Our Advice</h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsAdviceExpanded(!isAdviceExpanded)}
+                    className="p-2 rounded-lg transition-colors"
+                    style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}
+                    title={isAdviceExpanded ? 'Collapse details' : 'Expand details'}
+                  >
+                    <ChevronDown className={`w-5 h-5 transform transition-transform ${isAdviceExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                  <button
+                    onClick={handleGenerateOurAdvice}
+                    disabled={adviceLoading}
+                    className="px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                    style={{ backgroundColor: '#10b981', color: 'white' }}
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    {adviceLoading ? 'Generating...' : '💡 Get Advice'}
+                  </button>
+                </div>
+              </div>
+              {isAdviceExpanded && (
+                <>
+                  {adviceLoading && (
+                    <div className="text-center py-4" style={{ color: cardTextSecondary }}>
+                      Generating advice...
+                    </div>
+                  )}
+                  {adviceError && (
+                    <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: '#ef4444' }}>
+                      {adviceError}
+                    </div>
+                  )}
+                  {adviceText && !adviceLoading && (
+                    <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
+                      <div 
+                        style={{ color: cardTextSecondary }}
+                        dangerouslySetInnerHTML={{ __html: parseMarkdown(adviceText) }}
+                      />
+                    </div>
+                  )}
+                  {!adviceText && !adviceLoading && !adviceError && (
+                    <div className="text-sm" style={{ color: cardTextSecondary }}>
+                      <p>Click the button to get actionable advice for your portfolio.</p>
                     </div>
                   )}
                 </>

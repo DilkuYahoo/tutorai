@@ -5,10 +5,11 @@ This Lambda function reads pre-calculated chart1 financial data from DynamoDB,
 passes it to AWS Bedrock to generate recommended property attributes,
 and returns the results to the frontend for user review and persistence.
 
-Supports three actions:
+Supports four actions:
 - "add": Generate a new property recommendation based on current portfolio
 - "optimize": Optimize existing properties with market benchmarks
 - "summary": Generate an AI executive summary of the user's portfolio
+- "advice": Generate 5-6 actionable recommendations with reasoning based on forecast, risk profile, and investment goals
 """
 
 import json
@@ -450,11 +451,10 @@ IMPORTANT AUSTRALIAN LENDING STANDARDS:
 - DTI 3.0-5.0 (300-500%) is CAUTION
 - DTI above 5.0 (500%) is HIGH RISK
 
-Output format - STRICTLY follow this 4-section structure:
+Output format - STRICTLY follow this 3-section structure:
 1. INVESTOR PROFILE: Start with this section. Details about investors, current dependants, and future events (income changes and dependant changes over time).
 2. RISKS & OBJECTIVES: Investment goals, risk tolerance profile, and how the portfolio aligns with objectives.
 3. PORTFOLIO STATUS: Current status considering the investment timeframe and how it aligns with risk profile and objectives.
-4. RECOMMENDATIONS: Bullet point recommendations based on chart1 yearly_forecast data to reach portfolio goals. Be specific and actionable.
 
 Output ONLY the summary text. No JSON required."""
     
@@ -506,16 +506,7 @@ FINANCIAL METRICS (from chart1 yearly_forecast):
 EXISTING PROPERTIES:
 {format_existing_properties(existing_properties)}
 
-=== SECTION 4: RECOMMENDATIONS ===
-Based on the chart1 yearly_forecast data, provide 5-7 specific actionable bullet point recommendations to help achieve the portfolio goals.
-Consider:
-- Timeline projections in chart1 yearly_forecast
-- How {investment_years} year timeframe aligns with risk tolerance
-- Steps to achieve investment goals
-- Property acquisition opportunities based on financial capacity
-- Debt management strategies
-
-Provide recommendations as bullet points starting with "-" or "*"."""
+Provide the executive summary covering the three sections above."""
     
     return system_prompt, user_prompt
 
@@ -549,6 +540,102 @@ def parse_summary_response(response: str) -> str:
         pass
     
     # Return cleaned response
+    return response.strip()
+
+
+def build_advice_prompt(
+    investors: List[dict],
+    chart1_metrics: dict,
+    existing_properties: List[dict],
+    investment_goals: Optional[dict] = None,
+    investment_years: int = 30,
+    portfolio_dependants: int = 0,
+    portfolio_dependants_events: List[dict] = None
+) -> Tuple[str, str]:
+    """
+    Build prompts for actionable advice generation with 5-6 recommendations.
+    
+    Args:
+        investors: List of investor data
+        chart1_metrics: Extracted financial metrics from chart1
+        existing_properties: List of existing properties
+        investment_goals: Optional investment goals from user
+        investment_years: Number of years for investment projection
+        portfolio_dependants: Number of dependants at portfolio level
+        portfolio_dependants_events: Future dependant events
+    
+    Returns:
+        Tuple of (system_prompt, user_prompt)
+    """
+    # Get risk profile from investment_goals
+    risk_tolerance = investment_goals.get('risk_tolerance', 'moderate') if investment_goals else 'moderate'
+    investment_goal = investment_goals.get('goal', 'Wealth accumulation') if investment_goals else 'Wealth accumulation'
+    
+    # System prompt for advice generation - 5-6 recommendations with reasoning
+    system_prompt = """You are a professional Australian property investment advisor.
+Your role is to provide 5-6 actionable recommendations based on portfolio analysis.
+
+IMPORTANT REQUIREMENTS:
+1. Each recommendation MUST include reasoning backed by data
+2. Consider: chart1 forecast projections, risk profile, investment goals
+3. Use Australian lending standards (DTI < 3.0 = safe, 3.0-5.0 = caution, > 5.0 = high risk)
+4. Format each recommendation as: "**Recommendation X:** [title]\n**Reasoning:** [explanation based on data]"
+
+Output format - Provide exactly 5-6 recommendations, each with:
+- Recommendation title
+- Detailed reasoning based on the data (chart1 forecasts, risk profile, goals)
+
+Output ONLY the recommendations text. No JSON required."""
+    
+    # Build user prompt with forecast data, risk profile, and investment goals
+    user_prompt = f"""PORTFOLIO ADVICE REQUEST:
+
+RISK PROFILE: {risk_tolerance}
+INVESTMENT GOAL: {investment_goal}
+
+=== FORECAST (Year 1) ===
+{json.dumps(chart1_metrics.get('yearly_forecast', [])[:1], indent=2)}
+
+=== PORTFOLIO ===
+- Properties: {len(existing_properties)}, Equity: ${chart1_metrics.get('total_equity', 0):,.0f}
+- DTI: {chart1_metrics.get('current_dti', 0):.2f}x, Max Equity: ${chart1_metrics.get('max_accessible_equity', 0):,.0f}
+- Borrowing: ${chart1_metrics.get('borrowing_capacity', 0):,.0f}, Surplus: ${chart1_metrics.get('household_surplus', 0):,.0f}/yr
+
+=== PROPERTIES ===
+{format_existing_properties(existing_properties)}
+
+Provide 5-6 actionable recommendations with reasoning based on risk profile ({risk_tolerance}) and goal ({investment_goal})."""
+    
+    return system_prompt, user_prompt
+
+
+def parse_advice_response(response: str) -> str:
+    """
+    Parse Bedrock advice response.
+    
+    Args:
+        response: The raw response from Bedrock
+    
+    Returns:
+        Advice text string
+    """
+    if not response:
+        return ""
+    
+    # Try to clean up and return the response
+    try:
+        # If response contains JSON wrapper, try to extract text
+        json_match = re.search(r'\{[\s\S]*\}', response)
+        if json_match:
+            parsed = json.loads(json_match.group())
+            if isinstance(parsed, dict):
+                if 'advice' in parsed:
+                    return parsed['advice']
+                if 'recommendations' in parsed:
+                    return parsed['recommendations']
+    except (json.JSONDecodeError, Exception):
+        pass
+    
     return response.strip()
 
 
@@ -717,10 +804,10 @@ def lambda_handler(event: dict, context: any) -> dict:
             'message': 'Missing required parameter: id'
         })
     
-    if property_action not in ['add', 'optimize', 'summary']:
+    if property_action not in ['add', 'optimize', 'summary', 'advice']:
         return create_response(400, {
             'status': 'error', 
-            'message': f"Invalid property_action: {property_action}. Must be 'add', 'optimize', or 'summary'"
+            'message': f"Invalid property_action: {property_action}. Must be 'add', 'optimize', 'summary', or 'advice'"
         })
     
     # Fetch data from DynamoDB
@@ -794,7 +881,7 @@ def lambda_handler(event: dict, context: any) -> dict:
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 model_kwargs={
-                    "max_tokens": 1024,  # Summary needs fewer tokens
+                    "max_tokens": 4096,  # Summary needs fewer tokens
                     "temperature": 0.7
                 },
                 region=region
@@ -818,6 +905,100 @@ def lambda_handler(event: dict, context: any) -> dict:
         response_body = {
             'status': 'success',
             'summary': summary_text
+        }
+    elif property_action == "advice":
+        # For advice action - check for existing advice first
+        # If advice exists in DB, return it immediately (no timeout)
+        # If not, generate new advice (may timeout but will be saved)
+        
+        try:
+            # Check if there's already existing advice in DynamoDB
+            dynamodb = boto3.resource('dynamodb', region_name=region)
+            advice_table = dynamodb.Table(table_name)
+            
+            existing_item = advice_table.get_item(Key={'id': item_id})
+            existing_advice = existing_item.get('Item', {}).get('our_advice', '')
+            
+            # If advice exists and is not the "generating" placeholder, return it
+            if existing_advice and existing_advice != 'Generating advice...' and len(existing_advice) > 50:
+                logger.info(f"Returning cached advice for item {item_id}")
+                return create_response(200, {
+                    'status': 'success',
+                    'advice': existing_advice,
+                    'cached': True
+                })
+            
+            logger.info(f"Generating new advice for item {item_id}")
+        except Exception as e:
+            logger.error(f"Error checking for existing advice: {str(e)}")
+        
+        # Extract investment goals from the data
+        investment_goals = None
+        if 'investment_goals' in data:
+            investment_goals = data['investment_goals']
+        
+        # Get investment_years from the data (default to 30)
+        investment_years = data.get('investment_years', 30)
+        
+        # Get portfolio-level dependants
+        portfolio_dependants = data.get('portfolio_dependants', 0)
+        portfolio_dependants_events = data.get('portfolio_dependants_events', [])
+        
+        # Build prompts
+        system_prompt, user_prompt = build_advice_prompt(
+            investors=investors,
+            chart1_metrics=chart1_metrics,
+            existing_properties=properties,
+            investment_goals=investment_goals,
+            investment_years=investment_years,
+            portfolio_dependants=portfolio_dependants,
+            portfolio_dependants_events=portfolio_dependants_events
+        )
+        
+        # Invoke Bedrock
+        try:
+            logger.info(f"Invoking Bedrock for property_action: {property_action}, region: {region}")
+            bedrock_response = invoke_bedrock(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                model_kwargs={
+                    "max_tokens": 2048,
+                    "temperature": 0.7
+                },
+                region=region
+            )
+            logger.info("Bedrock invocation successful")
+        except Exception as e:
+            logger.error(f"Bedrock invocation error: {str(e)}")
+            return create_response(500, {
+                'status': 'error',
+                'message': f'Bedrock invocation failed: {str(e)}'
+            })
+        
+        # Parse advice response
+        advice_text = parse_advice_response(bedrock_response)
+        
+        # Validate advice is not empty
+        if not advice_text or len(advice_text.strip()) < 10:
+            logger.warning("Generated advice is too short or empty")
+            advice_text = "Unable to generate meaningful advice at this time. Please try again."
+        
+        # Save advice to DynamoDB
+        try:
+            dynamodb = boto3.resource('dynamodb', region_name=region)
+            advice_table = dynamodb.Table(table_name)
+            advice_table.update_item(
+                Key={'id': item_id},
+                UpdateExpression='SET our_advice = :advice',
+                ExpressionAttributeValues={':advice': advice_text}
+            )
+            logger.info(f"Saved advice to DynamoDB for item {item_id}")
+        except Exception as e:
+            logger.error(f"Failed to save advice to DynamoDB: {str(e)}")
+        
+        response_body = {
+            'status': 'success',
+            'advice': advice_text
         }
     else:
         # Original logic for add and optimize actions
@@ -959,7 +1140,7 @@ if __name__ == "__main__":
     import sys
     
     # Test parameters
-    test_id = "B57153AB-B66E-4085-A4C1-929EC158FC3E"
+    test_id = "1EB8EB7F-576B-497B-BF47-32664361A464"
     table_name = "BA-PORTAL-BASETABLE"
     region = "ap-southeast-2"
     

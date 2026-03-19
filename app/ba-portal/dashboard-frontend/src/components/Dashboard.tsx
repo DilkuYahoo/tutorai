@@ -24,6 +24,7 @@ interface DashboardData {
   properties: any[];
   investmentYears?: number;
   executiveSummary?: string;
+  ourAdvice?: string;
   loading: boolean;
   error: string | null;
 }
@@ -40,6 +41,8 @@ const Dashboard: React.FC = () => {
     investors: [],
     properties: [],
     investmentYears: 30,
+    executiveSummary: '',
+    ourAdvice: '',
     loading: true,
     error: null,
   });
@@ -124,6 +127,7 @@ const Dashboard: React.FC = () => {
           ...result,
           investmentYears: result.investmentYears || 30,
           executiveSummary: result.executiveSummary || '',
+          ourAdvice: result.ourAdvice || '',
           loading: false,
           error: null,
         });
@@ -220,16 +224,21 @@ const Dashboard: React.FC = () => {
       
       console.log("[DEBUG] handleUpdate called, current executiveSummary:", data.executiveSummary);
       
-      await updateDashboardData(investors, properties, data.chartData, investmentYears, data.executiveSummary, selectedPortfolioId);
-
-      const result = await fetchDashboardDataById(selectedPortfolioId);
-      console.log("[DEBUG] fetchDashboardDataById result, executiveSummary:", result.executiveSummary?.substring(0, 100) + "...");
+      // Clear summary and advice in database
+      await updateDashboardData(investors, properties, data.chartData, investmentYears, '', '', selectedPortfolioId);
       
-      setData({
-        ...result,
+      // Directly clear in local state - don't rely on API response for clearing
+      setData(prev => ({
+        ...prev,
+        investors,
+        properties,
+        chartData: data.chartData,
+        investmentYears,
+        executiveSummary: '',  // Clear summary immediately
+        ourAdvice: '',  // Clear advice immediately
         loading: false,
         error: null,
-      });
+      }));
 
       setUpdateSuccess("Data updated successfully!");
       onSuccess?.();
@@ -382,10 +391,15 @@ const Dashboard: React.FC = () => {
         chartData={data.chartData} 
         loading={data.loading}
         executiveSummary={data.executiveSummary}
+        ourAdvice={data.ourAdvice}
         selectedPortfolioId={selectedPortfolioId}
         onSummaryGenerated={(summary) => {
           console.log("[DEBUG] Summary received in Dashboard:", summary?.substring(0, 100) + "...");
           setData(prev => ({ ...prev, executiveSummary: summary }));
+        }}
+        onAdviceGenerated={(advice) => {
+          console.log("[DEBUG] Advice received in Dashboard:", advice?.substring(0, 100) + "...");
+          setData(prev => ({ ...prev, ourAdvice: advice }));
         }}
       />
 
