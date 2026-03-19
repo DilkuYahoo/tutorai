@@ -2,20 +2,74 @@
 
 import React, { useState, useEffect } from "react";
 import ReactECharts from 'echarts-for-react';
-import { generateAiRecommendations, type AiRecommendationAnalysis } from '../services/dashboardService';
+import { generatePortfolioSummary } from '../services/dashboardService';
 import { Sparkles, ChevronDown } from 'lucide-react';
+
+// Simple markdown to HTML converter
+const parseMarkdown = (text: string): string => {
+  if (!text) return '';
+  
+  let html = text
+    // Escape HTML entities first
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // Remove any header lines containing EXECUTIVE SUMMARY (case insensitive, any level)
+    .replace(/^#+\s*.*EXECUTIVE\s+SUMMARY.*$/gim, '')
+    .replace(/\n#+\s*.*EXECUTIVE\s+SUMMARY.*$/gim, '')
+    // Headers
+    .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2" style="color: inherit;">$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold mt-4 mb-2" style="color: inherit;">$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-4 mb-2" style="color: inherit;">$1</h1>')
+    // Bold
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // Italic
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Line breaks - handle multiple newlines
+    .replace(/\n\n\n+/g, '</p><p class="mb-2">')
+    .replace(/\n\n/g, '</p><p class="mb-2">')
+    .replace(/\n/g, '<br />');
+  
+  // Clean up any double paragraphs or empty tags
+  html = html.replace(/<p class="mb-2"><\/p>/g, '');
+  html = html.replace(/<p class="mb-2">\s*<\/p>/g, '');
+  
+  return `<p class="mb-2">${html}</p>`;
+};
 
 interface ChartSectionProps {
   chartData: any[];
   loading: boolean;
+  executiveSummary?: string;
+  selectedPortfolioId?: string;
+  onSummaryGenerated?: (summary: string) => void;
 }
 
-const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
-  const [aiRecommendations, setAiRecommendations] = useState<AiRecommendationAnalysis | null>(null);
-  const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
-  const [aiSectionExpanded, setAiSectionExpanded] = useState<boolean>(false);
+const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executiveSummary, selectedPortfolioId, onSummaryGenerated }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  
+  // Current Snapshot state
+  const [snapshotSummary, setSnapshotSummary] = useState<string>('');
+  const [snapshotLoading, setSnapshotLoading] = useState<boolean>(false);
+  const [snapshotError, setSnapshotError] = useState<string | null>(null);
+  const [isSnapshotExpanded, setIsSnapshotExpanded] = useState<boolean>(true);
+  const [cachedPortfolioId, setCachedPortfolioId] = useState<string>('');
+
+  // Load executive summary from props on mount or when portfolio changes
+  useEffect(() => {
+    // Reset cache when portfolio changes to force refresh from backend
+    if (selectedPortfolioId && selectedPortfolioId !== cachedPortfolioId) {
+      console.log("[DEBUG] Portfolio changed from", cachedPortfolioId, "to", selectedPortfolioId, "- resetting summary cache");
+      setCachedPortfolioId(selectedPortfolioId);
+      setSnapshotSummary(''); // Clear local cache
+    }
+    
+    // Always try to load from backend prop - if there's content in DB, use it
+    if (executiveSummary && executiveSummary.trim().length > 0) {
+      setSnapshotSummary(executiveSummary);
+    }
+  }, [executiveSummary, selectedPortfolioId, cachedPortfolioId]);
 
   useEffect(() => {
     // Check initial dark mode state
@@ -473,15 +527,23 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
 
   const totalPropertyValues = Object.values(latestData?.property_values || {}).reduce((sum: number, val: any) => sum + (val || 0), 0);
   const totalEquity = totalPropertyValues - (Object.values(latestData?.property_loan_balances || {}).reduce((sum: number, val: any) => sum + (val || 0), 0));
-  const generateAIRecommendations = async () => {
-    setIsGeneratingAI(true);
+
+  const handleGeneratePortfolioSummary = async () => {
+    setSnapshotLoading(true);
+    setSnapshotError(null);
     try {
-      const result = await generateAiRecommendations();
-      setAiRecommendations(result);
+      const result = await generatePortfolioSummary(selectedPortfolioId);
+      console.log("[DEBUG] Generated summary:", result.summary?.substring(0, 100) + "...");
+      setSnapshotSummary(result.summary);
+      // Notify parent component that summary was generated
+      if (onSummaryGenerated) {
+        onSummaryGenerated(result.summary);
+      }
     } catch (error) {
-      console.error("Failed to generate AI recommendations:", error);
+      console.error("Failed to generate portfolio summary:", error);
+      setSnapshotError("Unable to generate summary. Please try again.");
     } finally {
-      setIsGeneratingAI(false);
+      setSnapshotLoading(false);
     }
   };
 
@@ -543,62 +605,57 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading }) => {
               </div>
             </div>
 
-            {/* AI Recommendations Card */}
+            {/* Executive Summary Card */}
             <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold" style={{ color: cardText }}>AI Advice and Insights</h2>
+                <h2 className="text-xl font-bold" style={{ color: cardText }}>Executive Summary</h2>
                 <div className="flex items-center gap-2">
-                  {aiRecommendations && (
-                    <button
-                      onClick={() => setAiSectionExpanded(!aiSectionExpanded)}
-                      className="p-2 rounded-lg transition-colors"
-                      style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}
-                      title={aiSectionExpanded ? 'Collapse details' : 'Expand details'}
-                    >
-                      <ChevronDown className={`w-5 h-5 transform transition-transform ${aiSectionExpanded ? 'rotate-180' : ''}`} />
-                    </button>
-                  )}
                   <button
-                    onClick={generateAIRecommendations}
-                    disabled={isGeneratingAI}
+                    onClick={() => setIsSnapshotExpanded(!isSnapshotExpanded)}
+                    className="p-2 rounded-lg transition-colors"
+                    style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}
+                    title={isSnapshotExpanded ? 'Collapse details' : 'Expand details'}
+                  >
+                    <ChevronDown className={`w-5 h-5 transform transition-transform ${isSnapshotExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                  <button
+                    onClick={handleGeneratePortfolioSummary}
+                    disabled={snapshotLoading}
                     className="px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
                     style={{ backgroundColor: '#8b5cf6', color: 'white' }}
                   >
                     <Sparkles className="w-5 h-5" />
-                    {isGeneratingAI ? 'Generating...' : 'Get AI Advice'}
+                    {snapshotLoading ? 'Generating...' : '🤖 Summarise'}
                   </button>
+                  
                 </div>
               </div>
-              {aiRecommendations && aiSectionExpanded && (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
-                    <h4 className="text-sm font-semibold mb-2" style={{ color: cardText }}>Bottlenecks</h4>
-                    <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.bottlenecks}</p>
-                  </div>
-                  <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
-                    <h4 className="text-sm font-semibold mb-2" style={{ color: cardText }}>Recommendations</h4>
-                    <ul className="list-disc list-inside text-sm space-y-1" style={{ color: cardTextSecondary }}>
-                      {aiRecommendations.recommendations?.map((rec: string, i: number) => (
-                        <li key={i}>{rec}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
-                      <h4 className="text-sm font-semibold mb-1" style={{ color: cardText }}>Optimal Timing</h4>
-                      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.optimal_timing}</p>
+              {isSnapshotExpanded && (
+                <>
+                  {snapshotLoading && (
+                    <div className="text-center py-4" style={{ color: cardTextSecondary }}>
+                      Generating summary...
                     </div>
-                    <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
-                      <h4 className="text-sm font-semibold mb-1" style={{ color: cardText }}>Max Purchase Price</h4>
-                      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.max_purchase_price}</p>
+                  )}
+                  {snapshotError && (
+                    <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: '#ef4444' }}>
+                      {snapshotError}
                     </div>
-                  </div>
-                </div>
-              )}
-              {aiRecommendations && !aiSectionExpanded && (
-                <div className="text-sm" style={{ color: cardTextSecondary }}>
-                  <p>Click the expand button to view AI analysis details including bottlenecks, recommendations, optimal timing, and max purchase price.</p>
-                </div>
+                  )}
+                  {snapshotSummary && !snapshotLoading && (
+                    <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
+                      <div 
+                        style={{ color: cardTextSecondary }}
+                        dangerouslySetInnerHTML={{ __html: parseMarkdown(snapshotSummary) }}
+                      />
+                    </div>
+                  )}
+                  {!snapshotSummary && !snapshotLoading && !snapshotError && (
+                    <div className="text-sm" style={{ color: cardTextSecondary }}>
+                      <p>Click the button to generate an AI summary of your portfolio.</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

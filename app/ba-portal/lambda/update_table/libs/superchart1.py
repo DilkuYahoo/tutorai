@@ -251,11 +251,14 @@ def borrowing_capacity_forecast_investor_blocks(
     debug_print(f"Config: CPI_RATE={CPI_RATE}, MEDICARE_LEVY_RATE={MEDICARE_LEVY_RATE}, ACCESSIBLE_EQUITY_RATE={ACCESSIBLE_EQUITY_RATE}")
     debug_print(f"Config: BORROWING_POWER_MULTIPLIER_MIN={BORROWING_POWER_MULTIPLIER_MIN}, BASE={BORROWING_POWER_MULTIPLIER_BASE}")
     
-    # Validate that all investors have dependants
+    # Validate that all investors have dependants - default to 0 if missing
     for inv in investors:
         if "dependants" not in inv:
-            debug_print(f"ERROR: Investor {inv.get('name', 'unknown')} is missing 'dependants'")
-            raise ValueError(f"Investor {inv.get('name', 'unknown')} is missing 'dependants'")
+            debug_print(f"WARNING: Investor {inv.get('name', 'unknown')} is missing 'dependants', defaulting to 0")
+            inv["dependants"] = 0
+        elif inv["dependants"] is None:
+            debug_print(f"WARNING: Investor {inv.get('name', 'unknown')} has 'dependants' as None, defaulting to 0")
+            inv["dependants"] = 0
 
     # Validate that all properties have purchase_year to handle missing data gracefully
     for prop in properties:

@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Settings, Sun, Moon, LogIn, LogOut, User, Settings2, X, Save, Loader2 } from "lucide-react";
+import { Settings, Sun, Moon, LogIn, LogOut, User, Settings2, X, Save, Loader2, ChevronDown } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { fetchConfigParams, saveConfigParams } from "../services/dashboardService";
-import type { ConfigParams } from "../services/dashboardService";
+import type { ConfigParams, InvestmentGoals, PortfolioInfo } from "../services/dashboardService";
+
+// Investment goal options
+export const INVESTMENT_GOAL_OPTIONS = [
+  "Passive Income",
+  "Capital Growth",
+  "Tax Benefits",
+  "Wealth Accumulation",
+  "Retirement Planning",
+  "Lifestyle & Personal Use",
+] as const;
 
 interface HeaderProps {
   isDarkMode?: boolean;
@@ -11,6 +21,9 @@ interface HeaderProps {
   onInvestmentYearsChange?: (years: number) => void;
   configParams?: ConfigParams;
   onConfigParamsChange?: (params: ConfigParams) => void;
+  portfolios?: PortfolioInfo[];
+  selectedPortfolioId?: string;
+  onPortfolioChange?: (portfolioId: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -19,7 +32,10 @@ const Header: React.FC<HeaderProps> = ({
   investmentYears, 
   onInvestmentYearsChange,
   configParams: propConfigParams,
-  onConfigParamsChange
+  onConfigParamsChange,
+  portfolios,
+  selectedPortfolioId,
+  onPortfolioChange
 }) => {
   const { isAuthenticated, user, login, logout } = useAuth();
   const [localIsDarkMode, setLocalIsDarkMode] = useState(true);
@@ -41,6 +57,13 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const [configParams, setConfigParams] = useState<ConfigParams>(propConfigParams || defaultConfigParams);
+  const [investmentGoals, setInvestmentGoals] = useState<InvestmentGoals>({
+    goal: '',
+    riskTolerance: 'moderate',
+  });
+  
+  // Local state for investment years to capture current input value
+  const [localInvestmentYears, setLocalInvestmentYears] = useState<number>(investmentYears || 30);
 
   // Sync propConfigParams to local state when it changes
   useEffect(() => {
@@ -48,6 +71,13 @@ const Header: React.FC<HeaderProps> = ({
       setConfigParams(propConfigParams);
     }
   }, [propConfigParams]);
+
+  // Sync investmentYears from prop to local state
+  useEffect(() => {
+    if (investmentYears) {
+      setLocalInvestmentYears(investmentYears);
+    }
+  }, [investmentYears]);
 
   useEffect(() => {
     const checkDarkMode = () => {
@@ -92,11 +122,15 @@ const Header: React.FC<HeaderProps> = ({
     setIsLoadingConfig(true);
     setConfigError(null);
     try {
-      const configData = await fetchConfigParams();
+      const configData = await fetchConfigParams(selectedPortfolioId);
       setConfigParams(configData.configParams);
       // Also update the investment years if provided
       if (configData.investmentYears && onInvestmentYearsChange) {
         onInvestmentYearsChange(configData.investmentYears);
+      }
+      // Also load investment goals if provided
+      if (configData.investmentGoals) {
+        setInvestmentGoals(configData.investmentGoals);
       }
     } catch (error) {
       console.error("Failed to load config:", error);
@@ -138,7 +172,7 @@ const Header: React.FC<HeaderProps> = ({
     setConfigError(null);
     setConfigSuccess(null);
     try {
-      await saveConfigParams(configParams, investmentYears);
+      await saveConfigParams(configParams, localInvestmentYears, investmentGoals, selectedPortfolioId);
       onConfigParamsChange?.(configParams);
       setConfigSuccess("Configuration saved successfully!");
       setTimeout(() => {
@@ -184,6 +218,38 @@ const Header: React.FC<HeaderProps> = ({
           <h1 className="text-xl font-bold" style={{ color: textColor }}>AdviceGenie</h1>
           <p className="text-xs" style={{ color: textSecondary }}>your AI assisted Wealth Adviser</p>
         </div>
+        
+        {/* Portfolio Selector */}
+        {(portfolios && portfolios.length > 0) || selectedPortfolioId ? (
+          <div className="relative">
+            <select
+              value={selectedPortfolioId || ''}
+              onChange={(e) => onPortfolioChange?.(e.target.value)}
+              className="appearance-none px-4 py-2 pr-10 rounded-lg text-sm font-medium cursor-pointer"
+              style={{ 
+                backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', 
+                color: textColor,
+                borderColor: borderColor,
+                borderWidth: '1px'
+              }}
+            >
+              {portfolios && portfolios.length > 0 ? (
+                portfolios.map((portfolio) => (
+                  <option key={portfolio.id} value={portfolio.id}>
+                    {portfolio.name || portfolio.id}
+                  </option>
+                ))
+              ) : (
+                <option value={selectedPortfolioId}>{selectedPortfolioId}</option>
+              )}
+            </select>
+            <ChevronDown 
+              className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+              size={16}
+              style={{ color: textSecondary }}
+            />
+          </div>
+        ) : null}
       </div>
       
       <div className="flex items-center gap-3">
@@ -322,12 +388,49 @@ const Header: React.FC<HeaderProps> = ({
                     type="number"
                     min="1"
                     max="50"
-                    value={investmentYears || 30}
-                    onChange={(e) => onInvestmentYearsChange?.(parseInt(e.target.value) || 30)}
+                    value={localInvestmentYears || 30}
+                    onChange={(e) => {
+                      const newValue = parseInt(e.target.value) || 30;
+                      setLocalInvestmentYears(newValue);
+                      onInvestmentYearsChange?.(newValue);
+                    }}
                     className="w-full px-3 py-2 rounded text-sm"
                     style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
                   />
                   <span className="text-xs" style={{ color: textSecondary }}>yrs</span>
+                </div>
+              </div>
+
+              {/* Investment Goals */}
+              <div className="border-t pt-3 mt-3">
+                <label className="text-xs text-cyan-400 block mb-2 font-semibold">Investment Goal</label>
+                <div className="space-y-2">
+                  {/* Goal dropdown */}
+                  <select
+                    value={investmentGoals.goal}
+                    onChange={(e) => setInvestmentGoals({ ...investmentGoals, goal: e.target.value })}
+                    className="w-full px-3 py-2 rounded text-sm"
+                    style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
+                  >
+                    <option value="">Select a goal...</option>
+                    {INVESTMENT_GOAL_OPTIONS.map((goal) => (
+                      <option key={goal} value={goal}>{goal}</option>
+                    ))}
+                  </select>
+                  {/* Risk Tolerance */}
+                  <div>
+                    <label className="text-xs text-cyan-400 block mb-1">Risk Tolerance</label>
+                    <select
+                      value={investmentGoals.riskTolerance}
+                      onChange={(e) => setInvestmentGoals({ ...investmentGoals, riskTolerance: e.target.value as 'conservative' | 'moderate' | 'aggressive' })}
+                      className="w-full px-3 py-2 rounded text-sm"
+                      style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
+                    >
+                      <option value="conservative">Conservative</option>
+                      <option value="moderate">Moderate</option>
+                      <option value="aggressive">Aggressive</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 

@@ -135,22 +135,61 @@ Add a section to display the AI-generated recommendations in the same card.
 ```tsx
 {aiRecommendations && (
   <div className="mt-4 space-y-3">
+    {/* Portfolio Summary Section */}
+    <div>
+      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Portfolio Summary</h4>
+      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.portfolio_summary}</p>
+    </div>
+    {/* Key Metrics */}
+    <div className="grid grid-cols-2 gap-2">
+      <div>
+        <h4 className="text-sm font-semibold" style={{ color: cardText }}>DTI Ratio</h4>
+        <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.dti_ratio}</p>
+      </div>
+      <div>
+        <h4 className="text-sm font-semibold" style={{ color: cardText }}>LVR</h4>
+        <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.lvr}</p>
+      </div>
+      <div>
+        <h4 className="text-sm font-semibold" style={{ color: cardText }}>Cashflow</h4>
+        <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.cashflow_health}</p>
+      </div>
+      <div>
+        <h4 className="text-sm font-semibold" style={{ color: cardText }}>Borrowing Capacity</h4>
+        <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.borrowing_capacity}</p>
+      </div>
+    </div>
+    {/* Bottlenecks */}
     <div>
       <h4 className="text-sm font-semibold" style={{ color: cardText }}>Bottlenecks</h4>
       <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.bottlenecks}</p>
     </div>
+    {/* Detailed Recommendations with Reasoning */}
     <div>
-      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Recommendations</h4>
-      <ul className="list-disc list-inside text-sm" style={{ color: cardTextSecondary }}>
-        {aiRecommendations.recommendations?.map((rec: string, i: number) => (
-          <li key={i}>{rec}</li>
-        ))}
-      </ul>
+      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Recommended Actions</h4>
+      {aiRecommendations.recommendations?.map((rec: { action: string; reasoning: string }, i: number) => (
+        <div key={i} className="mt-2 p-2 rounded" style={{ backgroundColor: cardBg }}>
+          <p className="text-sm font-medium" style={{ color: cardText }}>{rec.action}</p>
+          <p className="text-xs" style={{ color: cardTextSecondary }}>{rec.reasoning}</p>
+        </div>
+      ))}
     </div>
+    {/* Property Acquisition Strategy */}
+    <div>
+      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Property Acquisition Strategy</h4>
+      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.acquisition_strategy}</p>
+    </div>
+    {/* Portfolio Optimization */}
+    <div>
+      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Portfolio Optimization</h4>
+      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.optimization}</p>
+    </div>
+    {/* Timing Decisions */}
     <div>
       <h4 className="text-sm font-semibold" style={{ color: cardText }}>Optimal Timing</h4>
       <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.optimal_timing}</p>
     </div>
+    {/* Max Purchase Price */}
     <div>
       <h4 className="text-sm font-semibold" style={{ color: cardText }}>Max Purchase Price</h4>
       <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.max_purchase_price}</p>
@@ -233,17 +272,68 @@ The "Generate AI Recommendations" button calls the [`ba_agent`](app/ba-portal/la
   "status": "success",
   "action": "optimize",
   "analysis": {
-    "bottlenecks": "High DTI ratio of 45% limits borrowing capacity",
+    "portfolio_summary": "Your portfolio currently has 2 properties with a combined value of $1,750,000 and total debt of $960,000. The portfolio is generating positive cashflow of $18,000 annually.",
+    "dti_ratio": "32.5%",
+    "lvr": "54.8% average across properties",
+    "cashflow_health": "Positive - $18,000 annual surplus",
+    "borrowing_capacity": "$340,000 available",
+    "bottlenecks": "High DTI ratio of 32.5% limits borrowing capacity. Consider paying down debt to reduce DTI below 30%.",
     "recommendations": [
-      "Consider paying down debt to reduce DTI below 30%",
-      "Accessible equity of $150,000 available for next purchase",
-      "Property cashflow is negative, consider increasing rent"
+      {
+        "action": "Reduce interest rate on Property A from 6.5% to 5.5%",
+        "reasoning": "This would reduce annual interest costs by $8,000, improving cashflow and lowering DTI by 2%"
+      },
+      {
+        "action": "Increase rent on Property B by $200/month",
+        "reasoning": "Current rent is 3.2% of property value, below the 4-6% market benchmark. This would add $2,400 annually to cashflow"
+      },
+      {
+        "action": "Access $80,000 in accessible equity for deposit",
+        "reasoning": "With current accessible equity of $150,000, using $80,000 as a 25% deposit would enable a $320,000 property purchase while maintaining DTI below 35%"
+      }
     ],
-    "optimal_timing": "Year 3 - when DTI drops below 30%",
-    "max_purchase_price": "$600,000 based on accessible equity"
+    "acquisition_strategy": "Wait until Year 2 when DTI drops below 28% to maximize borrowing capacity. Target properties in the $700,000-$800,000 range to maintain LVR below 80% and avoid LMI.",
+    "optimization": "Focus on rent optimization and debt reduction. Consider refinancing Property A to a lower rate. Increase rental income on underperforming properties to meet 4-6% of property value annually.",
+    "optimal_timing": "Year 2 - when DTI drops below 28%, providing maximum borrowing power of $420,000",
+    "max_purchase_price": "$600,000 based on accessible equity of $150,000 and projected borrowing capacity"
   }
 }
 ```
+
+### What It Displays
+
+The AI Advice and Insights section provides a comprehensive analysis of your portfolio:
+
+#### Portfolio Summary
+
+The AI first summarizes the current state of your portfolio, including:
+
+| Metric | Description |
+|--------|-------------|
+| **DTI Ratio** | Debt-to-Income ratio showing your borrowing health |
+| **LVR Analysis** | Loan-to-Value ratios across all properties |
+| **Cashflow Health** | Rental income vs expenses and surplus projections |
+| **Equity Position** | Total and accessible equity for future purchases |
+| **Borrowing Capacity** | How much additional debt the portfolio can sustain |
+
+#### Recommended Actions
+
+Based on the analysis, the AI provides detailed recommendations with reasoning:
+
+1. **Property Acquisition Strategies** - When and what property to buy next based on financial capacity
+   - Optimal purchase timing based on DTI projections
+   - Target property value within borrowing power + equity
+   - Recommended loan amounts to maintain sustainable DTI
+
+2. **Portfolio Optimization** - Adjust rent, expenses, and interest rates to align with market benchmarks:
+   - Rent should be 4-6% of property value annually
+   - Expenses should be 1-2% of property value annually
+   - Growth rates should align with historical averages (3-7%)
+   - Interest rates should reflect current market (5-7%)
+
+3. **Sell/Hold Strategy** - Recommendations on existing properties
+
+4. **Timing Decisions** - Best time to make moves based on financial projections
 
 ### What It Analyzes
 
@@ -296,12 +386,28 @@ The "Generate AI Recommendations" feature uses the `/ba-agent` endpoint with the
   "status": "success",
   "action": "optimize",
   "analysis": {
-    "bottlenecks": "High DTI ratio of 45% limits borrowing capacity",
+    "portfolio_summary": "Your portfolio currently has 2 properties with a combined value of $1,750,000 and total debt of $960,000. The portfolio is generating positive cashflow of $18,000 annually.",
+    "dti_ratio": "32.5%",
+    "lvr": "54.8% average across properties",
+    "cashflow_health": "Positive - $18,000 annual surplus",
+    "borrowing_capacity": "$340,000 available",
+    "bottlenecks": "High DTI ratio of 32.5% limits borrowing capacity",
     "recommendations": [
-      "Consider paying down debt to reduce DTI below 30%",
-      "Accessible equity of $150,000 available for next purchase",
-      "Property cashflow is negative, consider increasing rent"
+      {
+        "action": "Consider paying down debt to reduce DTI below 30%",
+        "reasoning": "Reducing DTI from 32.5% to 28% would increase borrowing capacity by $80,000"
+      },
+      {
+        "action": "Accessible equity of $150,000 available for next purchase",
+        "reasoning": "This equity can fund a 25% deposit on a $600,000 property"
+      },
+      {
+        "action": "Property cashflow is negative, consider increasing rent",
+        "reasoning": "Current rental yield of 3.2% is below the 4-6% market benchmark"
+      }
     ],
+    "acquisition_strategy": "Wait until Year 2 when DTI drops below 28% to maximize borrowing capacity. Target properties in the $700,000-$800,000 range.",
+    "optimization": "Focus on rent optimization and debt reduction. Consider refinancing to lower interest rates.",
     "optimal_timing": "Year 3 - when DTI drops below 30%",
     "max_purchase_price": "$600,000 based on accessible equity"
   }
@@ -462,6 +568,7 @@ flowchart LR
 | **Chart1 Calculations** | Automatic calculation of borrowing capacity, DTI, LVR, and cashflow projections |
 | **AI Recommendations** | Generate property acquisition recommendations using AWS Bedrock |
 | **Portfolio Optimization** | Optimize existing properties based on market benchmarks |
+| **Investment Goals** | Set personal investment goals and risk tolerance for personalized AI advice |
 | **Configuration Parameters** | Adjust financial assumptions (CPI, borrowing multipliers, equity rates) |
 | **Dark/Light Mode** | Toggle between dark and light themes |
 | **Secure Authentication** | Passwordless login with email verification via AWS Cognito |
@@ -1015,6 +1122,63 @@ Each year in the 30-year forecast contains the following calculated fields:
 
 ## Configuration
 
+### Header Configuration Panel
+
+The BA Portal includes a configuration panel in the header that allows users to set both financial parameters and investment goals. This panel is accessible via the gear icon in the header.
+
+#### Investment Goals Settings
+
+Users can set their investment goals to receive personalized AI recommendations:
+
+| Setting | Type | Options | Description |
+|---------|------|---------|-------------|
+| **Investment Goal** | Multi-select | Passive Income, Capital Growth, Tax Benefits, Wealth Accumulation, Retirement Planning, Lifestyle & Personal Use | Primary objectives for the portfolio |
+| **Risk Tolerance** | Single-select | Conservative, Moderate, Aggressive | Investment risk preference |
+
+#### Storing Investment Goals in DynamoDB
+
+Investment goals are stored in the `BA-PORTAL-BASETABLE` DynamoDB table:
+
+```json
+{
+  "id": "B57153AB-B66E-4085-A4C1-929EC158FC3E",
+  "investment_goals": {
+    "goals": ["Passive Income", "Capital Growth", "Retirement Planning"],
+    "risk_tolerance": "moderate"
+  }
+}
+```
+
+#### Using Investment Goals in AI Recommendations
+
+The BA Agent Lambda reads the investment goals from DynamoDB and incorporates them into the AI prompt to generate personalized recommendations:
+
+**File:** [`ba_agent/main.py`](app/ba-portal/lambda/ba_agent/main.py)
+
+```python
+# Extract investment goals from portfolio
+investment_goals = item.get('investment_goals', {})
+goals = investment_goals.get('goals', [])
+risk_tolerance = investment_goals.get('risk_tolerance', 'moderate')
+
+# Include in AI prompt for personalized recommendations
+prompt += f"""
+Investment Goals:
+- Goals: {', '.join(goals)}
+- Risk Tolerance: {risk_tolerance}
+"""
+```
+
+### Implementation Checklist
+
+| Step | Component | Status |
+|------|-----------|--------|
+| 1 | Add Investment Goals fields to Header.tsx config panel | ⬜ Not Started |
+| 2 | Add `investment_goals` to ConfigParams type in dashboardService.ts | ⬜ Not Started |
+| 3 | Update saveConfigParams in dashboardService.ts to save goals | ⬜ Not Started |
+| 4 | Update update_table.py Lambda to handle investment_goals | ⬜ Not Started |
+| 5 | Update ba_agent/main.py to read and use goals in AI prompts | ⬜ Not Started |
+
 ### Cognito Setup
 
 The application uses AWS Cognito for authentication with the following configuration:
@@ -1218,8 +1382,22 @@ Generates AI-powered property recommendations using AWS Bedrock (Claude). This e
     }
   ],
   "analysis": {
+    "portfolio_summary": "Your portfolio currently has 2 properties with a combined value of $1,750,000 and total debt of $960,000.",
+    "dti_ratio": "32.5%",
+    "lvr": "54.8%",
+    "cashflow_health": "Positive - $18,000 annual surplus",
+    "borrowing_capacity": "$340,000 available",
     "recommended_changes": "Reduced interest rate from 6% to 5.5%, adjusted rent to market rate",
-    "rationale": "Properties now more aligned with market benchmarks"
+    "rationale": "Properties now more aligned with market benchmarks",
+    "recommendations": [
+      {
+        "action": "Refinance Property A to lower rate",
+        "reasoning": "Current 6% rate is above market average of 5.5%, saving $8,000 annually"
+      }
+    ],
+    "acquisition_strategy": "Target properties in $700,000-$800,000 range in Year 2",
+    "optimal_timing": "Year 2 when DTI drops below 28%",
+    "max_purchase_price": "$600,000"
   }
 }
 ```

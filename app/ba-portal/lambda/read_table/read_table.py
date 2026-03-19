@@ -72,7 +72,73 @@ class DynamoDBReader:
         self.table = self.dynamodb.Table(self.table_name)
         
         logger.info(f"Initialized DynamoDBReader for table '{self.table_name}' in region '{self.region}'")
-      
+    
+    def list_all_portfolio_ids(self, adviser_name: str = None) -> List[Dict[str, Any]]:
+        """
+        List all portfolio IDs from DynamoDB with status='active'.
+        Optionally filter by adviser_name.
+        Returns a list of objects with id and optionally name/title.
+        """
+        try:
+            logger.info(f"Attempting to list all portfolio IDs from table {self.table_name}")
+            
+            # Build filter expression
+            filter_expr = '#status = :status'
+            expr_names = {'#status': 'status'}
+            expr_values = {':status': 'active'}
+            
+            # Add adviser_name filter if provided
+            if adviser_name:
+                filter_expr += ' AND #adviser = :adviser'
+                expr_names['#adviser'] = 'adviser_name'
+                expr_values[':adviser'] = adviser_name
+            
+            # Scan the table for items with status='active' (and optionally adviser_name)
+            # First, try with name projection, if it fails, try without
+            try:
+                response = self.table.scan(
+                    FilterExpression=filter_expr,
+                    ExpressionAttributeNames=expr_names,
+                    ExpressionAttributeValues=expr_values,
+                    ProjectionExpression='id, #name, last_updated_date, number_of_updates',
+                    Limit=100
+                )
+            except ClientError as e:
+                # If name attribute doesn't exist, try without it
+                logger.warning(f"Scan with name failed, retrying without: {e}")
+                response = self.table.scan(
+                    FilterExpression=filter_expr,
+                    ExpressionAttributeNames=expr_names,
+                    ExpressionAttributeValues=expr_values,
+                    ProjectionExpression='id, last_updated_date, number_of_updates',
+                    Limit=100
+                )
+            
+            items = response.get('Items', [])
+            
+            # Format the results
+            portfolios = []
+            for item in items:
+                portfolios.append({
+                    'id': item.get('id'),
+                    'name': item.get('name', item.get('id')),  # Use 'name' if available, otherwise use id
+                    'last_updated': item.get('last_updated_date'),
+                    'updates': item.get('number_of_updates', 0)
+                })
+            
+            logger.info(f"Found {len(portfolios)} active portfolio items")
+            return portfolios
+            
+        except ClientError as e:
+            error_msg = f"DynamoDB ClientError listing portfolio IDs: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            raise DynamoDBReadError(error_msg, 500) from e
+            
+        except Exception as e:
+            error_msg = f"Unexpected error listing portfolio IDs: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            raise DynamoDBReadError(error_msg, 500) from e
+    
     def validate_parameters(self, table_name: str, item_id: str) -> None:
         """Validate required parameters with robust checks."""
         if not table_name or not isinstance(table_name, str) or not table_name.strip():
@@ -219,16 +285,36 @@ def parse_lambda_event(event: Dict[str, Any]) -> Dict[str, Any]:
                 if key not in body_data or not body_data[key]:
                     body_data[key] = value
         
-        # Extract required parameters with case-insensitive fallback
+        # Extract parameters with case-insensitive fallback
         table_name = body_data.get('table_name') or body_data.get('tableName') or body_data.get('TableName')
         item_id = body_data.get('id') or body_data.get('ID') or body_data.get('item_id')
         region = body_data.get('region', "ap-southeast-2") or body_data.get('Region', "ap-southeast-2")
+        action = body_data.get('action') or body_data.get('Action')  # New: action parameter
+        adviser_name = body_data.get('adviser_name') or body_data.get('adviserName')  # New: adviser_name filter
         
         # Debug logging for parameter extraction
-        logger.debug(f"Extracted parameters - table_name: {table_name}, id: {item_id}, region: {region}")
+        logger.debug(f"Extracted parameters - table_name: {table_name}, id: {item_id}, region: {region}, action: {action}, adviser_name: {adviser_name}")
         logger.debug(f"Available keys in body_data: {list(body_data.keys())}")
         
-        # Validate required parameters
+        # Validate required parameters - for list_portfolios action, we only need table_name
+        if action == 'list_portfolios':
+            if not table_name or not isinstance(table_name, str) or not table_name.strip():
+                error_msg = "Missing or invalid required parameter: table_name"
+                logger.error(error_msg)
+                logger.error(f"Available parameters: {body_data}")
+                raise DynamoDBReadError(error_msg, 400)
+            
+            logger.info(f"Parsed parameters for list_portfolios: table_name='{table_name}', region='{region}', adviser_name='{adviser_name}'")
+            
+            return {
+                'table_name': table_name,
+                'id': None,
+                'region': region,
+                'action': action,
+                'adviser_name': adviser_name
+            }
+        
+        # For other actions, id is required
         if not table_name or not isinstance(table_name, str) or not table_name.strip():
             error_msg = "Missing or invalid required parameter: table_name"
             logger.error(error_msg)
@@ -246,7 +332,8 @@ def parse_lambda_event(event: Dict[str, Any]) -> Dict[str, Any]:
         return {
             'table_name': table_name,
             'id': item_id,
-            'region': region
+            'region': region,
+            'action': action
         }
         
     except json.JSONDecodeError as e:
@@ -289,7 +376,21 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             region=params['region']
         )
         
-        # Validate parameters
+        # Handle list_portfolios action
+        if params.get('action') == 'list_portfolios':
+            logger.info("Executing list_portfolios action")
+            adviser_name = params.get('adviser_name')
+            portfolios = reader.list_all_portfolio_ids(adviser_name)
+            
+            return create_api_gateway_response(200, {
+                'status': 'success',
+                'message': 'Portfolio list retrieved successfully',
+                'table_name': params['table_name'],
+                'timestamp': datetime.utcnow().isoformat(),
+                'portfolios': portfolios
+            })
+        
+        # For read action, validate parameters and read item
         reader.validate_parameters(params['table_name'], params['id'])
         
         # Perform the read operation

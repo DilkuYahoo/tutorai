@@ -44,6 +44,7 @@ interface RightSidebarProps {
   loading: boolean;
   isVisible?: boolean;
   onToggleVisibility?: (visible: boolean) => void;
+  selectedPortfolioId?: string;
   onUpdate?: (
     investors: any[],
     properties: any[],
@@ -59,6 +60,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   loading,
   isVisible = true,
   onToggleVisibility,
+  selectedPortfolioId,
   onUpdate,
 }) => {
   const [localVisible, setLocalVisible] = useState(isVisible);
@@ -147,7 +149,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   const addProperty = async () => {
     setIsAddingProperty(true);
     try {
-      const newProperty = await addPropertyWithBaAgent();
+      const newProperty = await addPropertyWithBaAgent(selectedPortfolioId);
       setLocalProperties([...localProperties, newProperty]);
       setHasLocalChanges(true);
     } catch (error) {

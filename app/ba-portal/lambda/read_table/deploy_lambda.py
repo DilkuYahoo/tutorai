@@ -269,7 +269,9 @@ class LambdaDeployer:
                         "dynamodb:UpdateItem",
                         "dynamodb:GetItem",
                         "dynamodb:TransactWriteItems",
-                        "dynamodb:DescribeTable"
+                        "dynamodb:DescribeTable",
+                        "dynamodb:Scan",
+                        "dynamodb:Query"
                     ],
                     "Resource": "*"
                 }

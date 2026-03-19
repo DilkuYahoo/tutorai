@@ -8,9 +8,11 @@ import ChartSection from "./ChartSection";
 import RightSidebar from "./RightSidebar";
 import Footer from "./Footer";
 import {
-  fetchDashboardData,
+  fetchDashboardDataById,
+  fetchPortfolioList,
   updateDashboardData,
   type ConfigParams,
+  type PortfolioInfo,
 } from "../services/dashboardService";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -19,12 +21,17 @@ interface DashboardData {
   investors: any[];
   properties: any[];
   investmentYears?: number;
+  executiveSummary?: string;
   loading: boolean;
   error: string | null;
 }
 
 const Dashboard: React.FC = () => {
   const { handleAuthCallback, isLoading: authLoading } = useAuth();
+  
+  // Portfolio state
+  const [portfolios, setPortfolios] = useState<PortfolioInfo[]>([]);
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
   
   const [data, setData] = useState<DashboardData>({
     chartData: [],
@@ -51,7 +58,7 @@ const Dashboard: React.FC = () => {
     borrowingPowerMultiplierBase: 5.0,
     borrowingPowerMultiplierDependantReduction: 0.25,
   });
-
+  
   // Handle OAuth callback on mount
   useEffect(() => {
     const handleCallback = async () => {
@@ -72,16 +79,45 @@ const Dashboard: React.FC = () => {
     handleCallback();
   }, [handleAuthCallback]);
 
+  // Load portfolios on mount
+  useEffect(() => {
+    const loadPortfolios = async () => {
+      try {
+        const result = await fetchPortfolioList();
+        setPortfolios(result.portfolios);
+        // Auto-select first portfolio if available
+        if (result.portfolios.length > 0) {
+          setSelectedPortfolioId(result.portfolios[0].id);
+        }
+      } catch (err) {
+        console.error("Failed to load portfolios:", err);
+        // Fallback to default ID if available
+        const defaultId = import.meta.env.VITE_REACT_APP_APPSYNC_FINANCE_ID;
+        if (defaultId) {
+          setSelectedPortfolioId(defaultId);
+        }
+      }
+    };
+    
+    if (!authLoading) {
+      loadPortfolios();
+    }
+  }, [authLoading]);
+
   useEffect(() => {
     const load = async () => {
+      // Don't load until we have a selected portfolio
+      if (!selectedPortfolioId) return;
+      
       try {
         setData((prev) => ({ ...prev, loading: true, error: null }));
 
-        const result = await fetchDashboardData();
+        const result = await fetchDashboardDataById(selectedPortfolioId);
 
         setData({
           ...result,
           investmentYears: result.investmentYears || 30,
+          executiveSummary: result.executiveSummary || '',
           loading: false,
           error: null,
         });
@@ -102,11 +138,11 @@ const Dashboard: React.FC = () => {
       }
     };
 
-    // Only load data if auth is not loading
-    if (!authLoading) {
+    // Only load data if auth is not loading and we have a selected portfolio
+    if (!authLoading && selectedPortfolioId) {
       load();
     }
-  }, [authLoading]);
+  }, [authLoading, selectedPortfolioId]);
 
   // Auto-dismiss update error with progress bar
   useEffect(() => {
@@ -166,9 +202,14 @@ const Dashboard: React.FC = () => {
       setUpdating(true);
       setUpdateError(null);
       setUpdateSuccess(null);
-      await updateDashboardData(investors, properties, data.chartData, investmentYears);
+      
+      console.log("[DEBUG] handleUpdate called, current executiveSummary:", data.executiveSummary);
+      
+      await updateDashboardData(investors, properties, data.chartData, investmentYears, data.executiveSummary, selectedPortfolioId);
 
-      const result = await fetchDashboardData();
+      const result = await fetchDashboardDataById(selectedPortfolioId);
+      console.log("[DEBUG] fetchDashboardDataById result, executiveSummary:", result.executiveSummary?.substring(0, 100) + "...");
+      
       setData({
         ...result,
         loading: false,
@@ -208,6 +249,9 @@ const Dashboard: React.FC = () => {
         onInvestmentYearsChange={setInvestmentYears}
         configParams={configParams}
         onConfigParamsChange={setConfigParams}
+        portfolios={portfolios}
+        selectedPortfolioId={selectedPortfolioId}
+        onPortfolioChange={setSelectedPortfolioId}
       />
       <div className="flex flex-1 overflow-hidden">
       {/* Main Error Toast */}
@@ -314,7 +358,16 @@ const Dashboard: React.FC = () => {
         onUpdate={handleUpdate}
       />
 
-      <ChartSection chartData={data.chartData} loading={data.loading} />
+      <ChartSection 
+        chartData={data.chartData} 
+        loading={data.loading}
+        executiveSummary={data.executiveSummary}
+        selectedPortfolioId={selectedPortfolioId}
+        onSummaryGenerated={(summary) => {
+          console.log("[DEBUG] Summary received in Dashboard:", summary?.substring(0, 100) + "...");
+          setData(prev => ({ ...prev, executiveSummary: summary }));
+        }}
+      />
 
       <RightSidebar
         investors={data.investors}
@@ -323,6 +376,7 @@ const Dashboard: React.FC = () => {
         loading={data.loading}
         isVisible={propertiesVisible}
         onToggleVisibility={setPropertiesVisible}
+        selectedPortfolioId={selectedPortfolioId}
         onUpdate={handleUpdate}
       />
       </div>

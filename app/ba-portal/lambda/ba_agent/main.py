@@ -5,9 +5,10 @@ This Lambda function reads pre-calculated chart1 financial data from DynamoDB,
 passes it to AWS Bedrock to generate recommended property attributes,
 and returns the results to the frontend for user review and persistence.
 
-Supports two actions:
+Supports three actions:
 - "add": Generate a new property recommendation based on current portfolio
 - "optimize": Optimize existing properties with market benchmarks
+- "summary": Generate an AI executive summary of the user's portfolio
 """
 
 import json
@@ -378,6 +379,117 @@ def parse_property_attributes(response: str) -> dict:
     return {"error": "Failed to parse property attributes", "raw_response": response[:500]}
 
 
+def build_summary_prompt(
+    investors: List[dict],
+    chart1_metrics: dict,
+    existing_properties: List[dict],
+    investment_goals: Optional[dict] = None
+) -> Tuple[str, str]:
+    """
+    Build system and user prompts for portfolio summary generation.
+    
+    Args:
+        investors: List of investor data
+        chart1_metrics: Extracted financial metrics from chart1
+        existing_properties: List of existing properties
+        investment_goals: Optional investment goals from user
+    
+    Returns:
+        Tuple of (system_prompt, user_prompt)
+    """
+    
+    # System prompt for summary generation
+    system_prompt = """You are a professional Australian property investment analyst specializing in portfolio analysis and executive summaries.
+Your role is to analyze an investor's property portfolio and provide a clear, actionable executive summary.
+
+IMPORTANT: 
+- Australian DTI (Debt-to-Income) ratio is expressed as a MULTIPLE (e.g., 1.5 = 150% = debt is 1.5x annual income)
+- DTI below 3.0 (300%) is considered SAFE
+- DTI 3.0-5.0 (300-500%) is CAUTION
+- DTI above 5.0 (500%) is HIGH RISK
+
+Provide clear, concise insights that are easy for investors to understand.
+Focus on key metrics, trends, and actionable recommendations.
+
+Output ONLY the summary text. No JSON required."""
+    
+    # Build user prompt for summary
+    goals_text = ""
+    if investment_goals:
+        goals_text = f"""
+INVESTMENT GOALS:
+- Target Properties: {investment_goals.get('target_properties', 'Not specified')}
+- Target Portfolio Value: ${investment_goals.get('target_portfolio_value', 0):,.0f}
+- Risk Tolerance: {investment_goals.get('risk_tolerance', 'Not specified')}
+- Time Horizon: {investment_goals.get('time_horizon', 'Not specified')}
+"""
+    
+    user_prompt = f"""PORTFOLIO EXECUTIVE SUMMARY REQUEST:
+
+CURRENT PORTFOLIO STATUS:
+- Property Count: {len(existing_properties)}
+- Total Property Values: ${chart1_metrics.get('total_property_values', 0):,.2f}
+- Total Loan Balances: ${chart1_metrics.get('total_loan_balances', 0):,.2f}
+- Total Equity: ${chart1_metrics.get('total_equity', 0):,.2f}
+
+FINANCIAL METRICS:
+- Current DTI Ratio: {chart1_metrics.get('current_dti', 0):.2f}x ({chart1_metrics.get('current_dti', 0)*100:.1f}%)
+- Min DTI (Best): {chart1_metrics.get('min_dti', 0):.2f}x
+- Max Accessible Equity: ${chart1_metrics.get('max_accessible_equity', 0):,.2f}
+- Borrowing Capacity: ${chart1_metrics.get('borrowing_capacity', 0):,.2f}
+- Household Surplus: ${chart1_metrics.get('household_surplus', 0):,.2f}/year
+- Property Cashflow: ${chart1_metrics.get('property_cashflow', 0):,.2f}/year
+
+EXISTING PROPERTIES:
+{format_existing_properties(existing_properties)}
+
+INVESTOR DETAILS:
+{format_investor_details(investors)}
+{goals_text}
+
+Please provide a comprehensive executive summary including:
+1. Overall portfolio health assessment
+2. Key strengths and opportunities
+3. Main risks or concerns
+4. Recommended next steps
+
+Keep the summary concise but informative - approximately 3-5 paragraphs."""
+    
+    return system_prompt, user_prompt
+
+
+def parse_summary_response(response: str) -> str:
+    """
+    Parse Bedrock summary response.
+    
+    Args:
+        response: The raw response from Bedrock
+    
+    Returns:
+        Summary text string
+    """
+    # The response should be plain text, but try to clean it up
+    if not response:
+        return ""
+    
+    # If response contains JSON wrapper, try to extract text
+    try:
+        json_match = re.search(r'\{[\s\S]*\}', response)
+        if json_match:
+            parsed = json.loads(json_match.group())
+            # Check for summary field in JSON
+            if isinstance(parsed, dict):
+                if 'summary' in parsed:
+                    return parsed['summary']
+                if 'analysis' in parsed:
+                    return parsed['analysis']
+    except (json.JSONDecodeError, Exception):
+        pass
+    
+    # Return cleaned response
+    return response.strip()
+
+
 def validate_property_attributes(properties: dict, action: str) -> Tuple[bool, str]:
     """
     Validate property attributes meet business rules.
@@ -543,10 +655,10 @@ def lambda_handler(event: dict, context: any) -> dict:
             'message': 'Missing required parameter: id'
         })
     
-    if property_action not in ['add', 'optimize']:
+    if property_action not in ['add', 'optimize', 'summary']:
         return create_response(400, {
             'status': 'error', 
-            'message': f"Invalid property_action: {property_action}. Must be 'add' or 'optimize'"
+            'message': f"Invalid property_action: {property_action}. Must be 'add', 'optimize', or 'summary'"
         })
     
     # Fetch data from DynamoDB
@@ -589,135 +701,183 @@ def lambda_handler(event: dict, context: any) -> dict:
         }
     
     # Build prompts
-    system_prompt, user_prompt = build_property_prompt(
-        investors=investors,
-        chart1_metrics=chart1_metrics,
-        existing_properties=properties,
-        property_action=property_action
-    )
-    
-    # Invoke Bedrock
-    try:
-        logger.info(f"Invoking Bedrock for property_action: {property_action}, region: {region}")
-        bedrock_response = invoke_bedrock(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            model_kwargs={
-                "max_tokens": 2048,
-                "temperature": 0.7
-            },
-            region=region
+    if property_action == "summary":
+        # For summary action, we need to get investment goals as well
+        # Extract investment goals from the item if available
+        investment_goals = None
+        if 'investment_goals' in data:
+            investment_goals = data['investment_goals']
+        
+        system_prompt, user_prompt = build_summary_prompt(
+            investors=investors,
+            chart1_metrics=chart1_metrics,
+            existing_properties=properties,
+            investment_goals=investment_goals
         )
-        logger.info("Bedrock invocation successful")
-    except Exception as e:
-        logger.error(f"Bedrock invocation error: {str(e)}")
-        return create_response(500, {
-            'status': 'error',
-            'message': f'Bedrock invocation failed: {str(e)}'
-        })
-    
-    # Parse response
-    parsed_response = parse_property_attributes(bedrock_response)
-    
-    # Validate response
-    is_valid, error_msg = validate_property_attributes(parsed_response, property_action)
-    
-    if not is_valid:
-        logger.warning(f"Validation warning: {error_msg}")
-        # Still return the response but with warning
-    
-    # Build final response
-    if property_action == "add":
+        
+        # Invoke Bedrock
+        try:
+            logger.info(f"Invoking Bedrock for property_action: {property_action}, region: {region}")
+            bedrock_response = invoke_bedrock(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                model_kwargs={
+                    "max_tokens": 1024,  # Summary needs fewer tokens
+                    "temperature": 0.7
+                },
+                region=region
+            )
+            logger.info("Bedrock invocation successful")
+        except Exception as e:
+            logger.error(f"Bedrock invocation error: {str(e)}")
+            return create_response(500, {
+                'status': 'error',
+                'message': f'Bedrock invocation failed: {str(e)}'
+            })
+        
+        # Parse summary response
+        summary_text = parse_summary_response(bedrock_response)
+        
+        # Validate summary is not empty
+        if not summary_text or len(summary_text.strip()) < 10:
+            logger.warning("Generated summary is too short or empty")
+            summary_text = "Unable to generate a meaningful portfolio summary at this time. Please try again."
+        
         response_body = {
             'status': 'success',
-            'action': 'add',
-            'property': parsed_response.get('name') and {
-                'name': parsed_response.get('name'),
-                'purchase_year': parsed_response.get('purchase_year'),
-                'loan_amount': parsed_response.get('loan_amount'),
-                'annual_principal_change': parsed_response.get('annual_principal_change', 0),
-                'rent': parsed_response.get('rent'),
-                'interest_rate': parsed_response.get('interest_rate'),
-                'other_expenses': parsed_response.get('other_expenses'),
-                'property_value': parsed_response.get('property_value'),
-                'initial_value': parsed_response.get('initial_value'),
-                'growth_rate': parsed_response.get('growth_rate'),
-                'investor_splits': parsed_response.get('investor_splits', [])
-            } or parsed_response
+            'summary': summary_text
         }
-    else:  # optimize
-        # Build analysis object with extracted metrics
-        current_dti = chart1_metrics.get('current_dti', 0)
-        max_equity = chart1_metrics.get('max_accessible_equity', 0)
-        borrowing_capacity = chart1_metrics.get('borrowing_capacity', 0)
-        property_cashflow = chart1_metrics.get('property_cashflow', 0)
+    else:
+        # Original logic for add and optimize actions
+        system_prompt, user_prompt = build_property_prompt(
+            investors=investors,
+            chart1_metrics=chart1_metrics,
+            existing_properties=properties,
+            property_action=property_action
+        )
         
-        # Calculate max purchase price (equity / 0.25 for 25% deposit)
-        max_purchase_price = max_equity / 0.25 if max_equity > 0 else 0
+        # Invoke Bedrock
+        try:
+            logger.info(f"Invoking Bedrock for property_action: {property_action}, region: {region}")
+            bedrock_response = invoke_bedrock(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                model_kwargs={
+                    "max_tokens": 2048,
+                    "temperature": 0.7
+                },
+                region=region
+            )
+            logger.info("Bedrock invocation successful")
+        except Exception as e:
+            logger.error(f"Bedrock invocation error: {str(e)}")
+            return create_response(500, {
+                'status': 'error',
+                'message': f'Bedrock invocation failed: {str(e)}'
+            })
         
-        # Determine optimal timing based on Australian DTI thresholds
-        # DTI < 3.0 = SAFE, DTI 3.0-5.0 = CAUTION, DTI > 5.0 = HIGH RISK
-        if current_dti < 3.0:
-            optimal_timing = "NOW - DTI is in the safe zone (<3.0x), comfortable borrowing capacity for new investments"
-        elif current_dti < 5.0:
-            optimal_timing = "CAUTION - DTI is 3.0-5.0x range. Monitor closely, still acceptable but reducing capacity"
-        else:
-            optimal_timing = "HIGH RISK - DTI exceeds 5.0x. Focus on debt reduction before additional borrowing"
+        # Parse response
+        parsed_response = parse_property_attributes(bedrock_response)
         
-        # Build initial bottlenecks from metrics (using Australian thresholds)
-        bottlenecks_list = []
-        if current_dti > 5.0:
-            bottlenecks_list.append(f"High DTI ratio of {current_dti:.2f}x ({current_dti*100:.1f}%) exceeds recommended threshold of 5.0x")
-        elif current_dti > 3.0:
-            bottlenecks_list.append(f"DTI ratio of {current_dti:.2f}x ({current_dti*100:.1f}%) is in caution zone (3.0-5.0x)")
-        if max_equity < 100000:
-            bottlenecks_list.append("Limited accessible equity restricts new property purchases")
-        if property_cashflow < 0:
-            bottlenecks_list.append("Negative property cashflow indicates rental income not covering expenses")
-        if borrowing_capacity < 100000:
-            bottlenecks_list.append("Low borrowing capacity constrains portfolio growth")
+        # Validate response
+        is_valid, error_msg = validate_property_attributes(parsed_response, property_action)
         
-        if not bottlenecks_list:
-            bottlenecks_list.append("Portfolio is well-positioned for growth - DTI is healthy and within acceptable range")
+        if not is_valid:
+            logger.warning(f"Validation warning: {error_msg}")
+            # Still return the response but with warning
         
-        bottlenecks = ". ".join(bottlenecks_list)
-        
-        # Build recommendations based on Australian lending standards
-        recommendations_list = []
-        if current_dti > 5.0:
-            recommendations_list.append("Focus on debt reduction to bring DTI below 5.0x before considering additional properties")
-        elif current_dti > 3.0:
-            recommendations_list.append("DTI is in caution zone - consider reducing debt before major investments")
-        else:
-            recommendations_list.append("DTI is in healthy range - good time to explore investment opportunities")
-        if max_equity > 0:
-            recommendations_list.append(f"Accessible equity of ${max_equity:,.0f} available for next purchase")
-        if property_cashflow < 0:
-            recommendations_list.append("Property cashflow is negative, consider increasing rent or reducing expenses")
-        if borrowing_capacity > 0:
-            recommendations_list.append(f"Borrowing capacity of ${borrowing_capacity:,.0f} available")
-        recommendations_list.append(f"Maximum purchase price of ${max_purchase_price:,.0f} based on accessible equity")
-        
-        # If Bedrock returned enhanced analysis, use it
-        if parsed_response.get('bottlenecks'):
-            bottlenecks = parsed_response.get('bottlenecks', bottlenecks)
-        if parsed_response.get('recommendations'):
-            recommendations_list = parsed_response.get('recommendations', recommendations_list)
-        if parsed_response.get('optimal_timing'):
-            optimal_timing = parsed_response.get('optimal_timing', optimal_timing)
-        if parsed_response.get('max_purchase_price'):
-            max_purchase_price = parsed_response.get('max_purchase_price', f"${max_purchase_price:,.0f}")
-        
-        response_body = {
-            'status': 'success',
-            'action': 'optimize',
-            'analysis': {
-                'bottlenecks': bottlenecks,
-                'recommendations': recommendations_list,
-                'optimal_timing': optimal_timing,
-                'max_purchase_price': f"${max_purchase_price:,.0f}" if isinstance(max_purchase_price, (int, float)) else max_purchase_price
+        # Build final response
+        if property_action == "add":
+            response_body = {
+                'status': 'success',
+                'action': 'add',
+                'property': parsed_response.get('name') and {
+                    'name': parsed_response.get('name'),
+                    'purchase_year': parsed_response.get('purchase_year'),
+                    'loan_amount': parsed_response.get('loan_amount'),
+                    'annual_principal_change': parsed_response.get('annual_principal_change', 0),
+                    'rent': parsed_response.get('rent'),
+                    'interest_rate': parsed_response.get('interest_rate'),
+                    'other_expenses': parsed_response.get('other_expenses'),
+                    'property_value': parsed_response.get('property_value'),
+                    'initial_value': parsed_response.get('initial_value'),
+                    'growth_rate': parsed_response.get('growth_rate'),
+                    'investor_splits': parsed_response.get('investor_splits', [])
+                } or parsed_response
             }
-        }
+        else:  # optimize
+            # Build analysis object with extracted metrics
+            current_dti = chart1_metrics.get('current_dti', 0)
+            max_equity = chart1_metrics.get('max_accessible_equity', 0)
+            borrowing_capacity = chart1_metrics.get('borrowing_capacity', 0)
+            property_cashflow = chart1_metrics.get('property_cashflow', 0)
+            
+            # Calculate max purchase price (equity / 0.25 for 25% deposit)
+            max_purchase_price = max_equity / 0.25 if max_equity > 0 else 0
+            
+            # Determine optimal timing based on Australian DTI thresholds
+            # DTI < 3.0 = SAFE, DTI 3.0-5.0 = CAUTION, DTI > 5.0 = HIGH RISK
+            if current_dti < 3.0:
+                optimal_timing = "NOW - DTI is in the safe zone (<3.0x), comfortable borrowing capacity for new investments"
+            elif current_dti < 5.0:
+                optimal_timing = "CAUTION - DTI is 3.0-5.0x range. Monitor closely, still acceptable but reducing capacity"
+            else:
+                optimal_timing = "HIGH RISK - DTI exceeds 5.0x. Focus on debt reduction before additional borrowing"
+            
+            # Build initial bottlenecks from metrics (using Australian thresholds)
+            bottlenecks_list = []
+            if current_dti > 5.0:
+                bottlenecks_list.append(f"High DTI ratio of {current_dti:.2f}x ({current_dti*100:.1f}%) exceeds recommended threshold of 5.0x")
+            elif current_dti > 3.0:
+                bottlenecks_list.append(f"DTI ratio of {current_dti:.2f}x ({current_dti*100:.1f}%) is in caution zone (3.0-5.0x)")
+            if max_equity < 100000:
+                bottlenecks_list.append("Limited accessible equity restricts new property purchases")
+            if property_cashflow < 0:
+                bottlenecks_list.append("Negative property cashflow indicates rental income not covering expenses")
+            if borrowing_capacity < 100000:
+                bottlenecks_list.append("Low borrowing capacity constrains portfolio growth")
+            
+            if not bottlenecks_list:
+                bottlenecks_list.append("Portfolio is well-positioned for growth - DTI is healthy and within acceptable range")
+            
+            bottlenecks = ". ".join(bottlenecks_list)
+            
+            # Build recommendations based on Australian lending standards
+            recommendations_list = []
+            if current_dti > 5.0:
+                recommendations_list.append("Focus on debt reduction to bring DTI below 5.0x before considering additional properties")
+            elif current_dti > 3.0:
+                recommendations_list.append("DTI is in caution zone - consider reducing debt before major investments")
+            else:
+                recommendations_list.append("DTI is in healthy range - good time to explore investment opportunities")
+            if max_equity > 0:
+                recommendations_list.append(f"Accessible equity of ${max_equity:,.0f} available for next purchase")
+            if property_cashflow < 0:
+                recommendations_list.append("Property cashflow is negative, consider increasing rent or reducing expenses")
+            if borrowing_capacity > 0:
+                recommendations_list.append(f"Borrowing capacity of ${borrowing_capacity:,.0f} available")
+            recommendations_list.append(f"Maximum purchase price of ${max_purchase_price:,.0f} based on accessible equity")
+            
+            # If Bedrock returned enhanced analysis, use it
+            if parsed_response.get('bottlenecks'):
+                bottlenecks = parsed_response.get('bottlenecks', bottlenecks)
+            if parsed_response.get('recommendations'):
+                recommendations_list = parsed_response.get('recommendations', recommendations_list)
+            if parsed_response.get('optimal_timing'):
+                optimal_timing = parsed_response.get('optimal_timing', optimal_timing)
+            if parsed_response.get('max_purchase_price'):
+                max_purchase_price = parsed_response.get('max_purchase_price', f"${max_purchase_price:,.0f}")
+            
+            response_body = {
+                'status': 'success',
+                'action': 'optimize',
+                'analysis': {
+                    'bottlenecks': bottlenecks,
+                    'recommendations': recommendations_list,
+                    'optimal_timing': optimal_timing,
+                    'max_purchase_price': f"${max_purchase_price:,.0f}" if isinstance(max_purchase_price, (int, float)) else max_purchase_price
+                }
+            }
     
     return create_response(200, response_body)
 

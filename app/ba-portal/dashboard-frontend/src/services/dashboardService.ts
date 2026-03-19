@@ -6,6 +6,7 @@ const REACT_APP_APPSYNC_FINANCE_ID =
   import.meta.env.VITE_REACT_APP_APPSYNC_FINANCE_ID || "";
 const REACT_APP_APPSYNC_FINANCE_TABLE_NAME =
   import.meta.env.VITE_REACT_APP_APPSYNC_FINANCE_TABLE_NAME || "";
+const REACT_APP_ADVISER_NAME = import.meta.env.VITE_REACT_APP_ADVISER_NAME || "John Smith";
 
 export interface ConfigParams {
   medicareLevyRate: number;
@@ -21,11 +22,29 @@ export interface DashboardApiResponse {
   investors: any[];
   properties: any[];
   investmentYears?: number;
+  executiveSummary?: string;
+}
+
+export interface PortfolioInfo {
+  id: string;
+  name: string;
+  last_updated?: string;
+  updates?: number;
+}
+
+export interface PortfolioListResponse {
+  portfolios: PortfolioInfo[];
 }
 
 export interface ConfigApiResponse {
   configParams: ConfigParams;
   investmentYears: number;
+  investmentGoals?: InvestmentGoals;
+}
+
+export interface InvestmentGoals {
+  goal: string;
+  riskTolerance: 'conservative' | 'moderate' | 'aggressive';
 }
 
 export async function fetchDashboardData(): Promise<DashboardApiResponse> {
@@ -54,16 +73,92 @@ export async function fetchDashboardData(): Promise<DashboardApiResponse> {
     investors: result.result.investors || [],
     properties: result.result.properties || [],
     investmentYears: result.result.investment_years || 30,
+    executiveSummary: result.result.executive_summary || '',
+  };
+}
+
+export async function fetchPortfolioList(adviserName?: string): Promise<PortfolioListResponse> {
+  const adviser = adviserName || REACT_APP_ADVISER_NAME;
+  
+  let url = `${FINANCE_URL}/read-table?t=${Date.now()}`;
+  
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+      action: 'list_portfolios',
+      adviser_name: adviser,
+      region: App_SYNC_REGION,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+
+  if (result.status !== "success") {
+    throw new Error(result.message || "API returned error status");
+  }
+
+  return {
+    portfolios: result.portfolios || [],
+  };
+}
+
+export async function fetchDashboardDataById(portfolioId: string): Promise<DashboardApiResponse> {
+  const response = await fetch(`${FINANCE_URL}/read-table?t=${Date.now()}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+      id: portfolioId,
+      region: App_SYNC_REGION,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+
+  if (result.status !== "success") {
+    throw new Error(result.message || "API returned error status");
+  }
+
+  return {
+    chartData: result.result.chart1 || [],
+    investors: result.result.investors || [],
+    properties: result.result.properties || [],
+    investmentYears: result.result.investment_years || 30,
+    executiveSummary: result.result.executive_summary || '',
   };
 }
 
 export async function updateDashboardData(
-  investors: any[],
-  properties: any[],
+  investors?: any[],
+  properties?: any[],
   chart1?: any[],
   investmentYears?: number,
+  executiveSummary?: string,
+  portfolioId?: string,
 ): Promise<void> {
-  const attributes: any = { investors, properties };
+  const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
+  
+  const attributes: any = {};
+
+  // Only include investors if it's a non-empty array
+  if (investors !== undefined && investors !== null && Array.isArray(investors) && investors.length > 0) {
+    attributes.investors = investors;
+  }
+
+  // Only include properties if it's a non-empty array
+  if (properties !== undefined && properties !== null && Array.isArray(properties) && properties.length > 0) {
+    attributes.properties = properties;
+  }
 
   // Include chart1 if provided
   if (chart1) {
@@ -75,12 +170,17 @@ export async function updateDashboardData(
     attributes.investment_years = investmentYears;
   }
 
+  // Include executive_summary if provided
+  if (executiveSummary !== undefined && executiveSummary !== null) {
+    attributes.executive_summary = executiveSummary;
+  }
+
   const response = await fetch(`${FINANCE_URL}/update-table?t=${Date.now()}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      id: REACT_APP_APPSYNC_FINANCE_ID,
+      id: id,
       attributes,
     }),
   });
@@ -96,13 +196,15 @@ export async function updateDashboardData(
   }
 }
 
-export async function fetchConfigParams(): Promise<ConfigApiResponse> {
+export async function fetchConfigParams(portfolioId?: string): Promise<ConfigApiResponse> {
+  const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
+  
   const response = await fetch(`${FINANCE_URL}/read-table`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      id: REACT_APP_APPSYNC_FINANCE_ID,
+      id: id,
       region: App_SYNC_REGION,
     }),
   });
@@ -129,13 +231,21 @@ export async function fetchConfigParams(): Promise<ConfigApiResponse> {
       borrowingPowerMultiplierDependantReduction: data.borrowing_power_multiplier_dependant_reduction ?? 0.25,
     },
     investmentYears: data.investment_years ?? 30,
+    investmentGoals: data.investment_goals ? {
+      goal: data.investment_goals.goal || '',
+      riskTolerance: data.investment_goals.risk_tolerance || 'moderate',
+    } : undefined,
   };
 }
 
 export async function saveConfigParams(
   configParams: ConfigParams,
-  investmentYears?: number
+  investmentYears?: number,
+  investmentGoals?: InvestmentGoals,
+  portfolioId?: string
 ): Promise<void> {
+  const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
+  
   const attributes: any = {
     medicare_levy_rate: configParams.medicareLevyRate,
     cpi_rate: configParams.cpiRate,
@@ -150,14 +260,22 @@ export async function saveConfigParams(
     attributes.investment_years = investmentYears;
   }
 
-  console.log("Saving config params:", { configParams, investmentYears, attributes });
+  // Include investment_goals if provided
+  if (investmentGoals) {
+    attributes.investment_goals = {
+      goal: investmentGoals.goal,
+      risk_tolerance: investmentGoals.riskTolerance,
+    };
+  }
+
+  console.log("Saving config params:", { configParams, investmentYears, investmentGoals, attributes });
 
   const response = await fetch(`${FINANCE_URL}/update-table`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      id: REACT_APP_APPSYNC_FINANCE_ID,
+      id: id,
       attributes,
     }),
   });
@@ -206,13 +324,15 @@ export interface AiRecommendationResponse {
   analysis: AiRecommendationAnalysis;
 }
 
-export async function addPropertyWithBaAgent(): Promise<BaAgentProperty> {
+export async function addPropertyWithBaAgent(portfolioId?: string): Promise<BaAgentProperty> {
+  const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
+  
   const response = await fetch(`${FINANCE_URL}/ba-agent`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      table_name: "BA-PORTAL-BASETABLE",
-      id: "B57153AB-B66E-4085-A4C1-929EC158FC3E",
+      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+      id: id,
       property_action: "add",
     }),
   });
@@ -230,13 +350,15 @@ export async function addPropertyWithBaAgent(): Promise<BaAgentProperty> {
   return result.property;
 }
 
-export async function generateAiRecommendations(): Promise<AiRecommendationAnalysis> {
+export async function generateAiRecommendations(portfolioId?: string): Promise<AiRecommendationAnalysis> {
+  const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
+  
   const response = await fetch(`${FINANCE_URL}/ba-agent`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      table_name: "BA-PORTAL-BASETABLE",
-      id: "B57153AB-B66E-4085-A4C1-929EC158FC3E",
+      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+      id: id,
       property_action: "optimize",
     }),
   });
@@ -252,4 +374,30 @@ export async function generateAiRecommendations(): Promise<AiRecommendationAnaly
   }
 
   return result.analysis;
+}
+
+export async function generatePortfolioSummary(portfolioId?: string): Promise<{ summary: string }> {
+  const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
+  
+  const response = await fetch(`${FINANCE_URL}/ba-agent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+      id: id,
+      property_action: "summary",
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+
+  if (result.status !== "success") {
+    throw new Error(result.message || "API returned error status");
+  }
+
+  return result;
 }
