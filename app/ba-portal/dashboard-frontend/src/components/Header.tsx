@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Settings, Sun, Moon, LogIn, LogOut, User, Settings2, X, Save, Loader2, ChevronDown } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { fetchConfigParams, saveConfigParams } from "../services/dashboardService";
-import type { ConfigParams, InvestmentGoals, PortfolioInfo } from "../services/dashboardService";
+import type { ConfigParams, InvestmentGoals, PortfolioInfo, PortfolioDependantsEvents } from "../services/dashboardService";
 
 // Investment goal options
 export const INVESTMENT_GOAL_OPTIONS = [
@@ -24,6 +24,10 @@ interface HeaderProps {
   portfolios?: PortfolioInfo[];
   selectedPortfolioId?: string;
   onPortfolioChange?: (portfolioId: string) => void;
+  portfolioDependants?: number;
+  onPortfolioDependantsChange?: (dependants: number) => void;
+  portfolioDependantsEvents?: PortfolioDependantsEvents[];
+  onPortfolioDependantsEventsChange?: (events: PortfolioDependantsEvents[]) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -35,7 +39,11 @@ const Header: React.FC<HeaderProps> = ({
   onConfigParamsChange,
   portfolios,
   selectedPortfolioId,
-  onPortfolioChange
+  onPortfolioChange,
+  portfolioDependants: propPortfolioDependants,
+  onPortfolioDependantsChange,
+  portfolioDependantsEvents: propPortfolioDependantsEvents,
+  onPortfolioDependantsEventsChange,
 }) => {
   const { isAuthenticated, user, login, logout } = useAuth();
   const [localIsDarkMode, setLocalIsDarkMode] = useState(true);
@@ -62,6 +70,12 @@ const Header: React.FC<HeaderProps> = ({
     riskTolerance: 'moderate',
   });
   
+  // Portfolio-level dependants state
+  const [portfolioDependants, setPortfolioDependants] = useState<number>(propPortfolioDependants || 0);
+  const [portfolioDependantsEvents, setPortfolioDependantsEvents] = useState<PortfolioDependantsEvents[]>(propPortfolioDependantsEvents || []);
+  const [newDependantEventYear, setNewDependantEventYear] = useState<number>(1);
+  const [newDependantEventCount, setNewDependantEventCount] = useState<number>(1);
+  
   // Local state for investment years to capture current input value
   const [localInvestmentYears, setLocalInvestmentYears] = useState<number>(investmentYears || 30);
 
@@ -71,6 +85,19 @@ const Header: React.FC<HeaderProps> = ({
       setConfigParams(propConfigParams);
     }
   }, [propConfigParams]);
+
+  // Sync portfolio dependants from props to local state
+  useEffect(() => {
+    if (propPortfolioDependants !== undefined) {
+      setPortfolioDependants(propPortfolioDependants);
+    }
+  }, [propPortfolioDependants]);
+
+  useEffect(() => {
+    if (propPortfolioDependantsEvents) {
+      setPortfolioDependantsEvents(propPortfolioDependantsEvents);
+    }
+  }, [propPortfolioDependantsEvents]);
 
   // Sync investmentYears from prop to local state
   useEffect(() => {
@@ -132,6 +159,15 @@ const Header: React.FC<HeaderProps> = ({
       if (configData.investmentGoals) {
         setInvestmentGoals(configData.investmentGoals);
       }
+      // Load portfolio dependants if provided
+      if (configData.portfolioDependants !== undefined) {
+        setPortfolioDependants(configData.portfolioDependants);
+        onPortfolioDependantsChange?.(configData.portfolioDependants);
+      }
+      if (configData.portfolioDependantsEvents) {
+        setPortfolioDependantsEvents(configData.portfolioDependantsEvents);
+        onPortfolioDependantsEventsChange?.(configData.portfolioDependantsEvents);
+      }
     } catch (error) {
       console.error("Failed to load config:", error);
       setConfigError("Failed to load configuration from server");
@@ -172,8 +208,17 @@ const Header: React.FC<HeaderProps> = ({
     setConfigError(null);
     setConfigSuccess(null);
     try {
-      await saveConfigParams(configParams, localInvestmentYears, investmentGoals, selectedPortfolioId);
+      await saveConfigParams(
+        configParams, 
+        localInvestmentYears, 
+        investmentGoals, 
+        portfolioDependants,
+        portfolioDependantsEvents,
+        selectedPortfolioId
+      );
       onConfigParamsChange?.(configParams);
+      onPortfolioDependantsChange?.(portfolioDependants);
+      onPortfolioDependantsEventsChange?.(portfolioDependantsEvents);
       setConfigSuccess("Configuration saved successfully!");
       setTimeout(() => {
         setShowConfigPanel(false);
@@ -513,6 +558,98 @@ const Header: React.FC<HeaderProps> = ({
                   className="w-full px-3 py-2 rounded text-sm"
                   style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
                 />
+              </div>
+
+              {/* Portfolio Dependants */}
+              <div className="border-t pt-3 mt-3">
+                <label className="text-xs text-cyan-400 block mb-1 font-semibold">Portfolio Dependants</label>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={portfolioDependants}
+                  onChange={(e) => {
+                    const newValue = parseInt(e.target.value) || 0;
+                    setPortfolioDependants(newValue);
+                    onPortfolioDependantsChange?.(newValue);
+                  }}
+                  className="w-full px-3 py-2 rounded text-sm"
+                  style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
+                />
+              </div>
+
+              {/* Dependant Events */}
+              <div className="border-t pt-3 mt-3">
+                <label className="text-xs text-cyan-400 block mb-2 font-semibold">Dependant Events (Future Changes)</label>
+                
+                {/* Add new event */}
+                <div className="flex gap-2 mb-2">
+                  <div className="flex-1">
+                    <label className="text-xs" style={{ color: textSecondary }}>Year</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newDependantEventYear}
+                      onChange={(e) => setNewDependantEventYear(parseInt(e.target.value) || 1)}
+                      className="w-full px-2 py-1 rounded text-xs"
+                      style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs" style={{ color: textSecondary }}>Dependants</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newDependantEventCount}
+                      onChange={(e) => setNewDependantEventCount(parseInt(e.target.value) || 0)}
+                      className="w-full px-2 py-1 rounded text-xs"
+                      style={{ backgroundColor: isDarkMode ? '#1e293b' : '#ffffff', color: textColor, borderColor: borderColor, borderWidth: '1px' }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newEvents = [...portfolioDependantsEvents, { year: newDependantEventYear, dependants: newDependantEventCount }];
+                      // Sort by year
+                      newEvents.sort((a, b) => a.year - b.year);
+                      setPortfolioDependantsEvents(newEvents);
+                      onPortfolioDependantsEventsChange?.(newEvents);
+                      setNewDependantEventYear(1);
+                      setNewDependantEventCount(1);
+                    }}
+                    className="mt-4 px-2 py-1 bg-cyan-500 text-white text-xs rounded hover:bg-cyan-600"
+                  >
+                    Add
+                  </button>
+                </div>
+
+                {/* Existing events list */}
+                {portfolioDependantsEvents.length > 0 && (
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {portfolioDependantsEvents.map((event, index) => (
+                      <div 
+                        key={index}
+                        className="flex items-center justify-between px-2 py-1 rounded text-xs"
+                        style={{ backgroundColor: isDarkMode ? '#334155' : '#f3f4f6' }}
+                      >
+                        <span style={{ color: textColor }}>
+                          Year {event.year}: {event.dependants} dependant{event.dependants !== 1 ? 's' : ''}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newEvents = portfolioDependantsEvents.filter((_, i) => i !== index);
+                            setPortfolioDependantsEvents(newEvents);
+                            onPortfolioDependantsEventsChange?.(newEvents);
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <button

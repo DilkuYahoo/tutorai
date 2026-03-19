@@ -421,14 +421,23 @@ class DynamoDBUpdater:
 
                 # Get investment_years from attributes, default to 30 if not provided
                 investment_years = attributes.get('investment_years', 30)
+                
+                # Get portfolio-level dependants from attributes
+                portfolio_dependants = attributes.get('portfolio_dependants', 0)
+                portfolio_dependants_events = attributes.get('portfolio_dependants_events', [])
+                
                 self.log(f"DEBUG: Using investment_years: {investment_years}")
+                self.log(f"DEBUG: Using portfolio_dependants: {portfolio_dependants}")
+                self.log(f"DEBUG: Using portfolio_dependants_events: {portfolio_dependants_events}")
                 
                 # Calculate the chart using user-specified years forecast
                 self.log("DEBUG: Calling borrowing_capacity_forecast_investor_blocks...")
                 chart1_value = borrowing_capacity_forecast_investor_blocks(
                     investors=investors,
                     properties=properties,
-                    years=investment_years
+                    years=investment_years,
+                    portfolio_dependants=portfolio_dependants,
+                    portfolio_dependants_events=portfolio_dependants_events
                 )
                 self.log(f"DEBUG: Calculation returned {len(chart1_value) if chart1_value else 0} years of data")
 

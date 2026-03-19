@@ -205,7 +205,9 @@ def calculate_max_purchase_price(property_value: float, loans: float) -> dict:
 def borrowing_capacity_forecast_investor_blocks(
     investors: List[Dict],
     properties: List[Dict],
-    years: int
+    years: int,
+    portfolio_dependants: int = 0,
+    portfolio_dependants_events: List[Dict] = None
 ):
     """
     Forecasts income, borrowing capacity and debt using investor blocks.
@@ -219,14 +221,10 @@ def borrowing_capacity_forecast_investor_blocks(
             - annual_growth_rate : float
             - essential_expenditure : float
             - nonessential_expenditure : float
-            - dependants : int
             - income_events : list of dict with
                 - year : int
                 - type : "increase" or "set"
                 - amount : float
-            - dependants_events : list of dict with (optional)
-                - year : int
-                - dependants : int
 
     properties : list of dict
         Each property must include:
@@ -246,19 +244,23 @@ def borrowing_capacity_forecast_investor_blocks(
 
     years : int
         Number of forecast years
+        
+    portfolio_dependants : int
+        Number of dependants at portfolio level (household total)
+        
+    portfolio_dependants_events : list of dict
+        List of dependant change events at portfolio level:
+        - year : int
+        - dependants : int
     """
     debug_print(f"Starting calculation with {len(investors)} investors, {len(properties)} properties, {years} years")
     debug_print(f"Config: CPI_RATE={CPI_RATE}, MEDICARE_LEVY_RATE={MEDICARE_LEVY_RATE}, ACCESSIBLE_EQUITY_RATE={ACCESSIBLE_EQUITY_RATE}")
     debug_print(f"Config: BORROWING_POWER_MULTIPLIER_MIN={BORROWING_POWER_MULTIPLIER_MIN}, BASE={BORROWING_POWER_MULTIPLIER_BASE}")
+    debug_print(f"Portfolio dependants: {portfolio_dependants}, events: {portfolio_dependants_events}")
     
-    # Validate that all investors have dependants - default to 0 if missing
-    for inv in investors:
-        if "dependants" not in inv:
-            debug_print(f"WARNING: Investor {inv.get('name', 'unknown')} is missing 'dependants', defaulting to 0")
-            inv["dependants"] = 0
-        elif inv["dependants"] is None:
-            debug_print(f"WARNING: Investor {inv.get('name', 'unknown')} has 'dependants' as None, defaulting to 0")
-            inv["dependants"] = 0
+    # Initialize portfolio_dependants_events if not provided
+    if portfolio_dependants_events is None:
+        portfolio_dependants_events = []
 
     # Validate that all properties have purchase_year to handle missing data gracefully
     for prop in properties:
@@ -286,11 +288,6 @@ def borrowing_capacity_forecast_investor_blocks(
         inv["name"]: inv.get("income_events", []) for inv in investors
     }
 
-    # map dependants events per investor
-    investor_dependants_events = {
-        inv["name"]: inv.get("dependants_events", []) for inv in investors
-    }
-
     # property balances
     property_balances = {}
 
@@ -307,8 +304,8 @@ def borrowing_capacity_forecast_investor_blocks(
     # investor debts
     investor_debt = {inv["name"]: 0 for inv in investors}
 
-    # investor dependants
-    investor_dependants = {inv["name"]: inv["dependants"] for inv in investors}
+    # portfolio-level dependants (household total)
+    current_portfolio_dependants = portfolio_dependants
 
     for year in range(1, years + 1):
         debug_print(f"Processing year {year}/{years}")
@@ -329,10 +326,10 @@ def borrowing_capacity_forecast_investor_blocks(
                     elif ev["type"] == "set":
                         investor_current_income[name] = ev.get("amount", 0)
 
-            # apply scheduled dependants events
-            for ev in investor_dependants_events[name]:
+            # apply scheduled portfolio-level dependant events
+            for ev in portfolio_dependants_events:
                 if ev["year"] == year:
-                    investor_dependants[name] = ev["dependants"]
+                    current_portfolio_dependants = ev["dependants"]
 
             # apply annual growth (after year 1)
             if year > 1:
@@ -461,13 +458,13 @@ def borrowing_capacity_forecast_investor_blocks(
         # ---- borrowing capacity ----
         investor_borrowing_capacities = {}
         investor_borrowing_multiples = {}
+        # Calculate borrowing multiple based on portfolio-level dependants
+        borrowing_multiple = calculate_borrowing_multiple(current_portfolio_dependants)
         for inv in investors:
             name = inv["name"]
             net_income = investor_net_income[name]
             debt = investor_debt[name]
-            dependants = investor_dependants[name]
-            # Calculate borrowing multiple based on dependants
-            borrowing_multiple = calculate_borrowing_multiple(dependants)
+            # Use same borrowing multiple for all investors (based on household dependants)
             investor_borrowing_multiples[name] = borrowing_multiple
             # Use net income after tax and expenditures
             # Ensure borrowing capacity is not less than 0
@@ -480,7 +477,7 @@ def borrowing_capacity_forecast_investor_blocks(
             "combined_income": round(combined_income, 2),
             "investor_borrowing_capacities": investor_borrowing_capacities,
             "investor_borrowing_multiples": investor_borrowing_multiples,
-            "investor_dependants": {name: dependants for name, dependants in investor_dependants.items()},
+            "portfolio_dependants": current_portfolio_dependants,
             "investor_debts": {name: round(debt, 2) for name, debt in investor_debt.items()},
             "total_debt": round(total_debt, 2),
             "total_rent": round(total_rent, 2),

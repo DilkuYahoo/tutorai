@@ -61,7 +61,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
 }) => {
   const [localVisible, setLocalVisible] = useState(isVisible);
   const [expandedInvestor, setExpandedInvestor] = useState<string | null>(null);
-  const [expandedDependants, setExpandedDependants] = useState<string | null>(null);
   const [localInvestors, setLocalInvestors] = useState<any[]>([]);
   const [originalInvestors, setOriginalInvestors] = useState<any[]>([]);
   const [hasLocalChanges, setHasLocalChanges] = useState(false);
@@ -95,12 +94,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     );
   };
 
-  const toggleDependantsExpand = (investorName: string) => {
-    setExpandedDependants(
-      expandedDependants === investorName ? null : investorName,
-    );
-  };
-
   const saveToCache = () => {
     localStorage.setItem("investors", JSON.stringify(localInvestors));
   };
@@ -125,18 +118,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     setHasLocalChanges(true);
   };
 
-  const addDependantsEvent = (investorIndex: number) => {
-    const updated = [...localInvestors];
-    if (!updated[investorIndex].dependants_events)
-      updated[investorIndex].dependants_events = [];
-    updated[investorIndex].dependants_events.push({
-      year: 1,
-      dependants: 1,
-    });
-    setLocalInvestors(updated);
-    setHasLocalChanges(true);
-  };
-
   const updateIncomeEvent = (
     investorIndex: number,
     eventIndex: number,
@@ -152,31 +133,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     setHasLocalChanges(true);
   };
 
-  const updateDependantsEvent = (
-    investorIndex: number,
-    eventIndex: number,
-    field: string,
-    value: any,
-  ) => {
-    const updated = [...localInvestors];
-    updated[investorIndex].dependants_events[eventIndex] = {
-      ...updated[investorIndex].dependants_events[eventIndex],
-      [field]: value,
-    };
-    setLocalInvestors(updated);
-    setHasLocalChanges(true);
-  };
-
   const deleteIncomeEvent = (investorIndex: number, eventIndex: number) => {
     const updated = [...localInvestors];
     updated[investorIndex].income_events.splice(eventIndex, 1);
-    setLocalInvestors(updated);
-    setHasLocalChanges(true);
-  };
-
-  const deleteDependantsEvent = (investorIndex: number, eventIndex: number) => {
-    const updated = [...localInvestors];
-    updated[investorIndex].dependants_events.splice(eventIndex, 1);
     setLocalInvestors(updated);
     setHasLocalChanges(true);
   };
@@ -324,126 +283,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                       className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
                     />
                   </div>
-                  <div className="flex justify-between">
-                    <span>Dependants:</span>
-                    <input
-                      type="number"
-                      value={investor?.dependants || 0}
-                      onChange={(e) =>
-                        updateInvestor(
-                          index,
-                          "dependants",
-                          parseInt(e.target.value),
-                        )
-                      }
-                      className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right"
-                    />
                   </div>
-                </div>
-
-                {/* Dependants Events */}
-                {investor?.dependants_events &&
-                  investor.dependants_events.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-slate-500">
-                      <div className="flex items-center justify-between mb-2">
-                        <button
-                          onClick={() =>
-                            toggleDependantsExpand(investor?.name || "")
-                          }
-                          className="flex items-center justify-between text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors flex-1"
-                        >
-                          <span>Dependants Events</span>
-                          <span>
-                            {expandedDependants === investor?.name ? (
-                              <ChevronDown size={16} />
-                            ) : (
-                              <ChevronRight size={16} />
-                            )}
-                          </span>
-                        </button>
-                        <button
-                          onClick={() => addDependantsEvent(index)}
-                          className="text-green-400 hover:text-green-300 ml-2"
-                          title="Add Dependants Event"
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                      {expandedDependants === investor?.name && (
-                        <div className="space-y-1">
-                          {investor.dependants_events.map(
-                            (event: any, eIdx: number) => (
-                              <div
-                                key={eIdx}
-                                className="rounded p-2 text-xs flex justify-between items-center"
-                               style={{ backgroundColor: 'var(--bg-secondary)' }}
-                              >
-                                <div className="flex-1">
-                                    <div className="space-y-1">
-                                      <div className="flex gap-2">
-                                        <label className="text-gray-300">
-                                          Year:
-                                        </label>
-                                        <input
-                                          type="number"
-                                          value={event.year || 0}
-                                          onChange={(e) =>
-                                            updateDependantsEvent(
-                                              index,
-                                              eIdx,
-                                              "year",
-                                              parseInt(e.target.value),
-                                            )
-                                          }
-                                          className="bg-slate-500 text-white rounded px-1 py-0 w-16 text-xs"
-                                        />
-                                      </div>
-                                      <div className="flex gap-2">
-                                        <label className="text-gray-300">
-                                          Dependants:
-                                        </label>
-                                        <input
-                                          type="number"
-                                          value={event.dependants || 0}
-                                          onChange={(e) =>
-                                            updateDependantsEvent(
-                                              index,
-                                              eIdx,
-                                              "dependants",
-                                              parseInt(e.target.value),
-                                            )
-                                          }
-                                          className="bg-slate-500 text-white rounded px-1 py-0 w-16 text-xs"
-                                        />
-                                      </div>
-                                    </div>
-                                </div>
-                                <button
-                                  onClick={() =>
-                                    deleteDependantsEvent(index, eIdx)
-                                  }
-                                  className="text-red-400 hover:text-red-300 ml-2"
-                                  title="Delete Dependants Event"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            ),
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                {(!investor?.dependants_events || investor.dependants_events.length === 0) && (
-                      <div className="mt-4 pt-4 border-t border-slate-500">
-                        <button
-                          onClick={() => addDependantsEvent(index)}
-                          className="text-green-400 hover:text-green-300 flex items-center gap-1 text-xs"
-                        >
-                          <Plus size={14} /> Add Dependants Event
-                        </button>
-                      </div>
-                    )}
 
                 {/* Income Events */}
                 {investor?.income_events &&

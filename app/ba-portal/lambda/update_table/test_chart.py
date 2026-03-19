@@ -3,6 +3,7 @@ from libs.superchart1 import borrowing_capacity_forecast_investor_blocks, calcul
 import json
 
 # Sample data for borrowing_capacity_forecast_investor_blocks
+# Note: dependants and dependants_events are now at portfolio level, not per investor
 investors = [
     {
         "name": "Bob",
@@ -10,14 +11,11 @@ investors = [
         "annual_growth_rate": 0.03,
         "essential_expenditure": 30000,
         "nonessential_expenditure": 15000,
-        "dependants": 2,
         "income_events": [
             {"year": 5, "type": "increase", "amount": 10000},
             {"year": 10, "type": "set", "amount": 150000}
-        ],
-        "dependants_events": [
-            {"year": 3, "dependants": 3}
         ]
+        # Note: dependants and dependants_events removed from investor level
     },
     {
         "name": "Alice",
@@ -25,9 +23,8 @@ investors = [
         "annual_growth_rate": 0.025,
         "essential_expenditure": 25000,
         "nonessential_expenditure": 12000,
-        "dependants": 2,
-        "income_events": [],
-        "dependants_events": []
+        "income_events": []
+        # Note: dependants and dependants_events removed from investor level
     }
 ]
 
@@ -46,13 +43,22 @@ properties = [
         "investor_splits": [{"name": "Bob", "percentage": 50}, {"name": "Alice", "percentage": 50}]
     }
 ]
+
+# Portfolio-level dependants (NEW)
+portfolio_dependants = 2
+portfolio_dependants_events = [
+    {"year": 3, "dependants": 3}
+]
+
 # Call the function
 results = borrowing_capacity_forecast_investor_blocks(
     investors=investors,
     properties=properties,
-    years=30
+    years=30,
+    portfolio_dependants=portfolio_dependants,
+    portfolio_dependants_events=portfolio_dependants_events
 )
-print (results)
+print(results)
 
 
 # Test calculate_net_income function

@@ -10,9 +10,11 @@ import Footer from "./Footer";
 import {
   fetchDashboardDataById,
   fetchPortfolioList,
+  fetchConfigParams,
   updateDashboardData,
   type ConfigParams,
   type PortfolioInfo,
+  type PortfolioDependantsEvents,
 } from "../services/dashboardService";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -58,6 +60,10 @@ const Dashboard: React.FC = () => {
     borrowingPowerMultiplierBase: 5.0,
     borrowingPowerMultiplierDependantReduction: 0.25,
   });
+  
+  // Portfolio-level dependants state
+  const [portfolioDependants, setPortfolioDependants] = useState<number>(0);
+  const [portfolioDependantsEvents, setPortfolioDependantsEvents] = useState<PortfolioDependantsEvents[]>([]);
   
   // Handle OAuth callback on mount
   useEffect(() => {
@@ -125,6 +131,15 @@ const Dashboard: React.FC = () => {
         // Update local state if investmentYears exists in response
         if (result.investmentYears !== undefined) {
           setInvestmentYears(result.investmentYears);
+        }
+        
+        // Load portfolio-level dependants from config
+        const configResult = await fetchConfigParams(selectedPortfolioId);
+        if (configResult.portfolioDependants !== undefined) {
+          setPortfolioDependants(configResult.portfolioDependants);
+        }
+        if (configResult.portfolioDependantsEvents) {
+          setPortfolioDependantsEvents(configResult.portfolioDependantsEvents);
         }
       } catch (err) {
         setData({
@@ -252,6 +267,10 @@ const Dashboard: React.FC = () => {
         portfolios={portfolios}
         selectedPortfolioId={selectedPortfolioId}
         onPortfolioChange={setSelectedPortfolioId}
+        portfolioDependants={portfolioDependants}
+        onPortfolioDependantsChange={setPortfolioDependants}
+        portfolioDependantsEvents={portfolioDependantsEvents}
+        onPortfolioDependantsEventsChange={setPortfolioDependantsEvents}
       />
       <div className="flex flex-1 overflow-hidden">
       {/* Main Error Toast */}

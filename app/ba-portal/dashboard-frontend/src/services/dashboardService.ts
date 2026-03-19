@@ -17,6 +17,11 @@ export interface ConfigParams {
   borrowingPowerMultiplierDependantReduction: number;
 }
 
+export interface PortfolioDependantsEvents {
+  year: number;
+  dependants: number;
+}
+
 export interface DashboardApiResponse {
   chartData: any[];
   investors: any[];
@@ -40,6 +45,8 @@ export interface ConfigApiResponse {
   configParams: ConfigParams;
   investmentYears: number;
   investmentGoals?: InvestmentGoals;
+  portfolioDependants?: number;
+  portfolioDependantsEvents?: PortfolioDependantsEvents[];
 }
 
 export interface InvestmentGoals {
@@ -235,6 +242,8 @@ export async function fetchConfigParams(portfolioId?: string): Promise<ConfigApi
       goal: data.investment_goals.goal || '',
       riskTolerance: data.investment_goals.risk_tolerance || 'moderate',
     } : undefined,
+    portfolioDependants: data.portfolio_dependants ?? 0,
+    portfolioDependantsEvents: data.portfolio_dependants_events || [],
   };
 }
 
@@ -242,6 +251,8 @@ export async function saveConfigParams(
   configParams: ConfigParams,
   investmentYears?: number,
   investmentGoals?: InvestmentGoals,
+  portfolioDependants?: number,
+  portfolioDependantsEvents?: PortfolioDependantsEvents[],
   portfolioId?: string
 ): Promise<void> {
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
@@ -268,7 +279,17 @@ export async function saveConfigParams(
     };
   }
 
-  console.log("Saving config params:", { configParams, investmentYears, investmentGoals, attributes });
+  // Include portfolio_dependants if provided
+  if (portfolioDependants !== undefined && portfolioDependants !== null) {
+    attributes.portfolio_dependants = portfolioDependants;
+  }
+
+  // Include portfolio_dependants_events if provided
+  if (portfolioDependantsEvents !== undefined && portfolioDependantsEvents !== null) {
+    attributes.portfolio_dependants_events = portfolioDependantsEvents;
+  }
+
+  console.log("Saving config params:", { configParams, investmentYears, investmentGoals, portfolioDependants, portfolioDependantsEvents, attributes });
 
   const response = await fetch(`${FINANCE_URL}/update-table`, {
     method: "POST",

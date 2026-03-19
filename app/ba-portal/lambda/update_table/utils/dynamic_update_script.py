@@ -320,11 +320,17 @@ class DynamoDBUpdater:
                     if 'growth_rate' in property_data:
                         property_data['growth_rate'] = property_data['growth_rate'] / 100.0
 
+                # Get portfolio-level dependants (NEW)
+                portfolio_dependants = attributes.get('portfolio_dependants', 0)
+                portfolio_dependants_events = attributes.get('portfolio_dependants_events', [])
+
                 # Calculate the chart using 30 years forecast
                 chart1_value = borrowing_capacity_forecast_investor_blocks(
                     investors=investors,
                     properties=properties,
-                    years=30
+                    years=30,
+                    portfolio_dependants=portfolio_dependants,
+                    portfolio_dependants_events=portfolio_dependants_events
                 )
 
                 # Convert all float values to integers for DynamoDB compatibility

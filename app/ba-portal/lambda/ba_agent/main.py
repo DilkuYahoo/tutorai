@@ -90,7 +90,9 @@ def get_data_from_dynamodb(table_name: str, item_id: str, region: str = "ap-sout
         'investors': item.get('investors', []),
         'properties': item.get('properties', []),
         'chart1': item.get('chart1', {}),
-        'status': status
+        'status': status,
+        'portfolio_dependants': item.get('portfolio_dependants', 0),
+        'portfolio_dependants_events': item.get('portfolio_dependants_events', [])
     }
 
 
@@ -171,14 +173,11 @@ def format_investor_details(investors: List[dict]) -> str:
     return "\n".join(lines) if lines else "No investors"
 
 
-def format_current_dependants(investors: List[dict]) -> str:
-    """Format current dependants for each investor."""
-    lines = []
-    for inv in investors:
-        name = inv.get('name', 'Unknown')
-        dependants = inv.get('dependants', 0)
-        lines.append(f"- {name}: {dependants} dependants")
-    return "\n".join(lines) if lines else "No dependants data"
+def format_current_dependants(investors: List[dict], portfolio_dependants: int = 0) -> str:
+    """Format current dependants for portfolio-level dependants."""
+    if portfolio_dependants > 0:
+        return f"Portfolio Level: {portfolio_dependants} dependant{'s' if portfolio_dependants != 1 else ''}"
+    return "No dependants at portfolio level"
 
 
 def format_income_events(investors: List[dict]) -> str:
@@ -196,18 +195,17 @@ def format_income_events(investors: List[dict]) -> str:
     return "\n".join(lines) if lines else "No future income events"
 
 
-def format_dependants_events(investors: List[dict]) -> str:
-    """Format future dependant events for each investor."""
+def format_dependants_events(portfolio_dependants_events: List[dict] = None) -> str:
+    """Format future dependant events for portfolio-level dependants."""
+    if not portfolio_dependants_events:
+        return "No future dependant events at portfolio level"
+    
     lines = []
-    for inv in investors:
-        name = inv.get('name', 'Unknown')
-        events = inv.get('dependants_events', [])
-        if events:
-            for ev in events:
-                year = ev.get('year', 0)
-                dependants = ev.get('dependants', 0)
-                lines.append(f"- {name}: Year {year}, {dependants} dependants")
-    return "\n".join(lines) if lines else "No future dependant events"
+    for ev in portfolio_dependants_events:
+        year = ev.get('year', 0)
+        dependants = ev.get('dependants', 0)
+        lines.append(f"- Year {year}: {dependants} dependant{'s' if dependants != 1 else ''}")
+    return "\n".join(lines)
 
 
 def format_existing_properties(properties: List[dict]) -> str:
@@ -424,7 +422,9 @@ def build_summary_prompt(
     chart1_metrics: dict,
     existing_properties: List[dict],
     investment_goals: Optional[dict] = None,
-    investment_years: int = 30
+    investment_years: int = 30,
+    portfolio_dependants: int = 0,
+    portfolio_dependants_events: List[dict] = None
 ) -> Tuple[str, str]:
     """
     Build system and user prompts for portfolio summary generation.
@@ -473,14 +473,14 @@ INVESTMENT GOALS:
 INVESTOR DETAILS (from investors[]):
 {format_investor_details(investors)}
 
-CURRENT DEPENDANTS (from investors[].dependants):
-{format_current_dependants(investors)}
+CURRENT DEPENDANTS (from portfolio level - portfolio_dependants):
+{format_current_dependants(investors, portfolio_dependants)}
 
 INCOME EVENTS (from investors[].income_events - future income changes):
 {format_income_events(investors)}
 
-DEPENDANT EVENTS (from investors[].dependants_events - future dependant changes):
-{format_dependants_events(investors)}
+DEPENDANT EVENTS (from portfolio_dependants_events - future dependant changes at portfolio level):
+{format_dependants_events(portfolio_dependants_events)}
 
 === SECTION 2: RISKS & OBJECTIVES ===
 {goals_text}
@@ -773,12 +773,18 @@ def lambda_handler(event: dict, context: any) -> dict:
         # Get investment_years from the data (default to 30)
         investment_years = data.get('investment_years', 30)
         
+        # Get portfolio-level dependants (NEW)
+        portfolio_dependants = data.get('portfolio_dependants', 0)
+        portfolio_dependants_events = data.get('portfolio_dependants_events', [])
+        
         system_prompt, user_prompt = build_summary_prompt(
             investors=investors,
             chart1_metrics=chart1_metrics,
             existing_properties=properties,
             investment_goals=investment_goals,
-            investment_years=investment_years
+            investment_years=investment_years,
+            portfolio_dependants=portfolio_dependants,
+            portfolio_dependants_events=portfolio_dependants_events
         )
         
         # Invoke Bedrock
