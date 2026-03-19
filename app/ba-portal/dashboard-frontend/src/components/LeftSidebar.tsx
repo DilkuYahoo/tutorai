@@ -47,6 +47,7 @@ interface LeftSidebarProps {
     onSuccess?: () => void,
     onError?: () => void,
   ) => Promise<void>;
+  selectedPortfolioId?: string;
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -56,6 +57,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   isVisible = true,
   onToggleVisibility,
   onUpdate,
+  selectedPortfolioId,
 }) => {
   const [localVisible, setLocalVisible] = useState(isVisible);
   const [expandedInvestor, setExpandedInvestor] = useState<string | null>(null);
@@ -71,6 +73,15 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
       setOriginalInvestors(investors);
     }
   }, [investors, hasLocalChanges]);
+
+  // Reset local changes when portfolio changes
+  useEffect(() => {
+    if (selectedPortfolioId) {
+      setHasLocalChanges(false);
+      setLocalInvestors(investors);
+      setOriginalInvestors(investors);
+    }
+  }, [selectedPortfolioId, investors]);
 
   const handleToggle = () => {
     const newVisible = !localVisible;
@@ -106,7 +117,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     if (!updated[investorIndex].income_events)
       updated[investorIndex].income_events = [];
     updated[investorIndex].income_events.push({
-      year: new Date().getFullYear(),
+      year: 3,
       amount: 0,
       type: "increase",
     });
@@ -119,8 +130,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     if (!updated[investorIndex].dependants_events)
       updated[investorIndex].dependants_events = [];
     updated[investorIndex].dependants_events.push({
-      year: new Date().getFullYear(),
-      dependants: 0,
+      year: 1,
+      dependants: 1,
     });
     setLocalInvestors(updated);
     setHasLocalChanges(true);

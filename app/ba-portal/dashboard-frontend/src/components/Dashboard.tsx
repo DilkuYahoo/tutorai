@@ -356,6 +356,7 @@ const Dashboard: React.FC = () => {
         isVisible={investorsVisible}
         onToggleVisibility={setInvestorsVisible}
         onUpdate={handleUpdate}
+        selectedPortfolioId={selectedPortfolioId}
       />
 
       <ChartSection 
