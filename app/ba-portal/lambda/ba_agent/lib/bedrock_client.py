@@ -34,7 +34,7 @@ def invoke_bedrock(system_prompt: str, user_prompt: str, model_id: str = None, m
     
     model_id = model_id or os.environ.get("BEDROCK_MODEL_ID", "au.anthropic.claude-sonnet-4-5-20250929-v1:0")
     default_kwargs = {
-        "max_tokens": 2048,
+        "max_tokens": 4096,
         "temperature": 0.7,
     }
     model_kwargs = model_kwargs or default_kwargs

@@ -162,12 +162,52 @@ def format_investor_details(investors: List[dict]) -> str:
         name = inv.get('name', 'Unknown')
         base_income = inv.get('base_income', 0)
         growth_rate = inv.get('annual_growth_rate', 0)
+        # Growth rate is stored as integer (e.g., 3 = 3%), no need to multiply
         essential = inv.get('essential_expenditure', 0)
         nonessential = inv.get('nonessential_expenditure', 0)
         
-        lines.append(f"- {name}: Base Income ${base_income:,.0f}, Growth {growth_rate*100}%, "
+        lines.append(f"- {name}: Base Income ${base_income:,.0f}, Growth {growth_rate}%, "
                     f"Essential ${essential:,.0f}, Non-essential ${nonessential:,.0f}")
     return "\n".join(lines) if lines else "No investors"
+
+
+def format_current_dependants(investors: List[dict]) -> str:
+    """Format current dependants for each investor."""
+    lines = []
+    for inv in investors:
+        name = inv.get('name', 'Unknown')
+        dependants = inv.get('dependants', 0)
+        lines.append(f"- {name}: {dependants} dependants")
+    return "\n".join(lines) if lines else "No dependants data"
+
+
+def format_income_events(investors: List[dict]) -> str:
+    """Format future income events for each investor."""
+    lines = []
+    for inv in investors:
+        name = inv.get('name', 'Unknown')
+        events = inv.get('income_events', [])
+        if events:
+            for ev in events:
+                year = ev.get('year', 0)
+                event_type = ev.get('type', 'increase')
+                amount = ev.get('amount', 0)
+                lines.append(f"- {name}: Year {year}, {event_type} ${amount:,.0f}")
+    return "\n".join(lines) if lines else "No future income events"
+
+
+def format_dependants_events(investors: List[dict]) -> str:
+    """Format future dependant events for each investor."""
+    lines = []
+    for inv in investors:
+        name = inv.get('name', 'Unknown')
+        events = inv.get('dependants_events', [])
+        if events:
+            for ev in events:
+                year = ev.get('year', 0)
+                dependants = ev.get('dependants', 0)
+                lines.append(f"- {name}: Year {year}, {dependants} dependants")
+    return "\n".join(lines) if lines else "No future dependant events"
 
 
 def format_existing_properties(properties: List[dict]) -> str:
@@ -383,7 +423,8 @@ def build_summary_prompt(
     investors: List[dict],
     chart1_metrics: dict,
     existing_properties: List[dict],
-    investment_goals: Optional[dict] = None
+    investment_goals: Optional[dict] = None,
+    investment_years: int = 30
 ) -> Tuple[str, str]:
     """
     Build system and user prompts for portfolio summary generation.
@@ -393,48 +434,70 @@ def build_summary_prompt(
         chart1_metrics: Extracted financial metrics from chart1
         existing_properties: List of existing properties
         investment_goals: Optional investment goals from user
+        investment_years: Number of years for investment projection
     
     Returns:
         Tuple of (system_prompt, user_prompt)
     """
     
-    # System prompt for summary generation
+    # System prompt for summary generation - 4-section structure
     system_prompt = """You are a professional Australian property investment analyst specializing in portfolio analysis and executive summaries.
 Your role is to analyze an investor's property portfolio and provide a clear, actionable executive summary.
 
-IMPORTANT: 
-- Australian DTI (Debt-to-Income) ratio is expressed as a MULTIPLE (e.g., 1.5 = 150% = debt is 1.5x annual income)
+IMPORTANT AUSTRALIAN LENDING STANDARDS:
+- DTI (Debt-to-Income) ratio is expressed as a MULTIPLE (e.g., 1.5 = 150% = debt is 1.5x annual income)
 - DTI below 3.0 (300%) is considered SAFE
 - DTI 3.0-5.0 (300-500%) is CAUTION
 - DTI above 5.0 (500%) is HIGH RISK
 
-Provide clear, concise insights that are easy for investors to understand.
-Focus on key metrics, trends, and actionable recommendations.
+Output format - STRICTLY follow this 4-section structure:
+1. INVESTOR PROFILE: Start with this section. Details about investors, current dependants, and future events (income changes and dependant changes over time).
+2. RISKS & OBJECTIVES: Investment goals, risk tolerance profile, and how the portfolio aligns with objectives.
+3. PORTFOLIO STATUS: Current status considering the investment timeframe and how it aligns with risk profile and objectives.
+4. RECOMMENDATIONS: Bullet point recommendations based on chart1 yearly_forecast data to reach portfolio goals. Be specific and actionable.
 
 Output ONLY the summary text. No JSON required."""
     
-    # Build user prompt for summary
+    # Format goals text
     goals_text = ""
     if investment_goals:
         goals_text = f"""
 INVESTMENT GOALS:
-- Target Properties: {investment_goals.get('target_properties', 'Not specified')}
-- Target Portfolio Value: ${investment_goals.get('target_portfolio_value', 0):,.0f}
-- Risk Tolerance: {investment_goals.get('risk_tolerance', 'Not specified')}
-- Time Horizon: {investment_goals.get('time_horizon', 'Not specified')}
-"""
+- Goal: {investment_goals.get('goal', 'Not specified')}
+- Risk Tolerance: {investment_goals.get('risk_tolerance', 'Not specified')}"""
     
+    # Build user prompt with 4 sections
     user_prompt = f"""PORTFOLIO EXECUTIVE SUMMARY REQUEST:
 
-CURRENT PORTFOLIO STATUS:
+=== SECTION 1: INVESTOR PROFILE ===
+INVESTOR DETAILS (from investors[]):
+{format_investor_details(investors)}
+
+CURRENT DEPENDANTS (from investors[].dependants):
+{format_current_dependants(investors)}
+
+INCOME EVENTS (from investors[].income_events - future income changes):
+{format_income_events(investors)}
+
+DEPENDANT EVENTS (from investors[].dependants_events - future dependant changes):
+{format_dependants_events(investors)}
+
+=== SECTION 2: RISKS & OBJECTIVES ===
+{goals_text}
+
+INVESTMENT TIMEFRAME (from investment_years):
+- Years to Invest: {investment_years} years
+
+=== SECTION 3: PORTFOLIO STATUS ===
+CURRENT PORTFOLIO:
 - Property Count: {len(existing_properties)}
 - Total Property Values: ${chart1_metrics.get('total_property_values', 0):,.2f}
 - Total Loan Balances: ${chart1_metrics.get('total_loan_balances', 0):,.2f}
 - Total Equity: ${chart1_metrics.get('total_equity', 0):,.2f}
 
-FINANCIAL METRICS:
+FINANCIAL METRICS (from chart1 yearly_forecast):
 - Current DTI Ratio: {chart1_metrics.get('current_dti', 0):.2f}x ({chart1_metrics.get('current_dti', 0)*100:.1f}%)
-- Min DTI (Best): {chart1_metrics.get('min_dti', 0):.2f}x
+- Min DTI (Best over timeline): {chart1_metrics.get('min_dti', 0):.2f}x
 - Max Accessible Equity: ${chart1_metrics.get('max_accessible_equity', 0):,.2f}
 - Borrowing Capacity: ${chart1_metrics.get('borrowing_capacity', 0):,.2f}
 - Household Surplus: ${chart1_metrics.get('household_surplus', 0):,.2f}/year
@@ -443,17 +506,16 @@ FINANCIAL METRICS:
 EXISTING PROPERTIES:
 {format_existing_properties(existing_properties)}
 
-INVESTOR DETAILS:
-{format_investor_details(investors)}
-{goals_text}
+=== SECTION 4: RECOMMENDATIONS ===
+Based on the chart1 yearly_forecast data, provide 5-7 specific actionable bullet point recommendations to help achieve the portfolio goals.
+Consider:
+- Timeline projections in chart1 yearly_forecast
+- How {investment_years} year timeframe aligns with risk tolerance
+- Steps to achieve investment goals
+- Property acquisition opportunities based on financial capacity
+- Debt management strategies
 
-Please provide a comprehensive executive summary including:
-1. Overall portfolio health assessment
-2. Key strengths and opportunities
-3. Main risks or concerns
-4. Recommended next steps
-
-Keep the summary concise but informative - approximately 3-5 paragraphs."""
+Provide recommendations as bullet points starting with "-" or "*"."""
     
     return system_prompt, user_prompt
 
@@ -702,17 +764,21 @@ def lambda_handler(event: dict, context: any) -> dict:
     
     # Build prompts
     if property_action == "summary":
-        # For summary action, we need to get investment goals as well
+        # For summary action, we need to get investment goals and investment years
         # Extract investment goals from the item if available
         investment_goals = None
         if 'investment_goals' in data:
             investment_goals = data['investment_goals']
         
+        # Get investment_years from the data (default to 30)
+        investment_years = data.get('investment_years', 30)
+        
         system_prompt, user_prompt = build_summary_prompt(
             investors=investors,
             chart1_metrics=chart1_metrics,
             existing_properties=properties,
-            investment_goals=investment_goals
+            investment_goals=investment_goals,
+            investment_years=investment_years
         )
         
         # Invoke Bedrock
