@@ -570,7 +570,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executi
       // Save summary to DynamoDB so it persists
       if (result.summary && selectedPortfolioId) {
         try {
-          await updateDashboardData(undefined, undefined, undefined, undefined, result.summary, undefined, selectedPortfolioId);
+          await updateDashboardData(undefined, undefined, undefined, result.summary, undefined, selectedPortfolioId);
           console.log("[DEBUG] Saved summary to DynamoDB");
         } catch (saveError) {
           console.error("[DEBUG] Failed to save summary to DynamoDB:", saveError);

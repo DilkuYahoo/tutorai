@@ -222,24 +222,25 @@ const Dashboard: React.FC = () => {
       setUpdateError(null);
       setUpdateSuccess(null);
       
-      console.log("[DEBUG] handleUpdate called, current executiveSummary:", data.executiveSummary);
+      // Don't pass chart1 - let the Lambda calculate it fresh from investors/properties
+      await updateDashboardData(investors, properties, investmentYears, '', '', selectedPortfolioId);
       
-      // Clear summary and advice in database
-      await updateDashboardData(investors, properties, data.chartData, investmentYears, '', '', selectedPortfolioId);
+      // Fetch fresh data from DynamoDB after update (includes newly calculated chart1)
+      const freshData = await fetchDashboardDataById(selectedPortfolioId);
       
-      // Directly clear in local state - don't rely on API response for clearing
+      // Update local state with fresh data from DynamoDB
       setData(prev => ({
         ...prev,
-        investors,
-        properties,
-        chartData: data.chartData,
-        investmentYears,
-        executiveSummary: '',  // Clear summary immediately
-        ourAdvice: '',  // Clear advice immediately
+        investors: freshData.investors,
+        properties: freshData.properties,
+        chartData: freshData.chartData,
+        investmentYears: freshData.investmentYears || investmentYears,
+        executiveSummary: '',  // Clear summary - needs regeneration
+        ourAdvice: '',  // Clear advice - needs regeneration
         loading: false,
         error: null,
       }));
-
+      
       setUpdateSuccess("Data updated successfully!");
       onSuccess?.();
     } catch (err) {

@@ -151,7 +151,6 @@ export async function fetchDashboardDataById(portfolioId: string): Promise<Dashb
 export async function updateDashboardData(
   investors?: any[],
   properties?: any[],
-  chart1?: any[],
   investmentYears?: number,
   executiveSummary?: string,
   ourAdvice?: string,
@@ -171,10 +170,8 @@ export async function updateDashboardData(
     attributes.properties = properties;
   }
 
-  // Include chart1 if provided
-  if (chart1) {
-    attributes.chart1 = chart1;
-  }
+  // Note: chart1 is NOT sent to backend - it's calculated by the Lambda
+  // The Lambda recalculates chart1 whenever investors and properties are provided
 
   // Include investment_years if provided
   if (investmentYears !== undefined && investmentYears !== null) {
