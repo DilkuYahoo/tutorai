@@ -1,20 +1,20 @@
-# Wealth Pulse - Comprehensive Feature Documentation
+# Wealth Pulse Insights Engine
 
-A comprehensive wealth management dashboard for property investors and financial advisors, built with React, TypeScript, and AWS serverless architecture.
+An intelligent wealth management insights engine for property investors and financial advisors, powered by AI and built on AWS serverless architecture.
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Core Features](#core-features)
-- [Portfolio Management](#portfolio-management)
-- [Financial Analytics](#financial-analytics--projections)
+- [Core Capabilities](#core-capabilities)
+- [Portfolio Intelligence](#portfolio-intelligence)
+- [Financial Modelling Engine](#financial-modelling-engine)
 - [AI-Powered Insights](#ai-powered-insights)
-- [Cashflow Management](#cashflow-management)
-- [Equity \& Debt Management](#equity--debt-management)
+- [Cashflow Intelligence](#cashflow-intelligence)
+- [Equity & Debt Analysis](#equity--debt-analysis)
 - [Configuration Parameters](#configuration-parameters)
-- [Visualization \& Reporting](#visualization--reporting)
+- [Visualisation & Reporting](#visualisation--reporting)
 - [User Management](#user-management--security)
 - [Data Integration](#data-integration--import)
 - [Roadmap Features](#roadmap-features)
@@ -25,60 +25,60 @@ A comprehensive wealth management dashboard for property investors and financial
 
 ## Overview
 
-Wealth Pulse is an advanced wealth management dashboard designed for property investors and financial advisors. It provides comprehensive portfolio tracking, financial projections, AI-powered recommendations, and sophisticated analytics to help users make informed investment decisions.
+Wealth Pulse Insights Engine is an advanced AI-powered platform designed for property investors and financial advisors. It goes beyond traditional dashboards by providing intelligent analysis, predictive modelling, and actionable recommendations to help users make informed investment decisions.
 
-### Key Value Propositions
+### Core Value Propositions
 
-- **Real-time Portfolio Monitoring** - Track properties, investors, and financial metrics in one place
-- **30-Year Projections** - Automated forecasting of DTI, borrowing capacity, equity, and cashflow
-- **AI-Powered Insights** - Intelligent recommendations using AWS Bedrock
+- **AI-Powered Analysis** - Intelligent portfolio insights using AWS Bedrock
+- **Predictive Modelling** - 30-year forecasts of DTI, borrowing capacity, equity, and cashflow
+- **Smart Recommendations** - Actionable advice tailored to investment goals
 - **Scenario Modelling** - "What if" analysis for different financial scenarios
-- **Professional Reporting** - Generate executive summaries and detailed reports
+- **Automated Advisory** - Executive summaries and detailed strategic reports
 
 ---
 
-## Core Features
+## Core Capabilities
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| Dashboard Analytics | ✅ Active | Interactive charts showing 30-year financial projections |
+| Capability | Status | Description |
+|------------|--------|-------------|
+| AI Recommendations | ✅ Active | Generate intelligent property recommendations using Bedrock |
+| Portfolio Optimisation | ✅ Active | Optimise properties based on market benchmarks |
+| Investment Goal Analysis | ✅ Active | Set goals and risk tolerance for personalised AI advice |
+| Financial Projections | ✅ Active | Automated 30-year forecasting of key metrics |
 | Investor Management | ✅ Active | Add, edit, and manage multiple investors per portfolio |
 | Property Tracking | ✅ Active | Track property investments with all financial details |
 | Chart1 Calculations | ✅ Active | Automatic calculation of DTI, LVR, borrowing capacity |
-| AI Recommendations | ✅ Active | Generate property recommendations using Bedrock |
-| Portfolio Optimization | ✅ Active | Optimize properties based on market benchmarks |
-| Investment Goals | ✅ Active | Set goals and risk tolerance for personalized AI advice |
 | Configuration Parameters | ✅ Active | Adjust financial assumptions (CPI, borrowing multipliers) |
 | Dark/Light Mode | ✅ Active | Toggle between dark and light themes |
 | Passwordless Auth | ✅ Active | Email-based verification via AWS Cognito |
 
 ---
 
-## Portfolio Management
+## Portfolio Intelligence
 
-### Multi-Portfolio Support
+### Multi-Portfolio Analysis
 
-Create and manage multiple investment portfolios:
+Create and manage multiple investment portfolios with deep intelligence:
 
 - Create new portfolios with custom names
 - Switch between portfolios seamlessly
 - Compare portfolio performance side-by-side
 - Archive inactive portfolios
 
-### Property Tracking
+### Property Intelligence
 
-Comprehensive property management:
+Comprehensive property analysis with AI insights:
 
 ```typescript
 interface Property {
   name: string;                    // Property identifier
   purchase_year: number;            // Year of acquisition
   initial_value: number;            // Purchase price
-  loan_amount: number;              // Mortgage principal
-  interest_rate: number;            // Annual interest rate (decimal)
-  rent: number;                     // Annual rental income
-  growth_rate: number;              // Annual appreciation rate
-  other_expenses: number;           // Annual maintenance/costs
+  loan_amount: number;             // Mortgage principal
+  interest_rate: number;           // Annual interest rate (decimal)
+  rent: number;                    // Annual rental income
+  growth_rate: number;             // Annual appreciation rate
+  other_expenses: number;          // Annual maintenance/costs
   annual_principal_change: number; // Annual repayment amount
   investor_splits: InvestorSplit[];  // Ownership percentages
 }
@@ -89,9 +89,9 @@ interface InvestorSplit {
 }
 ```
 
-### Investor Management
+### Investor Intelligence
 
-Manage multiple investors per portfolio:
+Manage multiple investors per portfolio with predictive insights:
 
 - Base income tracking
 - Annual growth rate projections
@@ -119,7 +119,7 @@ interface IncomeEvent {
 
 ---
 
-## Financial Analytics & Projections
+## Financial Modelling Engine
 
 ### Core Financial Calculations
 
@@ -180,7 +180,7 @@ Max Purchase Price = Accessible Equity / 0.25 (25% deposit)
 
 ### 30-Year Projection Model
 
-The dashboard generates comprehensive yearly forecasts including:
+The engine generates comprehensive yearly forecasts including:
 
 | Metric | Description |
 |--------|-------------|
@@ -204,14 +204,14 @@ The dashboard generates comprehensive yearly forecasts including:
 
 ## AI-Powered Insights
 
-### Generate AI Recommendations
+### Intelligent Recommendations
 
-Intelligent portfolio analysis using AWS Bedrock (Claude):
+The core of Wealth Pulse Insights Engine - AI-powered portfolio analysis using AWS Bedrock (Claude):
 
-1. **Click "Generate AI Recommendations"** on the dashboard
-2. System analyses Chart1 financial data
-3. Bedrock processes portfolio metrics
-4. Returns actionable recommendations
+1. **Generate AI Recommendations** - Click the recommendation button on the interface
+2. **AI Analysis** - System analyses Chart1 financial data using Bedrock
+3. **Processing** - Claude processes portfolio metrics and market benchmarks
+4. **Insights** - Returns actionable recommendations with reasoning
 
 ### AI Analysis Metrics
 
@@ -226,15 +226,15 @@ Intelligent portfolio analysis using AWS Bedrock (Claude):
 
 ### AI Recommendations
 
-The AI provides recommendations for:
+The AI provides intelligent recommendations for:
 
 1. **Property Acquisition**
    - Optimal purchase timing based on DTI
    - Target property value range
    - Recommended loan amounts
 
-2. **Portfolio Optimization**
-   - Rent optimization (4-6% of property value)
+2. **Portfolio Optimisation**
+   - Rent optimisation (4-6% of property value)
    - Expense management (1-2% of property value)
    - Interest rate refinancing opportunities
 
@@ -263,14 +263,14 @@ Risk tolerance settings:
 
 ---
 
-## Cashflow Management
+## Cashflow Intelligence
 
 ### Features
 
 | Feature | Description |
 |---------|-------------|
-| Rental Income Tracking | Record and forecast rental income per property |
-| Expense Management | Track interest, maintenance, insurance |
+| Rental Income Intelligence | Record and forecast rental income per property |
+| Expense Analysis | Track interest, maintenance, insurance |
 | Cashflow Heatmap | Visual calendar showing monthly cashflow |
 | Surplus Projections | Household surplus forecasting |
 | Expense Ratios | Monitor expenses vs income |
@@ -289,9 +289,9 @@ Total Cashflow =
 
 ---
 
-## Equity & Debt Management
+## Equity & Debt Analysis
 
-### Equity Tracking
+### Equity Intelligence
 
 - **Raw Equity**: Property value minus loan balance
 - **Accessible Equity**: Usable equity (80% LVR threshold)
@@ -339,12 +339,12 @@ Total Cashflow =
 
 ---
 
-## Visualization & Reporting
+## Visualisation & Reporting
 
-### Interactive Charts
+### Interactive Visualisations
 
-| Chart Type | Visualization |
-|------------|---------------|
+| Visualisation Type | Description |
+|--------------------|-------------|
 | DTI Trend Line | 30-year debt-to-income over time |
 | Borrowing Capacity Bar | Year-by-year borrowing power |
 | Equity Area Chart | Total and accessible equity growth |
@@ -402,7 +402,7 @@ Total Cashflow =
 | Method | Description |
 |--------|-------------|
 | CSV Upload | Bulk property/investor data |
-| Manual Entry | Add via dashboard forms |
+| Manual Entry | Add via interface forms |
 | API Integration | External data sources |
 
 ### Data Validation
@@ -420,10 +420,10 @@ Total Cashflow =
 
 | Feature | Description |
 |---------|-------------|
-| Scenario Modeling | What-if analysis for various scenarios |
+| Scenario Modelling | What-if analysis for various scenarios |
 | Monte Carlo Simulations | Probability-based projections |
 | Export Reports | PDF and CSV generation |
-| Bank Integration | Auto-categorize transactions |
+| Bank Integration | Auto-categorise transactions |
 
 ### Phase 3 (Future)
 
@@ -449,7 +449,7 @@ Total Cashflow =
 | Vite | 7.x | Build tool |
 | Tailwind CSS | 4.x | Styling |
 | Recharts | 3.x | Basic charting |
-| ECharts | 6.x | Advanced visualization |
+| ECharts | 6.x | Advanced visualisation |
 | Lucide React | 0.x | Icons |
 | Axios | 1.x | HTTP client |
 | AWS Amplify | 6.x | Authentication |
@@ -473,7 +473,7 @@ Total Cashflow =
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         WEALTH PULSE SYSTEM                                  │
+│                    WEALTH PULSE INSIGHTS ENGINE                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌──────────────────────┐      ┌──────────────────────────────────────┐   │
@@ -517,7 +517,7 @@ Total Cashflow =
 
 ```mermaid
 flowchart LR
-    A[Frontend Dashboard] -->|HTTP POST| B[API Gateway]
+    A[Frontend Interface] -->|HTTP POST| B[API Gateway]
     B --> C[Lambda Functions]
     C --> D[DynamoDB]
     C --> E[Bedrock AI]
@@ -559,7 +559,7 @@ flowchart LR
    npm run dev
    ```
 
-4. **Access Dashboard**
+4. **Access the Engine**
    - Open http://localhost:3000
    - Login with your email
 
@@ -620,7 +620,7 @@ flowchart LR
 
 ## License
 
-This project is part of the Wealth Pulse system. All rights reserved.
+This project is part of the Wealth Pulse Insights Engine system. All rights reserved.
 
 ---
 
