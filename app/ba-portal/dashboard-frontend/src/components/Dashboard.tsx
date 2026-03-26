@@ -3,9 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { X, AlertCircle, RefreshCw, Check } from "lucide-react";
 import Header from "./Header";
-import LeftSidebar from "./LeftSidebar";
+import Sidebar from "./Sidebar";
 import ChartSection from "./ChartSection";
-import RightSidebar from "./RightSidebar";
 import Footer from "./Footer";
 import {
   fetchDashboardDataById,
@@ -47,8 +46,7 @@ const Dashboard: React.FC = () => {
     error: null,
   });
 
-  const [investorsVisible, setInvestorsVisible] = useState(false);
-  const [propertiesVisible, setPropertiesVisible] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -270,17 +268,9 @@ const Dashboard: React.FC = () => {
       <Header 
         isDarkMode={isDarkMode} 
         onToggleDarkMode={toggleDarkMode}
-        investmentYears={investmentYears}
-        onInvestmentYearsChange={setInvestmentYears}
-        configParams={configParams}
-        onConfigParamsChange={setConfigParams}
         portfolios={portfolios}
         selectedPortfolioId={selectedPortfolioId}
         onPortfolioChange={setSelectedPortfolioId}
-        portfolioDependants={portfolioDependants}
-        onPortfolioDependantsChange={setPortfolioDependants}
-        portfolioDependantsEvents={portfolioDependantsEvents}
-        onPortfolioDependantsEventsChange={setPortfolioDependantsEvents}
       />
       <div className="flex flex-1 overflow-hidden">
       {/* Main Error Toast */}
@@ -378,14 +368,23 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      <LeftSidebar
+      <Sidebar
         investors={data.investors}
         properties={data.properties}
+        chartData={data.chartData}
         loading={data.loading}
-        isVisible={investorsVisible}
-        onToggleVisibility={setInvestorsVisible}
+        isVisible={sidebarVisible}
+        onToggleVisibility={setSidebarVisible}
         onUpdate={handleUpdate}
         selectedPortfolioId={selectedPortfolioId}
+        investmentYears={investmentYears}
+        onInvestmentYearsChange={setInvestmentYears}
+        configParams={configParams}
+        onConfigParamsChange={setConfigParams}
+        portfolioDependants={portfolioDependants}
+        onPortfolioDependantsChange={setPortfolioDependants}
+        portfolioDependantsEvents={portfolioDependantsEvents}
+        onPortfolioDependantsEventsChange={setPortfolioDependantsEvents}
       />
 
       <ChartSection 
@@ -402,17 +401,6 @@ const Dashboard: React.FC = () => {
           console.log("[DEBUG] Advice received in Dashboard:", advice?.substring(0, 100) + "...");
           setData(prev => ({ ...prev, ourAdvice: advice }));
         }}
-      />
-
-      <RightSidebar
-        investors={data.investors}
-        properties={data.properties}
-        chartData={data.chartData}
-        loading={data.loading}
-        isVisible={propertiesVisible}
-        onToggleVisibility={setPropertiesVisible}
-        selectedPortfolioId={selectedPortfolioId}
-        onUpdate={handleUpdate}
       />
       </div>
       <Footer />
