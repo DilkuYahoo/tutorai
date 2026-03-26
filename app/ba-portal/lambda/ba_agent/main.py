@@ -9,7 +9,7 @@ Supports four actions:
 - "add": Generate a new property recommendation based on current portfolio
 - "optimize": Optimize existing properties with market benchmarks
 - "summary": Generate an AI executive summary of the user's portfolio
-- "advice": Generate 5-6 actionable recommendations with reasoning based on forecast, risk profile, and investment goals
+- "advice": Generate 3 actionable recommendations with reasoning based on forecast, risk profile, and investment goals
 """
 
 import json
@@ -93,7 +93,8 @@ def get_data_from_dynamodb(table_name: str, item_id: str, region: str = "ap-sout
         'chart1': item.get('chart1', {}),
         'status': status,
         'portfolio_dependants': item.get('portfolio_dependants', 0),
-        'portfolio_dependants_events': item.get('portfolio_dependants_events', [])
+        'portfolio_dependants_events': item.get('portfolio_dependants_events', []),
+        'investment_goals': item.get('investment_goals', None)
     }
 
 
@@ -553,7 +554,7 @@ def build_advice_prompt(
     portfolio_dependants_events: List[dict] = None
 ) -> Tuple[str, str]:
     """
-    Build prompts for actionable advice generation with 5-6 recommendations.
+    Build prompts for actionable advice generation with 3 recommendations.
     
     Args:
         investors: List of investor data
@@ -573,7 +574,7 @@ def build_advice_prompt(
     
     # System prompt for advice generation - 5-6 recommendations with reasoning
     system_prompt = """You are a professional Australian property investment advisor.
-Your role is to provide 5-6 actionable recommendations based on portfolio analysis.
+Your role is to provide 3 actionable recommendations based on portfolio analysis.
 
 IMPORTANT REQUIREMENTS:
 1. Each recommendation MUST include reasoning backed by data
@@ -581,7 +582,7 @@ IMPORTANT REQUIREMENTS:
 3. Use Australian lending standards (DTI < 3.0 = safe, 3.0-5.0 = caution, > 5.0 = high risk)
 4. Format each recommendation as: "**Recommendation X:** [title]\n**Reasoning:** [explanation based on data]"
 
-Output format - Provide exactly 5-6 recommendations, each with:
+Output format - Provide exactly 3 recommendations, each with:
 - Recommendation title
 - Detailed reasoning based on the data (chart1 forecasts, risk profile, goals)
 
@@ -604,7 +605,7 @@ INVESTMENT GOAL: {investment_goal}
 === PROPERTIES ===
 {format_existing_properties(existing_properties)}
 
-Provide 5-6 actionable recommendations with reasoning based on risk profile ({risk_tolerance}) and goal ({investment_goal})."""
+Provide 3 actionable recommendations with reasoning based on risk profile ({risk_tolerance}) and goal ({investment_goal})."""
     
     return system_prompt, user_prompt
 
