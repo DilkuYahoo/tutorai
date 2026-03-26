@@ -1,0 +1,37 @@
+/* soa-form.css */
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+    color: #333;
+}
+
+.container {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: #333;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+
+table {
+border-collapse: collapse;
+width: 100%;
+}
+
+th {
+background-color: #0096FF;
+color: white;
+}
+tr:nth-child(even) {background-color: #f2f2f2;}
+
