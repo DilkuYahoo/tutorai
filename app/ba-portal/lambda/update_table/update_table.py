@@ -34,6 +34,35 @@ from botocore.exceptions import ClientError, BotoCoreError
 # Import the superchart1 library for chart calculations
 from libs.superchart1 import borrowing_capacity_forecast_investor_blocks, set_config_params, reset_config_to_defaults
 
+# CloudWatch Logs for audit trail
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+audit_logger = logging.getLogger('audit')
+audit_logger.setLevel(logging.INFO)
+
+def log_audit_event(event_type: str, user_email: str, portfolio_id: str, action: str, status: str, message: str = "") -> None:
+    """
+    Log authentication and authorization events for audit trail.
+    This creates structured audit logs in CloudWatch for security monitoring.
+    """
+    audit_entry = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "event_type": event_type,
+        "user_email": user_email or "anonymous",
+        "portfolio_id": portfolio_id or "N/A",
+        "action": action,
+        "status": status,
+        "message": message
+    }
+    
+    if status in ["success", "approved"]:
+        audit_logger.info(json.dumps(audit_entry))
+    else:
+        audit_logger.warning(json.dumps(audit_entry))
+    
+    # Also print for visibility in Lambda
+    print(f"AUDIT: {event_type} - user={user_email or 'anonymous'} action={action} status={status}")
+
 class DynamoDBUpdater:
     def __init__(self, table_name: str, region: str = "ap-southeast-2"):
         """Initialize the DynamoDB updater with table name and region."""
@@ -617,6 +646,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         if not email:
             print("[WARNING] No user email found in JWT - authentication required")
+            
+            # Audit: Failed authentication
+            log_audit_event(
+                event_type="AUTH_FAILURE",
+                user_email="",
+                portfolio_id=event.get('body',{}).get('id','unknown'),
+                action="update_portfolio",
+                status="denied",
+                message="No valid JWT token provided"
+            )
+            
             return create_api_gateway_response(401, {
                 'status': 'error',
                 'message': 'Authentication required. Please login.',
@@ -640,6 +680,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             item_adviser = existing_item.get('adviser_name', '')
             if item_adviser and item_adviser.lower() != email.lower():
                 print(f"[WARNING] User {email} attempted to update portfolio owned by {item_adviser}")
+                
+                # Audit: Access denied
+                log_audit_event(
+                    event_type="ACCESS_DENIED",
+                    user_email=email,
+                    portfolio_id=params['id'],
+                    action="update_portfolio",
+                    status="denied",
+                    message=f"User {email} attempted to update portfolio owned by {item_adviser}"
+                )
+                
                 return create_api_gateway_response(403, {
                     'status': 'error',
                     'message': 'Access denied. You do not have permission to update this portfolio.',
@@ -655,6 +706,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Item doesn't exist, create it with the attributes
             updater.log(f"Item {params['id']} does not exist, creating new item")
             result = updater.create_item(params['id'], params['attributes'])
+            
+            # Audit: Successful creation
+            log_audit_event(
+                event_type="PORTFOLIO_CREATE",
+                user_email=email,
+                portfolio_id=params['id'],
+                action="create_portfolio",
+                status="success",
+                message=f"Created new portfolio with attributes: {list(params['attributes'].keys())}"
+            )
+            
             return create_api_gateway_response(201, {
                 'status': 'success',
                 'message': 'Item created successfully',
@@ -668,6 +730,16 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             result = updater.update_item_with_transaction(params['id'], params['attributes'])
         else:
             result = updater.update_item(params['id'], params['attributes'])
+        
+        # Audit: Successful update
+        log_audit_event(
+            event_type="PORTFOLIO_UPDATE",
+            user_email=email,
+            portfolio_id=params['id'],
+            action="update_portfolio",
+            status="success",
+            message=f"Updated portfolio with attributes: {list(params['attributes'].keys())}"
+        )
         
         # Return success response
         return create_api_gateway_response(200, {

@@ -732,11 +732,11 @@ Authorizer:
 
 ### Phase 2: Backend Authorization (Week 2)
 
-- [ ] Configure API Gateway Cognito Authorizer (NOT IMPLEMENTED: api-config.json shows authentication type: "NONE")
+- [x] Configure API Gateway Cognito Authorizer (IMPLEMENTED: Updated api-config.json with COGNITO_USER_POOLS)
 - [x] Update `update_table.py` Lambda with auth validation (IMPLEMENTED: extract_user_from_event at lines 529-541)
 - [x] Update `read_table.py` Lambda with user filtering (IMPLEMENTED: extract_user_from_event at lines 226-239)
 - [x] Add portfolio ownership validation (IMPLEMENTED: validated in both read and update)
-- [ ] Implement audit logging (NOT IMPLEMENTED)
+- [x] Implement audit logging (IMPLEMENTED: Added log_audit_event function in both Lambda functions)
 
 ### Phase 3: Portfolio Filtering (Week 3)
 

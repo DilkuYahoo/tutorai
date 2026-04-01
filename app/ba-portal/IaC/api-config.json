@@ -1,7 +1,7 @@
 {
   "api_name": "ba-portal-api-gateway",
   "region": "ap-southeast-2",
-  "description": "API Gateway for BA Portal Lambda functions including read and update operations",
+  "description": "API Gateway for BA Portal Lambda functions including read and update operations - REQUIRES COGNITO AUTH",
   "endpoints": [
     {
       "path": "/ba-agent",
@@ -9,6 +9,11 @@
       "lambda_integration": {
         "function_name": "ba-portal-ba-agent-lambda-function",
         "timeout": 30
+      },
+      "authorization": {
+        "type": "COGNITO_USER_POOLS",
+        "authorizer_id": "${AuthorizerId}",
+        "authorization_scopes": ["openid", "email", "profile"]
       }
     },
     {
@@ -17,6 +22,11 @@
       "lambda_integration": {
         "function_name": "ba-portal-update-table-lambda-function",
         "timeout": 10
+      },
+      "authorization": {
+        "type": "COGNITO_USER_POOLS",
+        "authorizer_id": "${AuthorizerId}",
+        "authorization_scopes": ["openid", "email", "profile"]
       }
     },
     {
@@ -25,14 +35,31 @@
       "lambda_integration": {
         "function_name": "ba-portal-read-table-lambda-function",
         "timeout": 10
+      },
+      "authorization": {
+        "type": "COGNITO_USER_POOLS",
+        "authorizer_id": "${AuthorizerId}",
+        "authorization_scopes": ["openid", "email", "profile"]
       }
+    }
+  ],
+  "authorizers": [
+    {
+      "name": "BA-Portal-Cognito-Authorizer",
+      "type": "COGNITO_USER_POOLS",
+      "identity_source": "Authorization",
+      "provider_arns": [
+        "arn:aws:cognito-idp:ap-southeast-2:ACCOUNT_ID:userpool/USER_POOL_ID"
+      ],
+      "ttl": 300
     }
   ],
   "cors": {
     "enabled": true,
-    "origins": ["*"],
-    "headers": ["Content-Type"],
-    "methods": ["POST", "OPTIONS"]
+    "origins": ["https://advicegenie.com", "http://localhost:3000"],
+    "headers": ["Content-Type", "Authorization"],
+    "methods": ["POST", "OPTIONS"],
+    "allow_credentials": true
   },
   "stages": [
     {
@@ -46,7 +73,7 @@
   ],
   "documentation": {
     "read_table_endpoint": {
-      "description": "Read items from DynamoDB table with filtering",
+      "description": "Read items from DynamoDB table with filtering - REQUIRES AUTH",
       "request_schema": {
         "required": ["table_name", "id"],
         "properties": {
@@ -94,6 +121,24 @@
             "timestamp": {"type": "string", "format": "date-time"}
           }
         },
+        "401": {
+          "description": "Unauthorized - authentication required",
+          "properties": {
+            "status": {"type": "string", "enum": ["error"]},
+            "message": {"type": "string"},
+            "error_code": {"type": "string", "enum": ["UNAUTHORIZED"]},
+            "timestamp": {"type": "string", "format": "date-time"}
+          }
+        },
+        "403": {
+          "description": "Forbidden - access denied to this portfolio",
+          "properties": {
+            "status": {"type": "string", "enum": ["error"]},
+            "message": {"type": "string"},
+            "error_code": {"type": "string", "enum": ["FORBIDDEN"]},
+            "timestamp": {"type": "string", "format": "date-time"}
+          }
+        },
         "404": {
           "description": "Item not found",
           "properties": {
@@ -115,17 +160,32 @@
         }
       },
       "authentication": {
-        "type": "NONE",
-        "description": "No authentication required for read operations"
+        "type": "COGNITO_USER_POOLS",
+        "description": "Requires Cognito User Pool authentication - validates JWT token"
       },
       "logging": {
         "enabled": true,
         "level": "INFO",
-        "cloudwatch_logs": true
+        "cloudwatch_logs": true,
+        "log_authorization": true
       },
       "monitoring": {
         "cloudwatch_metrics": true,
         "cloudwatch_alarms": [
+          {
+            "alarm_name": "AuthFailures",
+            "metric_name": "4XXError",
+            "threshold": 10,
+            "period": 300,
+            "evaluation_periods": 1
+          },
+          {
+            "alarm_name": "UnauthorizedAccess",
+            "metric_name": "4XXError",
+            "threshold": 5,
+            "period": 300,
+            "evaluation_periods": 1
+          },
           {
             "alarm_name": "ReadTableErrors",
             "metric_name": "5XXError",

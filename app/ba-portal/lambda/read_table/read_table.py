@@ -54,6 +54,33 @@ from botocore.exceptions import ClientError, BotoCoreError
 logging.basicConfig(level=os.environ.get('LOG_LEVEL', 'INFO'))
 logger = logging.getLogger(__name__)
 
+# CloudWatch Logs for audit trail
+audit_logger = logging.getLogger('audit')
+audit_logger.setLevel(logging.INFO)
+
+def log_audit_event(event_type: str, user_email: str, portfolio_id: str, action: str, status: str, message: str = "") -> None:
+    """
+    Log authentication and authorization events for audit trail.
+    This creates structured audit logs in CloudWatch for security monitoring.
+    """
+    audit_entry = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "event_type": event_type,
+        "user_email": user_email or "anonymous",
+        "portfolio_id": portfolio_id or "N/A",
+        "action": action,
+        "status": status,
+        "message": message
+    }
+    
+    if status in ["success", "approved"]:
+        audit_logger.info(json.dumps(audit_entry))
+    else:
+        audit_logger.warning(json.dumps(audit_entry))
+    
+    # Also log to main logger for visibility
+    logger.info(f"AUDIT: {event_type} - user={user_email or 'anonymous'} action={action} status={status}")
+
 class DynamoDBReadError(Exception):
     """Custom exception for DynamoDB read errors."""
     def __init__(self, message: str, status_code: int = 400):
@@ -391,6 +418,15 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         if not email:
             logger.warning("No user email found in JWT - authentication required")
+            # Audit: Failed authentication attempt
+            log_audit_event(
+                event_type="AUTH_FAILURE",
+                user_email="",
+                portfolio_id=event.get('body',{}).get('id','unknown'),
+                action="Lambda invocation",
+                status="denied",
+                message="No valid JWT token provided"
+            )
             return create_api_gateway_response(401, {
                 'status': 'error',
                 'message': 'Authentication required. Please login.',
@@ -414,6 +450,16 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             adviser_name = email  # Get from JWT, not from request params
             portfolios = reader.list_all_portfolio_ids(adviser_name)
             
+            # Audit: Successful portfolio list access
+            log_audit_event(
+                event_type="PORTFOLIO_LIST",
+                user_email=email,
+                portfolio_id="N/A",
+                action="list_portfolios",
+                status="success",
+                message=f"Retrieved {len(portfolios)} portfolios"
+            )
+            
             return create_api_gateway_response(200, {
                 'status': 'success',
                 'message': 'Portfolio list retrieved successfully',
@@ -432,6 +478,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         item_adviser = result.get('adviser_name', '')
         if item_adviser and item_adviser.lower() != email.lower():
             logger.warning(f"User {email} attempted to access portfolio owned by {item_adviser}")
+            
+            # Audit: Access denied attempt
+            log_audit_event(
+                event_type="ACCESS_DENIED",
+                user_email=email,
+                portfolio_id=params['id'],
+                action="read_portfolio",
+                status="denied",
+                message=f"User {email} attempted to access portfolio owned by {item_adviser}"
+            )
+            
             return create_api_gateway_response(403, {
                 'status': 'error',
                 'message': 'Access denied. You do not have permission to access this portfolio.',

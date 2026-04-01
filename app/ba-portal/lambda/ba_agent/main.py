@@ -18,6 +18,7 @@ import boto3
 import logging
 import re
 from decimal import Decimal
+from datetime import datetime
 from typing import Dict, List, Any, Optional, Tuple
 
 # Configure logging
@@ -26,6 +27,55 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# CloudWatch Logs for audit trail
+audit_logger = logging.getLogger('audit')
+audit_logger.setLevel(logging.INFO)
+
+def log_audit_event(event_type: str, user_email: str, portfolio_id: str, action: str, status: str, message: str = "") -> None:
+    """
+    Log authentication and authorization events for audit trail.
+    This creates structured audit logs in CloudWatch for security monitoring.
+    """
+    audit_entry = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "event_type": event_type,
+        "user_email": user_email or "anonymous",
+        "portfolio_id": portfolio_id or "N/A",
+        "action": action,
+        "status": status,
+        "message": message
+    }
+    
+    if status in ["success", "approved"]:
+        audit_logger.info(json.dumps(audit_entry))
+    else:
+        audit_logger.warning(json.dumps(audit_entry))
+    
+    # Also print for visibility in Lambda
+    print(f"AUDIT: {event_type} - user={user_email or 'anonymous'} action={action} status={status}")
+
+
+def extract_user_from_event(event: Dict[str, Any]) -> Optional[str]:
+    """
+    Extract user email from API Gateway authorizer context.
+    API Gateway validates the JWT and passes claims to Lambda via requestContext.authorizer.claims.
+    """
+    try:
+        # API Gateway has already validated the JWT - we trust this data
+        authorizer = event.get('requestContext', {}).get('authorizer', {})
+        claims = authorizer.get('claims', {})
+        
+        # Extract email from claims (already validated by API Gateway)
+        email = claims.get('email')
+        
+        if email:
+            logger.info(f"Extracted user email from JWT: {email}")
+        
+        return email
+    except Exception as e:
+        logger.warning(f"Could not extract user from event: {e}")
+        return None
 
 # CORS headers for API Gateway
 CORS_HEADERS = {
@@ -767,6 +817,29 @@ def lambda_handler(event: dict, context: any) -> dict:
         logger.info("Handling OPTIONS preflight request")
         return handle_options_request(event)
     
+    # Extract user from API Gateway authorizer context (already validated by API Gateway)
+    email = extract_user_from_event(event)
+    
+    if not email:
+        logger.warning("No user email found in JWT - authentication required")
+        
+        # Audit: Failed authentication
+        log_audit_event(
+            event_type="AUTH_FAILURE",
+            user_email="",
+            portfolio_id=event.get('body',{}).get('id','unknown'),
+            action="ba_agent",
+            status="denied",
+            message="No valid JWT token provided"
+        )
+        
+        return create_response(401, {
+            'status': 'error',
+            'message': 'Authentication required. Please login.',
+            'error_code': 'UNAUTHORIZED',
+            'timestamp': datetime.utcnow().isoformat()
+        })
+    
     # Parse the event to extract parameters
     body_data = {}
     
@@ -804,6 +877,36 @@ def lambda_handler(event: dict, context: any) -> dict:
             'status': 'error', 
             'message': 'Missing required parameter: id'
         })
+    
+    # Validate portfolio ownership - user can only access their own portfolios
+    try:
+        data = get_data_from_dynamodb(table_name, item_id, region)
+        item_adviser = data.get('adviser_name', '')
+        if item_adviser and item_adviser.lower() != email.lower():
+            logger.warning(f"User {email} attempted to access portfolio owned by {item_adviser}")
+            
+            # Audit: Access denied
+            log_audit_event(
+                event_type="ACCESS_DENIED",
+                user_email=email,
+                portfolio_id=item_id,
+                action=f"ba_agent_{property_action}",
+                status="denied",
+                message=f"User {email} attempted to access portfolio owned by {item_adviser}"
+            )
+            
+            return create_response(403, {
+                'status': 'error',
+                'message': 'Access denied. You do not have permission to access this portfolio.',
+                'error_code': 'FORBIDDEN',
+                'timestamp': datetime.utcnow().isoformat()
+            })
+    except ValueError as e:
+        # If item doesn't exist, we'll let it fail later in the main logic
+        data = {}
+    except Exception as e:
+        logger.error(f"Error checking portfolio ownership: {e}")
+        data = {}
     
     if property_action not in ['add', 'optimize', 'summary', 'advice']:
         return create_response(400, {
