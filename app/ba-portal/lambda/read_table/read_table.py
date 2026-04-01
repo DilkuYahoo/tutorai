@@ -221,6 +221,25 @@ class DecimalEncoder(json.JSONEncoder):
         # Let the base class default method raise the TypeError
         return super().default(obj)
 
+def extract_user_from_event(event: Dict[str, Any]) -> Optional[str]:
+    """
+    Extract user email from API Gateway authorizer context.
+    API Gateway validates the JWT and passes claims to Lambda via requestContext.authorizer.claims.
+    """
+    try:
+        # API Gateway has already validated the JWT - we trust this data
+        authorizer = event.get('requestContext', {}).get('authorizer', {})
+        claims = authorizer.get('claims', {})
+        
+        # Extract email from claims (already validated by API Gateway)
+        email = claims.get('email')
+        
+        return email
+    except Exception as e:
+        logger.warning(f"Could not extract user from event: {e}")
+        return None
+
+
 def parse_lambda_event(event: Dict[str, Any]) -> Dict[str, Any]:
     """Parse Lambda event from API Gateway with robust validation."""
     try:
@@ -367,6 +386,18 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Log Lambda invocation
         logger.info(f"Lambda function invoked with context: {context.function_name}")
         
+        # Extract user from API Gateway authorizer context (already validated by API Gateway)
+        email = extract_user_from_event(event)
+        
+        if not email:
+            logger.warning("No user email found in JWT - authentication required")
+            return create_api_gateway_response(401, {
+                'status': 'error',
+                'message': 'Authentication required. Please login.',
+                'error_code': 'UNAUTHORIZED',
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        
         # Parse Lambda event
         params = parse_lambda_event(event)
         
@@ -379,7 +410,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Handle list_portfolios action
         if params.get('action') == 'list_portfolios':
             logger.info("Executing list_portfolios action")
-            adviser_name = params.get('adviser_name')
+            # Use email from JWT for filtering - this is more secure than request params
+            adviser_name = email  # Get from JWT, not from request params
             portfolios = reader.list_all_portfolio_ids(adviser_name)
             
             return create_api_gateway_response(200, {
@@ -395,6 +427,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Perform the read operation
         result = reader.get_active_item_by_id(params['id'])
+        
+        # Validate portfolio ownership - user can only access their own portfolios
+        item_adviser = result.get('adviser_name', '')
+        if item_adviser and item_adviser.lower() != email.lower():
+            logger.warning(f"User {email} attempted to access portfolio owned by {item_adviser}")
+            return create_api_gateway_response(403, {
+                'status': 'error',
+                'message': 'Access denied. You do not have permission to access this portfolio.',
+                'error_code': 'FORBIDDEN',
+                'timestamp': datetime.utcnow().isoformat()
+            })
         
         # Return success response
         return create_api_gateway_response(200, {

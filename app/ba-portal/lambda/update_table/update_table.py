@@ -524,6 +524,28 @@ class DynamoDBUpdateError(Exception):
     """Custom exception for DynamoDB update errors."""
     pass
 
+def extract_user_from_event(event: Dict[str, Any]) -> Optional[str]:
+    """
+    Extract user email from API Gateway authorizer context.
+    API Gateway validates the JWT and passes claims to Lambda via requestContext.authorizer.claims.
+    """
+    try:
+        # API Gateway has already validated the JWT - we trust this data
+        authorizer = event.get('requestContext', {}).get('authorizer', {})
+        claims = authorizer.get('claims', {})
+        
+        # Extract email from claims (already validated by API Gateway)
+        email = claims.get('email')
+        
+        if email:
+            print(f"[INFO] Extracted user email from JWT: {email}")
+        
+        return email
+    except Exception as e:
+        print(f"[WARNING] Could not extract user from event: {e}")
+        return None
+
+
 def parse_lambda_event(event: Dict[str, Any]) -> Dict[str, Any]:
     """Parse Lambda event from API Gateway."""
     try:
@@ -590,6 +612,18 @@ def create_api_gateway_response(status_code: int, body: Dict[str, Any]) -> Dict[
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """Lambda function handler for DynamoDB updates."""
     try:
+        # Extract user from API Gateway authorizer context (already validated by API Gateway)
+        email = extract_user_from_event(event)
+        
+        if not email:
+            print("[WARNING] No user email found in JWT - authentication required")
+            return create_api_gateway_response(401, {
+                'status': 'error',
+                'message': 'Authentication required. Please login.',
+                'error_code': 'UNAUTHORIZED',
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        
         # Parse Lambda event
         params = parse_lambda_event(event)
         
@@ -598,6 +632,20 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             table_name=params['table_name'],
             region=params['region']
         )
+        
+        # Validate portfolio ownership - user can only update their own portfolios
+        # First, get the existing item to check ownership
+        existing_item = updater._get_item(params['id'])
+        if existing_item:
+            item_adviser = existing_item.get('adviser_name', '')
+            if item_adviser and item_adviser.lower() != email.lower():
+                print(f"[WARNING] User {email} attempted to update portfolio owned by {item_adviser}")
+                return create_api_gateway_response(403, {
+                    'status': 'error',
+                    'message': 'Access denied. You do not have permission to update this portfolio.',
+                    'error_code': 'FORBIDDEN',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
         
         # Log what we're about to do
         updater.log(f"Received attributes to save: {params['attributes']}")

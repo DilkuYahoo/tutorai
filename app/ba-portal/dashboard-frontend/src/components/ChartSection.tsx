@@ -68,7 +68,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executi
   useEffect(() => {
     // Reset cache when portfolio changes to force refresh from backend
     if (selectedPortfolioId && selectedPortfolioId !== cachedPortfolioId) {
-      console.log("[DEBUG] Portfolio changed from", cachedPortfolioId, "to", selectedPortfolioId, "- resetting summary cache");
+      console.log("Portfolio changed from", cachedPortfolioId, "to", selectedPortfolioId, "- resetting summary cache");
       setCachedPortfolioId(selectedPortfolioId);
       setSnapshotSummary(''); // Clear local cache
     }
@@ -76,7 +76,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executi
     // If executiveSummary prop is empty or undefined, clear local cache
     // This handles the case when Refresh Data is pressed
     if (!executiveSummary || executiveSummary.trim().length === 0) {
-      console.log("[DEBUG] Executive summary prop is empty - clearing local cache");
+      console.log("Executive summary prop is empty - clearing local cache");
       setSnapshotSummary('');
       return;
     }

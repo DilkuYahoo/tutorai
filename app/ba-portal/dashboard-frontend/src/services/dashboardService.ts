@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import authService from './authService';
+
 const FINANCE_URL = import.meta.env.VITE_REACT_APP_FINANCE_URL || "";
 const App_SYNC_REGION = import.meta.env.VITE_REACT_APP_APPSYNC_REGION || "";
 const REACT_APP_APPSYNC_FINANCE_ID =
@@ -56,9 +58,17 @@ export interface InvestmentGoals {
 }
 
 export async function fetchDashboardData(): Promise<DashboardApiResponse> {
+  const idToken = authService.getIdToken();
+  
+  // Handle case where token is literally the string "null"
+  const validToken = (idToken && idToken !== "null" && idToken !== "undefined") ? idToken : null;
+  
   const response = await fetch(`${FINANCE_URL}/read-table?t=${Date.now()}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": validToken ? `Bearer ${validToken}` : ""
+    },
     body: JSON.stringify({
       table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
       id: REACT_APP_APPSYNC_FINANCE_ID,
@@ -87,13 +97,17 @@ export async function fetchDashboardData(): Promise<DashboardApiResponse> {
 }
 
 export async function fetchPortfolioList(adviserName?: string): Promise<PortfolioListResponse> {
+  const idToken = authService.getIdToken();
   const adviser = adviserName || REACT_APP_ADVISER_NAME;
   
   let url = `${FINANCE_URL}/read-table?t=${Date.now()}`;
   
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
     body: JSON.stringify({
       table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
       action: 'list_portfolios',
@@ -118,9 +132,14 @@ export async function fetchPortfolioList(adviserName?: string): Promise<Portfoli
 }
 
 export async function fetchDashboardDataById(portfolioId: string): Promise<DashboardApiResponse> {
+  const idToken = authService.getIdToken();
+  
   const response = await fetch(`${FINANCE_URL}/read-table?t=${Date.now()}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
     body: JSON.stringify({
       table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
       id: portfolioId,
@@ -156,6 +175,7 @@ export async function updateDashboardData(
   ourAdvice?: string,
   portfolioId?: string,
 ): Promise<void> {
+  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
   
   const attributes: any = {};
@@ -190,7 +210,10 @@ export async function updateDashboardData(
 
   const response = await fetch(`${FINANCE_URL}/update-table?t=${Date.now()}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
     body: JSON.stringify({
       table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
       id: id,
@@ -210,11 +233,15 @@ export async function updateDashboardData(
 }
 
 export async function fetchConfigParams(portfolioId?: string): Promise<ConfigApiResponse> {
+  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
   
   const response = await fetch(`${FINANCE_URL}/read-table`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
     body: JSON.stringify({
       table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
       id: id,
@@ -261,6 +288,7 @@ export async function saveConfigParams(
   portfolioDependantsEvents?: PortfolioDependantsEvents[],
   portfolioId?: string
 ): Promise<void> {
+  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
   
   const attributes: any = {
@@ -295,11 +323,12 @@ export async function saveConfigParams(
     attributes.portfolio_dependants_events = portfolioDependantsEvents;
   }
 
-  console.log("Saving config params:", { configParams, investmentYears, investmentGoals, portfolioDependants, portfolioDependantsEvents, attributes });
-
   const response = await fetch(`${FINANCE_URL}/update-table`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
     body: JSON.stringify({
       table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
       id: id,
@@ -352,11 +381,15 @@ export interface AiRecommendationResponse {
 }
 
 export async function addPropertyWithBaAgent(portfolioId?: string): Promise<BaAgentProperty> {
+  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
   
   const response = await fetch(`${FINANCE_URL}/ba-agent`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
     body: JSON.stringify({
       table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
       id: id,
@@ -378,11 +411,15 @@ export async function addPropertyWithBaAgent(portfolioId?: string): Promise<BaAg
 }
 
 export async function generateAiRecommendations(portfolioId?: string): Promise<AiRecommendationAnalysis> {
+  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
   
   const response = await fetch(`${FINANCE_URL}/ba-agent`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
     body: JSON.stringify({
       table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
       id: id,
@@ -404,11 +441,15 @@ export async function generateAiRecommendations(portfolioId?: string): Promise<A
 }
 
 export async function generatePortfolioSummary(portfolioId?: string): Promise<{ summary: string }> {
+  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
   
   const response = await fetch(`${FINANCE_URL}/ba-agent`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
     body: JSON.stringify({
       table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
       id: id,
@@ -430,14 +471,15 @@ export async function generatePortfolioSummary(portfolioId?: string): Promise<{ 
 }
 
 export async function generateOurAdvice(portfolioId?: string): Promise<{ advice: string; cached?: boolean }> {
+  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
-  
-  console.log("[DEBUG] generateOurAdvice called with portfolioId:", id);
-  console.log("[DEBUG] FINANCE_URL:", FINANCE_URL);
   
   const response = await fetch(`${FINANCE_URL}/ba-agent`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
     body: JSON.stringify({
       table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
       id: id,
@@ -445,17 +487,11 @@ export async function generateOurAdvice(portfolioId?: string): Promise<{ advice:
     }),
   });
 
-  console.log("[DEBUG] generateOurAdvice response status:", response.status);
-  console.log("[DEBUG] generateOurAdvice response statusText:", response.statusText);
-
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[DEBUG] generateOurAdvice error response:", errorText);
-    throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
+    throw new Error(`API error: ${response.statusText}`);
   }
 
   const result = await response.json();
-  console.log("[DEBUG] generateOurAdvice result:", result);
 
   if (result.status !== "success") {
     throw new Error(result.message || "API returned error status");

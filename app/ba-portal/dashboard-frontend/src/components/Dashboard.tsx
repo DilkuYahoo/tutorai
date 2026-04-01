@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect } from "react";
-import { X, AlertCircle, RefreshCw, Check } from "lucide-react";
+import { X, AlertCircle, RefreshCw, Check, LogIn } from "lucide-react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import ChartSection from "./ChartSection";
@@ -29,7 +29,26 @@ interface DashboardData {
 }
 
 const Dashboard: React.FC = () => {
-  const { handleAuthCallback, isLoading: authLoading } = useAuth();
+  const { handleAuthCallback, isLoading: authLoading, isAuthenticated, login } = useAuth();
+
+  // Render login prompt for unauthenticated users
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+        <div className="text-center p-8">
+          <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
+          <p className="mb-6">Please log in to access the dashboard.</p>
+          <button
+            onClick={login}
+            className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          >
+            <LogIn size={20} />
+            Log In
+          </button>
+        </div>
+      </div>
+    );
+  }
   
   // Portfolio state
   const [portfolios, setPortfolios] = useState<PortfolioInfo[]>([]);
@@ -106,15 +125,20 @@ const Dashboard: React.FC = () => {
       }
     };
     
-    if (!authLoading) {
+    if (!authLoading && isAuthenticated) {
       loadPortfolios();
     }
-  }, [authLoading]);
+  }, [authLoading, isAuthenticated]);
 
   useEffect(() => {
     const load = async () => {
       // Don't load until we have a selected portfolio
       if (!selectedPortfolioId) return;
+      
+      // Don't load if not authenticated
+      if (!isAuthenticated) {
+        return;
+      }
       
       try {
         setData((prev) => ({ ...prev, loading: true, error: null }));
@@ -156,10 +180,10 @@ const Dashboard: React.FC = () => {
     };
 
     // Only load data if auth is not loading and we have a selected portfolio
-    if (!authLoading && selectedPortfolioId) {
+    if (!authLoading && selectedPortfolioId && isAuthenticated) {
       load();
     }
-  }, [authLoading, selectedPortfolioId]);
+  }, [authLoading, selectedPortfolioId, isAuthenticated]);
 
   // Auto-dismiss update error with progress bar
   useEffect(() => {
@@ -394,11 +418,9 @@ const Dashboard: React.FC = () => {
         ourAdvice={data.ourAdvice}
         selectedPortfolioId={selectedPortfolioId}
         onSummaryGenerated={(summary) => {
-          console.log("[DEBUG] Summary received in Dashboard:", summary?.substring(0, 100) + "...");
           setData(prev => ({ ...prev, executiveSummary: summary }));
         }}
         onAdviceGenerated={(advice) => {
-          console.log("[DEBUG] Advice received in Dashboard:", advice?.substring(0, 100) + "...");
           setData(prev => ({ ...prev, ourAdvice: advice }));
         }}
       />
