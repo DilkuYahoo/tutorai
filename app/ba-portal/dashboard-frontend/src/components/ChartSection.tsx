@@ -684,8 +684,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executi
                   <button
                     onClick={handleGeneratePortfolioSummary}
                     disabled={snapshotLoading}
-                    className="px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
-                    style={{ backgroundColor: '#8b5cf6', color: 'white' }}
+                    className="px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white"
                   >
                     <Sparkles className="w-5 h-5" />
                     {snapshotLoading ? 'Generating...' : '🤖 Summarise'}
@@ -738,8 +737,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executi
                   <button
                     onClick={handleGenerateOurAdvice}
                     disabled={adviceLoading}
-                    className="px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
-                    style={{ backgroundColor: '#10b981', color: 'white' }}
+                    className="px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white"
                   >
                     <Sparkles className="w-5 h-5" />
                     {adviceLoading ? 'Generating...' : '💡 Get Advice'}

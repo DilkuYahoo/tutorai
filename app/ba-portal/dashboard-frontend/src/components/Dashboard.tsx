@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect } from "react";
-import { X, AlertCircle, RefreshCw, Check, LogIn } from "lucide-react";
+import { X, AlertCircle, RefreshCw, LogIn } from "lucide-react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import ChartSection from "./ChartSection";
@@ -40,7 +40,7 @@ const Dashboard: React.FC = () => {
           <p className="mb-6">Please log in to access the dashboard.</p>
           <button
             onClick={login}
-            className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
           >
             <LogIn size={20} />
             Log In
@@ -353,36 +353,7 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Update Success Toast */}
-      {updateSuccess && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-3 rounded-lg shadow-xl z-50 w-100 animate-in slide-in-from-top-2 fade-in">
-          <div className="flex items-center gap-3">
-            <Check className="w-5 h-5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium line-clamp-2">
-                {updateSuccess}
-              </p>
-            </div>
-            <button
-              onClick={() => setUpdateSuccess(null)}
-              className="text-white/80 hover:text-white transition-colors flex-shrink-0"
-              aria-label="Dismiss"
-            >
-              <X size={18} />
-            </button>
-          </div>
 
-          {/* Progress bar */}
-          <div className="mt-2 h-1 bg-white/20 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-white/70 rounded-full transition-all duration-75 ease-linear"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Loading Overlay */}
       {updating && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in">
           <div className="bg-slate-800 p-6 rounded-xl shadow-2xl text-center border border-slate-700">

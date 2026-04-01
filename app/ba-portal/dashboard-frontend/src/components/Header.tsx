@@ -179,8 +179,7 @@ const Header: React.FC<HeaderProps> = ({
         ) : (
           <button 
             onClick={handleLoginClick}
-            className="flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90"
-            style={{ backgroundColor: '#06b6d4' }}
+            className="flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90 bg-cyan-500 hover:bg-cyan-600"
           >
             <LogIn size={16} />
             Login

@@ -29,9 +29,11 @@ User → Login Button → Cognito Hosted UI → OAuth Callback → Token Exchang
 
 | Endpoint | Method | Purpose | Auth Required |
 |----------|--------|---------|---------------|
-| `/read-table` | POST | Read portfolio data | ❌ No (Current) |
-| `/update-table` | POST | Update portfolio data | ❌ No (Current) |
-| `/ba-agent` | POST | AI agent operations | ❌ No (Current) |
+| `/read-table` | POST | Read portfolio data | ❌ No (NOT SECURED) |
+| `/update-table` | POST | Update portfolio data | ❌ No (NOT SECURED) |
+| `/ba-agent` | POST | AI agent operations | ❌ No (NOT SECURED) |
+
+**⚠️ SECURITY NOTE:** As of the current implementation, API Gateway has NO Cognito authorizer configured. All endpoints are publicly accessible. The frontend performs authentication checks only.
 
 ---
 
@@ -45,20 +47,25 @@ User → Login Button → Cognito Hosted UI → OAuth Callback → Token Exchang
 ├─────────────────────────────────────────────────────────────┤
 │  Operation          │  Unauthenticated  │  Authenticated    │
 ├─────────────────────────────────────────────────────────────┤
-│  View Dashboard     │       ❌          │       ✅          │
-│  View Charts        │       ❌          │       ✅          │
-│  View Sidebar       │       ❌          │       ✅          │
-│  Edit Investors     │       ❌          │       ✅          │
-│  Edit Properties    │       ❌          │       ✅          │
-│  Save Config        │       ❌          │       ✅          │
-│  Update Table       │       ❌          │       ✅          │
-│  Add Property       │       ❌          │       ✅          │
-│  Generate Summary   │       ❌          │       ✅          │
-│  Generate Advice    │       ❌          │       ✅          │
+│  View Dashboard     │       ❌          │       ✅ (Frontend) │
+│  View Charts        │       ❌          │       ✅ (Frontend) │
+│  View Sidebar       │       ❌          │       ✅ (Frontend) │
+│  Edit Investors     │       ❌          │       ✅ (Frontend) │
+│  Edit Properties    │       ❌          │       ✅ (Frontend) │
+│  Save Config        │       ❌          │       ✅ (Frontend) │
+│  Update Table       │       ✅ ⚠️        │       ✅ ⚠️        │
+│  Add Property       │       ✅ ⚠️        │       ✅ ⚠️        │
+│  Generate Summary   │       ✅ ⚠️        │       ✅ ⚠️        │
+│  Generate Advice    │       ✅ ⚠️        │       ✅ ⚠️        │
 └─────────────────────────────────────────────────────────────┘
 
-**Note:** All authorization is handled at API Gateway level.
-Frontend only needs to redirect to Cognito for login.
+**⚠️ SECURITY ISSUE:** API Gateway is NOT configured with Cognito authorizer. 
+Backend endpoints accept requests from ANYONE. Only frontend enforces auth.
+
+**CURRENT STATE:** 
+- Frontend: Handles authentication with AuthContext ✅
+- Backend: NO authorization (authentication.type = "NONE") ❌
+- Portfolio filtering: Done in Lambda using adviser_name parameter ✅
 ```
 
 ### 2.2 Portfolio Filtering Model
@@ -601,35 +608,48 @@ export async function updateDashboardData(
 
 | Aspect | Implementation |
 |--------|----------------|
-| **Token Storage** | HTTP-only cookies (not accessible via JavaScript) |
-| **Token Validation** | API Gateway validates JWT signature |
-| **Token Expiration** | API Gateway handles token expiration |
-| **CORS** | Configured for specific origins with credentials |
+| **Token Storage** | sessionStorage (JavaScript accessible - NOT HTTP-only cookies) ⚠️ |
+| **Token Validation** | Done by FRONTEND only - NOT API Gateway ❌ |
+| **Token Expiration** | Frontend checks with authService.isTokenExpired() |
+| **CORS** | Configured with origins: ["*"] |
 | **HTTPS** | Required for all API calls |
-| **All Endpoints** | Require authentication (no public access) |
-| **XSS Protection** | HTTP-only cookies prevent JavaScript access |
-| **Authorization Point** | API Gateway (single source of truth) |
+| **All Endpoints** | NO authentication required (API Gateway type: "NONE") ❌ |
+| **XSS Protection** | Tokens in sessionStorage are vulnerable to XSS ⚠️ |
+| **Authorization Point** | Frontend only (NOT API Gateway) ❌ |
+
+**⚠️ SECURITY GAPS:**
+1. Tokens stored in sessionStorage (vulnerable to XSS attacks)
+2. No API Gateway authorization - endpoints publicly accessible
+3. Frontend-only authentication - anyone can call API directly
+4. adviser_name passed as parameter (not from validated JWT)
 
 ### 5.2 Authorization Security
 
 | Aspect | Implementation |
 |--------|----------------|
-| **Portfolio Ownership** | Validated via `adviser_name` field |
-| **Email Matching** | Case-insensitive comparison |
-| **Access Denial** | 403 Forbidden for unauthorized access |
-| **Audit Logging** | Log all API attempts with user email |
-| **Read Access** | Only own portfolios (filtered by email) |
-| **Write Access** | Only own portfolios (validated before update) |
+| **Portfolio Ownership** | Validated via `adviser_name` field ✅ (in Lambda) |
+| **Email Matching** | Case-insensitive comparison ✅ |
+| **Access Denial** | 403 Forbidden returned by Lambda ⚠️ (only if JWT validated - currently bypassed) |
+| **Audit Logging** | NOT IMPLEMENTED ❌ |
+| **Read Access** | Lambda filters by adviser_name parameter ⚠️ (not from JWT) |
+| **Write Access** | Lambda validates ownership ⚠️ (only if JWT present - currently bypassed) |
+
+**⚠️ CRITICAL ISSUE:** Without API Gateway authorizer, the validation in Lambda can be bypassed because:
+1. User sends their own adviser_name parameter
+2. Lambda trusts the parameter (if no JWT is validated by API Gateway)
+3. Only the frontend properly enforces authentication
 
 ### 5.3 Data Protection
 
 | Aspect | Implementation |
 |--------|----------------|
-| **Public Data** | ❌ No public access (all require auth) |
-| **Private Data** | Read/Write access only to owned portfolios |
-| **Input Validation** | Server-side validation of all inputs |
-| **SQL Injection** | Parameterized DynamoDB queries |
-| **Data Isolation** | Users cannot see other users' portfolios |
+| **Public Data** | ❌ ALL DATA IS PUBLICLY ACCESSIBLE without API Gateway auth! |
+| **Private Data** | Users can access own portfolios (frontend auth) ⚠️ |
+| **Input Validation** | Server-side validation in Lambda ✅ |
+| **SQL Injection** | Parameterized DynamoDB queries ✅ |
+| **Data Isolation** | Lambda filters by adviser_name parameter ⚠️ (not secure without API GW) |
+
+**⚠️ CRITICAL SECURITY ISSUE:** The backend has NO authorization enforcement. Anyone with knowledge of the API URL and portfolio ID can read/update data. The frontend-only authentication is a UX feature, not a security feature.
 
 ---
 
@@ -705,25 +725,25 @@ Authorizer:
 
 ### Phase 1: Frontend Authentication Gate (Week 1)
 
-- [ ] Create Login page component
-- [ ] Update App component with authentication routing
-- [ ] Update `Header` to show user info and logout button
-- [ ] Remove `AuthContext` and `AuthService` (no longer needed)
+- [x] Create Login page component (IMPLEMENTED: Login UI embedded in Dashboard.tsx)
+- [x] Update App component with authentication routing (IMPLEMENTED: Uses AuthContext)
+- [x] Update `Header` to show user info and logout button (IMPLEMENTED: Header.tsx uses useAuth)
+- [x] AuthContext and AuthService ARE NEEDED (IMPLEMENTED: Full implementation in contexts/AuthContext.tsx and services/authService.ts)
 
 ### Phase 2: Backend Authorization (Week 2)
 
-- [ ] Configure API Gateway Cognito Authorizer
-- [ ] Update `update_table.py` Lambda with auth validation
-- [ ] Update `read_table.py` Lambda with user filtering
-- [ ] Add portfolio ownership validation
-- [ ] Implement audit logging
+- [ ] Configure API Gateway Cognito Authorizer (NOT IMPLEMENTED: api-config.json shows authentication type: "NONE")
+- [x] Update `update_table.py` Lambda with auth validation (IMPLEMENTED: extract_user_from_event at lines 529-541)
+- [x] Update `read_table.py` Lambda with user filtering (IMPLEMENTED: extract_user_from_event at lines 226-239)
+- [x] Add portfolio ownership validation (IMPLEMENTED: validated in both read and update)
+- [ ] Implement audit logging (NOT IMPLEMENTED)
 
 ### Phase 3: Portfolio Filtering (Week 3)
 
-- [ ] Update `fetchPortfolioList` to use user email
-- [ ] Modify Dashboard to load user-specific portfolios
-- [ ] Update portfolio selector logic
-- [ ] Test filtering with multiple users
+- [x] Update `fetchPortfolioList` to use user email (IMPLEMENTED: passes adviser_name to backend)
+- [x] Modify Dashboard to load user-specific portfolios (IMPLEMENTED: checks isAuthenticated)
+- [x] Update portfolio selector logic (IMPLEMENTED: Portfolio selector in Header)
+- [ ] Test filtering with multiple users (NOT TESTED)
 
 ### Phase 4: Testing & Deployment (Week 4)
 
@@ -927,14 +947,65 @@ describe('Dashboard Access Control', () => {
 
 ---
 
+## Implementation Status Summary (Updated: 2026-04-01)
+
+### What Was Implemented ✅
+
+| Component | Implementation | Status |
+|-----------|---------------|--------|
+| **Frontend Auth** | Full implementation with AuthContext and OAuth code flow | ✅ COMPLETE |
+| **Login UI** | Embedded in Dashboard.tsx (inline login prompt) | ✅ COMPLETE |
+| **Header Component** | Shows user info, login/logout, portfolio selector | ✅ COMPLETE |
+| **AuthContext** | Full context in `contexts/AuthContext.tsx` | ✅ COMPLETE |
+| **authService** | Full OAuth flow in `services/authService.ts` | ✅ COMPLETE |
+| **Token Storage** | sessionStorage (NOT HTTP-only cookies as originally designed) | ✅ COMPLETE |
+| **read_table Lambda** | User filtering by `adviser_name` from JWT claims | ✅ COMPLETE |
+| **update_table Lambda** | Portfolio ownership validation | ✅ COMPLETE |
+
+### Key Differences from Original Design ⚠️
+
+1. **Login Page**: Instead of a separate `pages/Login.tsx`, login UI is embedded inline in [`Dashboard.tsx`](dashboard-frontend/src/components/Dashboard.tsx:36)
+2. **Token Storage**: Uses sessionStorage (JavaScript-accessible) instead of HTTP-only cookies
+3. **API Gateway Auth**: NOT enabled - endpoints still have `"authentication": {"type": "NONE"}` in api-config.json
+4. **AuthContext**: REQUIRED - Not removed (opposite of design)
+5. **App.tsx**: Minimal - just renders Dashboard directly (AuthContext wraps it elsewhere)
+
+### What Was NOT Implemented ❌
+
+
+| Component | Design Requirement | Status |
+|-----------|----------------|--------|
+| **API Gateway Cognito Authorizer** | All endpoints require Cognito auth | ❌ NOT IMPLEMENTED |
+| **HTTP-only Cookies** | Tokens in cookies, not sessionStorage | ❌ NOT IMPLEMENTED |
+| **Backend Auth Validation** | API Gateway validates JWT | ❌ NOT IMPLEMENTED |
+| **Audit Logging** | Log all API attempts | ❌ NOT IMPLEMENTED |
+
+### Critical Gaps ⚠️
+
+
+1. **Security Issue**: API Gateway has NO Cognito authorizer configured - all endpoints are publicly accessible!
+2. **Token Security**: Tokens are stored in sessionStorage (JavaScript accessible), not HTTP-only cookies
+3. **Frontend-only Auth**: Authentication is only enforced on frontend - backend has NO authorization
+4. **Portfolio Access**: Anyone with API URL can access any portfolio (no adviser_name validation)
+
+### Required Actions to Close Gaps
+
+1. **Enable API Gateway Cognito Authorizer** - Configure in AWS Console or update deploy_api.py
+2. **Update api-config.json** - Change authentication.type from "NONE" to "COGNITO_USER_POOLS"
+3. **Consider HTTP-only cookies** - For production-grade security (optional enhancement)
+4. **Add audit logging** - CloudWatch logging for auth events
+
+---
+
 ## Document Information
 
 | Field | Value |
 |-------|-------|
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Author** | System Architect |
 | **Date** | 2024-01-15 |
-| **Status** | Draft |
+| **Status** | Updated with Implementation Status |
+| **Last Updated** | 2026-04-01 |
 | **Reviewers** | Development Team, Security Team |
 
 ---

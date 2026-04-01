@@ -1154,7 +1154,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   onClick={addProperty}
                   disabled={isAddingProperty}
-                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-2 rounded mt-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                  className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white text-xs px-3 py-2 rounded mt-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full"
                   aria-label="Add property"
                 >
                   {isAddingProperty ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
