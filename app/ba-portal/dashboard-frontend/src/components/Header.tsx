@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Sun, Moon, LogIn, LogOut, User, ChevronDown } from "lucide-react";
+import { Sun, Moon, LogIn, LogOut, User, ChevronDown, FolderOpen } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import type { PortfolioInfo } from "../services/dashboardService";
 
@@ -9,14 +9,16 @@ interface HeaderProps {
   portfolios?: PortfolioInfo[];
   selectedPortfolioId?: string;
   onPortfolioChange?: (portfolioId: string) => void;
+  onSwitchPortfolio?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ 
-  isDarkMode: propIsDarkMode, 
-  onToggleDarkMode, 
+const Header: React.FC<HeaderProps> = ({
+  isDarkMode: propIsDarkMode,
+  onToggleDarkMode,
   portfolios,
   selectedPortfolioId,
   onPortfolioChange,
+  onSwitchPortfolio,
 }) => {
   const { isAuthenticated, user, login, logout } = useAuth();
   const [localIsDarkMode, setLocalIsDarkMode] = useState(true);
@@ -152,7 +154,7 @@ const Header: React.FC<HeaderProps> = ({
                   borderColor: borderColor 
                 }}
               >
-                <div 
+                <div
                   className="px-4 py-3 border-b"
                   style={{ borderColor: borderColor }}
                 >
@@ -163,6 +165,21 @@ const Header: React.FC<HeaderProps> = ({
                     {user?.email || ''}
                   </p>
                 </div>
+                {onSwitchPortfolio && (
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      onSwitchPortfolio();
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors"
+                    style={{ color: textColor }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#334155' : '#f3f4f6'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <FolderOpen size={16} />
+                    Switch Portfolio
+                  </button>
+                )}
                 <button
                   onClick={handleLogoutClick}
                   className="w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors"
