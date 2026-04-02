@@ -7,6 +7,7 @@ import Sidebar from "./Sidebar";
 import ChartSection from "./ChartSection";
 import Footer from "./Footer";
 import PortfolioSelector from "./PortfolioSelector";
+import HouseholdExpensesForm from "./HouseholdExpensesForm";
 import {
   fetchDashboardDataById,
   fetchPortfolioList,
@@ -69,10 +70,14 @@ const Dashboard: React.FC = () => {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
   const [progress, setProgress] = useState(100);
   const [investmentYears, setInvestmentYears] = useState(30);
+  const [showExpensesForm, setShowExpensesForm] = useState(false);
   const [configParams, setConfigParams] = useState<ConfigParams>({
     medicareLevyRate: 0.02,
     cpiRate: 0.03,
@@ -280,6 +285,11 @@ const Dashboard: React.FC = () => {
     }
   }, [isDarkMode]);
 
+  useEffect(() => {
+    // Save dark mode preference to localStorage
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
+
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
   };
@@ -289,12 +299,54 @@ const Dashboard: React.FC = () => {
   };
 
   if (selectedPortfolioId) {
+    if (showExpensesForm) {
+      return (
+        <div className="flex flex-col h-screen transition-colors duration-300 overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+          <Header
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={toggleDarkMode}
+            onBackToDashboard={() => setShowExpensesForm(false)}
+          />
+          <div className="flex-1 overflow-auto">
+            {(() => {
+              const totalEssential = data.investors.reduce((sum, inv) => sum + (inv.essential_expenditure || 0), 0);
+              const totalNonEssential = data.investors.reduce((sum, inv) => sum + (inv.nonessential_expenditure || 0), 0);
+              return (
+                <HouseholdExpensesForm
+                  onSave={(expensesData) => {
+                    const annualEssential = expensesData.totals.essentialTotal * 12;
+                    const annualNonEssential = expensesData.totals.nonEssentialTotal * 12;
+                    const numInv = data.investors.length;
+                    const updatedInvestors = data.investors.map(inv => ({
+                      ...inv,
+                      essential_expenditure: annualEssential / numInv,
+                      nonessential_expenditure: annualNonEssential / numInv
+                    }));
+                    handleUpdate(updatedInvestors, data.properties, () => {
+                      setShowExpensesForm(false);
+                    }, () => {
+                      // error handling if needed
+                    });
+                  }}
+                  numInvestors={data.investors.length}
+                  initialEssentialTotal={totalEssential}
+                  initialNonEssentialTotal={totalNonEssential}
+                />
+              );
+            })()}
+          </div>
+          <Footer />
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col h-screen transition-colors duration-300 overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
         <Header
           isDarkMode={isDarkMode}
           onToggleDarkMode={toggleDarkMode}
           onSwitchPortfolio={handleSwitchPortfolio}
+          onShowExpenses={() => setShowExpensesForm(true)}
         />
         <div className="flex flex-1 overflow-hidden">
         {/* Main Error Toast */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Sun, Moon, LogIn, LogOut, User, ChevronDown, FolderOpen } from "lucide-react";
+import { Sun, Moon, LogIn, LogOut, User, ChevronDown, FolderOpen, DollarSign, Home } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import type { PortfolioInfo } from "../services/dashboardService";
 
@@ -10,6 +10,8 @@ interface HeaderProps {
   selectedPortfolioId?: string;
   onPortfolioChange?: (portfolioId: string) => void;
   onSwitchPortfolio?: () => void;
+  onShowExpenses?: () => void;
+  onBackToDashboard?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -19,6 +21,8 @@ const Header: React.FC<HeaderProps> = ({
   selectedPortfolioId,
   onPortfolioChange,
   onSwitchPortfolio,
+  onShowExpenses,
+  onBackToDashboard,
 }) => {
   const { isAuthenticated, user, login, logout } = useAuth();
   const [localIsDarkMode, setLocalIsDarkMode] = useState(true);
@@ -178,6 +182,36 @@ const Header: React.FC<HeaderProps> = ({
                   >
                     <FolderOpen size={16} />
                     Switch Portfolio
+                  </button>
+                )}
+                {onBackToDashboard && (
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      onBackToDashboard();
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors"
+                    style={{ color: textColor }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#334155' : '#f3f4f6'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <Home size={16} />
+                    Back to Dashboard
+                  </button>
+                )}
+                {onShowExpenses && (
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      onShowExpenses();
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors"
+                    style={{ color: textColor }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#334155' : '#f3f4f6'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <DollarSign size={16} />
+                    Household Expenses
                   </button>
                 )}
                 <button
