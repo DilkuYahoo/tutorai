@@ -622,7 +622,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executi
         {/* Header */}
         <div>
           <h1 className="text-4xl font-bold mb-2" style={{ color: cardText }}>
-            WealthPulse Dashboard
+            WealthPulse
           </h1>
           <p style={{ color: cardTextSecondary }}>
             Comprehensive financial dashboard providing insights into portfolio growth, risk management, and cashflow analysis over time.

@@ -467,7 +467,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       className="w-80 text-white overflow-y-auto border-r flex flex-col" 
       style={{ backgroundColor: 'var(--bg-sidebar)', borderColor: 'var(--border-color)' }}
       role="navigation"
-      aria-label="Dashboard sidebar"
+      aria-label="WealthPulse sidebar"
     >
       {/* Header */}
       <div className="flex justify-between items-center p-4 border-b" style={{ borderColor: 'var(--border-color)' }}>
@@ -480,7 +480,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         >
           <ChevronsLeft size={20} />
         </button>
-        <h2 className="text-xl font-bold text-cyan-400">Dashboard</h2>
+        <h2 className="text-xl font-bold text-cyan-400">WealthPulse</h2>
       </div>
 
       {/* Section Tabs */}

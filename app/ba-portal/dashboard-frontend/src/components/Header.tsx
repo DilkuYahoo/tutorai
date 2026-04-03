@@ -196,7 +196,7 @@ const Header: React.FC<HeaderProps> = ({
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
                     <Home size={16} />
-                    Back to Dashboard
+                    Back to WealthPulse
                   </button>
                 )}
                 {onShowExpenses && (
