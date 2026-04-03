@@ -347,6 +347,97 @@ export async function saveConfigParams(
   }
 }
 
+const DEFAULT_INVESTORS = [
+  {
+    name: "Bob",
+    base_income: 120000,
+    annual_growth_rate: 3,
+    essential_expenditure: 50000,
+    nonessential_expenditure: 3000,
+    income_events: []
+  },
+  {
+    name: "Alice",
+    base_income: 100000,
+    annual_growth_rate: 2.5,
+    essential_expenditure: 50000,
+    nonessential_expenditure: 3000,
+    income_events: []
+  }
+];
+
+const DEFAULT_PROPERTY = {
+  name: "Property 1",
+  purchase_year: 1,
+  initial_value: 600000,
+  property_value: 660000,
+  loan_amount: 600000,
+  interest_rate: 5,
+  rent: 30000,
+  growth_rate: 3,
+  other_expenses: 5000,
+  annual_principal_change: 0,
+  investor_splits: [
+    { name: "Bob", percentage: 50 },
+    { name: "Alice", percentage: 50 }
+  ]
+};
+
+export async function createPortfolio(name: string): Promise<string> {
+  const idToken = authService.getIdToken();
+  const validToken = (idToken && idToken !== "null" && idToken !== "undefined") ? idToken : null;
+  const portfolioId = crypto.randomUUID();
+  const userEmail = authService.getUserFromToken()?.email || REACT_APP_ADVISER_NAME;
+
+  const response = await fetch(`${FINANCE_URL}/insert-table`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": validToken ? `Bearer ${validToken}` : ""
+    },
+    body: JSON.stringify({
+      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+      region: App_SYNC_REGION,
+      item: {
+        id: portfolioId,
+        name,
+        status: "active",
+        adviser_name: userEmail,
+        investors: DEFAULT_INVESTORS,
+        properties: [DEFAULT_PROPERTY],
+      }
+    }),
+  });
+
+  if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+  const result = await response.json();
+  if (result.status !== "success") throw new Error(result.message || "Portfolio creation failed");
+  return portfolioId;
+}
+
+export async function renamePortfolio(portfolioId: string, newName: string): Promise<void> {
+  const idToken = authService.getIdToken();
+  const validToken = (idToken && idToken !== "null" && idToken !== "undefined") ? idToken : null;
+
+  const response = await fetch(`${FINANCE_URL}/update-table`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": validToken ? `Bearer ${validToken}` : ""
+    },
+    body: JSON.stringify({
+      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+      id: portfolioId,
+      region: App_SYNC_REGION,
+      attributes: { name: newName }
+    }),
+  });
+
+  if (!response.ok) throw new Error(`API error: ${response.statusText}`);
+  const result = await response.json();
+  if (result.status !== "success") throw new Error(result.message || "Rename failed");
+}
+
 export interface BaAgentProperty {
   name: string;
   purchase_year: number;

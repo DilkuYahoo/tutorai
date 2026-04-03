@@ -95,13 +95,30 @@ class APIGatewayDeployer:
 
     def add_resources_and_methods(self, api_id):
         """Add resources and methods for each endpoint"""
-        root_id = self.api_client.get_resources(restApiId=api_id)['items'][0]['id']
+        all_resources = self.api_client.get_resources(restApiId=api_id)['items']
+        root_id = next(r['id'] for r in all_resources if r['path'] == '/')
         account_id = self.get_account_id()
+
+        # Resolve Cognito authorizer ID once for all endpoints that need it
+        cognito_authorizer_id = None
+        try:
+            authorizers = self.api_client.get_authorizers(restApiId=api_id)['items']
+            cognito_auth = next((a for a in authorizers if a['type'] == 'COGNITO_USER_POOLS'), None)
+            if cognito_auth:
+                cognito_authorizer_id = cognito_auth['id']
+                print(f"Found Cognito authorizer: {cognito_authorizer_id}")
+        except ClientError as e:
+            print(f"Warning: could not retrieve authorizers: {e}")
 
         for endpoint in self.config['endpoints']:
             path = endpoint['path']
             method = endpoint['method']
             function_name = endpoint['lambda_integration']['function_name']
+
+            # Resolve authorization settings for this endpoint
+            auth_config = endpoint.get('authorization', {})
+            auth_type = auth_config.get('type', 'NONE')
+            authorizer_id = cognito_authorizer_id if auth_type == 'COGNITO_USER_POOLS' else None
 
             # Find or create resource
             path_part = path.strip('/')
@@ -111,18 +128,33 @@ class APIGatewayDeployer:
             resource_id = self.find_or_create_resource(api_id, root_id, path_part)
 
             # Add or update method
+            put_method_kwargs = {
+                'restApiId': api_id,
+                'resourceId': resource_id,
+                'httpMethod': method,
+                'authorizationType': auth_type if authorizer_id else 'NONE',
+            }
+            if authorizer_id:
+                put_method_kwargs['authorizerId'] = authorizer_id
+
             try:
-                self.api_client.put_method(
-                    restApiId=api_id,
-                    resourceId=resource_id,
-                    httpMethod=method,
-                    authorizationType='NONE'
-                )
+                self.api_client.put_method(**put_method_kwargs)
                 print(f"Created method {method} for {path}")
             except ClientError as e:
                 if e.response['Error']['Code'] == 'ConflictException':
                     print(f"Method {method} for {path} already exists, updating...")
-                    # Method exists, but we can proceed as put_method is idempotent for our purposes
+                    # Update the authorizer on existing method
+                    try:
+                        patch_ops = [{'op': 'replace', 'path': '/authorizationType',
+                                      'value': auth_type if authorizer_id else 'NONE'}]
+                        if authorizer_id:
+                            patch_ops.append({'op': 'replace', 'path': '/authorizerId', 'value': authorizer_id})
+                        self.api_client.update_method(
+                            restApiId=api_id, resourceId=resource_id,
+                            httpMethod=method, patchOperations=patch_ops
+                        )
+                    except ClientError:
+                        pass  # Best-effort update
                 else:
                     raise
 
@@ -159,27 +191,35 @@ class APIGatewayDeployer:
                     raise
 
             # Add method response with CORS headers
-            self.api_client.put_method_response(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod=method,
-                statusCode='200',
-                responseParameters={
-                    'method.response.header.Access-Control-Allow-Origin': True
-                }
-            )
+            try:
+                self.api_client.put_method_response(
+                    restApiId=api_id,
+                    resourceId=resource_id,
+                    httpMethod=method,
+                    statusCode='200',
+                    responseParameters={
+                        'method.response.header.Access-Control-Allow-Origin': True
+                    }
+                )
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'ConflictException':
+                    raise
 
             # Add integration response with CORS headers
-            self.api_client.put_integration_response(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod=method,
-                statusCode='200',
-                responseParameters={
-                    'method.response.header.Access-Control-Allow-Origin': "'*'"
-                },
-                responseTemplates={'application/json': ''}
-            )
+            try:
+                self.api_client.put_integration_response(
+                    restApiId=api_id,
+                    resourceId=resource_id,
+                    httpMethod=method,
+                    statusCode='200',
+                    responseParameters={
+                        'method.response.header.Access-Control-Allow-Origin': "'*'"
+                    },
+                    responseTemplates={'application/json': ''}
+                )
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'ConflictException':
+                    raise
 
             # Add permission for API Gateway to invoke Lambda
             statement_id = f'api-gateway-{api_id}-{resource_id}'
@@ -236,42 +276,54 @@ class APIGatewayDeployer:
                     print(f"Error adding OPTIONS method: {e}")
 
             # Add method response for OPTIONS
-            self.api_client.put_method_response(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod='OPTIONS',
-                statusCode='200',
-                responseParameters={
-                    'method.response.header.Access-Control-Allow-Headers': True,
-                    'method.response.header.Access-Control-Allow-Methods': True,
-                    'method.response.header.Access-Control-Allow-Origin': True,
-                    'method.response.header.Access-Control-Max-Age': True
-                }
-            )
+            try:
+                self.api_client.put_method_response(
+                    restApiId=api_id,
+                    resourceId=resource_id,
+                    httpMethod='OPTIONS',
+                    statusCode='200',
+                    responseParameters={
+                        'method.response.header.Access-Control-Allow-Headers': True,
+                        'method.response.header.Access-Control-Allow-Methods': True,
+                        'method.response.header.Access-Control-Allow-Origin': True,
+                        'method.response.header.Access-Control-Max-Age': True
+                    }
+                )
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'ConflictException':
+                    print(f"Error adding OPTIONS method response: {e}")
 
             # Add integration for OPTIONS (MOCK)
-            self.api_client.put_integration(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod='OPTIONS',
-                type='MOCK',
-                requestTemplates={'application/json': '{"statusCode": 200}'}
-            )
+            try:
+                self.api_client.put_integration(
+                    restApiId=api_id,
+                    resourceId=resource_id,
+                    httpMethod='OPTIONS',
+                    type='MOCK',
+                    requestTemplates={'application/json': '{"statusCode": 200}'}
+                )
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'ConflictException':
+                    print(f"Error adding OPTIONS integration: {e}")
 
             # Add integration response for OPTIONS
-            self.api_client.put_integration_response(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod='OPTIONS',
-                statusCode='200',
-                responseParameters={
-                    'method.response.header.Access-Control-Allow-Headers': f"'{', '.join(allowed_headers)}'",
-                    'method.response.header.Access-Control-Allow-Methods': f"'{', '.join(allowed_methods)}'",
-                    'method.response.header.Access-Control-Allow-Origin': "'*'",
-                    'method.response.header.Access-Control-Max-Age': "'3600'"
-                },
-                responseTemplates={'application/json': ''}
-            )
+            try:
+                self.api_client.put_integration_response(
+                    restApiId=api_id,
+                    resourceId=resource_id,
+                    httpMethod='OPTIONS',
+                    statusCode='200',
+                    responseParameters={
+                        'method.response.header.Access-Control-Allow-Headers': f"'{', '.join(allowed_headers)}'",
+                        'method.response.header.Access-Control-Allow-Methods': f"'{', '.join(allowed_methods)}'",
+                        'method.response.header.Access-Control-Allow-Origin': "'*'",
+                        'method.response.header.Access-Control-Max-Age': "'3600'"
+                    },
+                    responseTemplates={'application/json': ''}
+                )
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'ConflictException':
+                    print(f"Error adding OPTIONS integration response: {e}")
 
             # Update existing methods with CORS headers
             if 'resourceMethods' in resource:

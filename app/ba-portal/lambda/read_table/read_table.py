@@ -111,18 +111,19 @@ class DynamoDBReader:
             
             # Build filter expression
             filter_expr = '#status = :status'
-            expr_names = {'#status': 'status'}
+            expr_names = {'#status': 'status', '#name': 'name'}
             expr_values = {':status': 'active'}
-            
+
             # Add adviser_name filter if provided
             if adviser_name:
                 filter_expr += ' AND #adviser = :adviser'
                 expr_names['#adviser'] = 'adviser_name'
                 expr_values[':adviser'] = adviser_name
-            
+
             # Scan the table for items with status='active' (and optionally adviser_name)
             # First, try with name projection, if it fails, try without
             try:
+                logger.info(f"Attempting scan with name projection: {filter_expr}")
                 response = self.table.scan(
                     FilterExpression=filter_expr,
                     ExpressionAttributeNames=expr_names,
@@ -130,9 +131,11 @@ class DynamoDBReader:
                     ProjectionExpression='id, #name, last_updated_date, number_of_updates',
                     Limit=100
                 )
+                logger.info("Scan with name projection succeeded")
             except ClientError as e:
                 # If name attribute doesn't exist, try without it
-                logger.warning(f"Scan with name failed, retrying without: {e}")
+                logger.warning(f"Scan with name projection failed: {e}")
+                logger.info("Attempting scan without name projection")
                 response = self.table.scan(
                     FilterExpression=filter_expr,
                     ExpressionAttributeNames=expr_names,
@@ -140,15 +143,18 @@ class DynamoDBReader:
                     ProjectionExpression='id, last_updated_date, number_of_updates',
                     Limit=100
                 )
+                logger.info("Scan without name projection succeeded")
             
             items = response.get('Items', [])
             
             # Format the results
             portfolios = []
             for item in items:
+                item_name = item.get('name', item.get('id'))  # Use 'name' if available, otherwise use id
+                logger.debug(f"Processing item {item.get('id')}: attributes={list(item.keys())}, name_value='{item_name}'")
                 portfolios.append({
                     'id': item.get('id'),
-                    'name': item.get('name', item.get('id')),  # Use 'name' if available, otherwise use id
+                    'name': item_name,
                     'last_updated': item.get('last_updated_date'),
                     'updates': item.get('number_of_updates', 0)
                 })

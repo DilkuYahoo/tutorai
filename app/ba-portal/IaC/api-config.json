@@ -41,6 +41,19 @@
         "authorizer_id": "${AuthorizerId}",
         "authorization_scopes": ["openid", "email", "profile"]
       }
+    },
+    {
+      "path": "/insert-table",
+      "method": "POST",
+      "lambda_integration": {
+        "function_name": "ba-portal-insert-table-lambda-function",
+        "timeout": 10
+      },
+      "authorization": {
+        "type": "COGNITO_USER_POOLS",
+        "authorizer_id": "${AuthorizerId}",
+        "authorization_scopes": ["openid", "email", "profile"]
+      }
     }
   ],
   "authorizers": [

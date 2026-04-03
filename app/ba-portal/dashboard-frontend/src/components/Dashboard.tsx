@@ -13,6 +13,8 @@ import {
   fetchPortfolioList,
   fetchConfigParams,
   updateDashboardData,
+  renamePortfolio,
+  createPortfolio,
   type ConfigParams,
   type PortfolioInfo,
   type PortfolioDependantsEvents,
@@ -235,6 +237,19 @@ const Dashboard: React.FC = () => {
     }
   }, [updateSuccess]);
 
+  const handleCreatePortfolio = async (name: string) => {
+    await createPortfolio(name);
+    const { portfolios: updated } = await fetchPortfolioList();
+    setPortfolios(updated);
+  };
+
+  const handleRenamePortfolio = async (portfolioId: string, newName: string) => {
+    await renamePortfolio(portfolioId, newName);
+    setPortfolios(prev =>
+      prev.map(p => p.id === portfolioId ? { ...p, name: newName } : p)
+    );
+  };
+
   const handleUpdate = async (
     investors: any[],
     properties: any[],
@@ -451,7 +466,7 @@ const Dashboard: React.FC = () => {
       </div>
     );
   } else if (portfolios.length > 0) {
-    return <PortfolioSelector portfolios={portfolios} onSelectPortfolio={setSelectedPortfolioId} isDarkMode={isDarkMode} />;
+    return <PortfolioSelector portfolios={portfolios} onSelectPortfolio={setSelectedPortfolioId} onRenamePortfolio={handleRenamePortfolio} onCreatePortfolio={handleCreatePortfolio} isDarkMode={isDarkMode} />;
   } else {
     return (
       <div className="flex items-center justify-center h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>

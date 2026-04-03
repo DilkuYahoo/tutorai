@@ -31,6 +31,46 @@ from decimal import Decimal
 import boto3
 from botocore.exceptions import ClientError, BotoCoreError
 
+# Configure logging
+logging.basicConfig(level=os.environ.get('LOG_LEVEL', 'INFO'))
+logger = logging.getLogger(__name__)
+
+# CloudWatch Logs for audit trail
+audit_logger = logging.getLogger('audit')
+audit_logger.setLevel(logging.INFO)
+
+def log_audit_event(event_type: str, user_email: str, portfolio_id: str, action: str, status: str, message: str = "") -> None:
+    """Log authentication and authorization events for audit trail."""
+    audit_entry = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "event_type": event_type,
+        "user_email": user_email or "anonymous",
+        "portfolio_id": portfolio_id or "N/A",
+        "action": action,
+        "status": status,
+        "message": message
+    }
+
+    if status in ["success", "approved"]:
+        audit_logger.info(json.dumps(audit_entry))
+    else:
+        audit_logger.warning(json.dumps(audit_entry))
+
+    logger.info(f"AUDIT: {event_type} - user={user_email or 'anonymous'} action={action} status={status}")
+
+def extract_user_from_event(event: Dict[str, Any]) -> Optional[str]:
+    """
+    Extract user email from API Gateway authorizer context.
+    API Gateway validates the JWT and passes claims to Lambda via requestContext.authorizer.claims.
+    """
+    try:
+        authorizer = event.get('requestContext', {}).get('authorizer', {})
+        claims = authorizer.get('claims', {})
+        return claims.get('email')
+    except Exception as e:
+        logger.warning(f"Could not extract user from event: {e}")
+        return None
+
 class DynamoDBInserter:
     def __init__(self, table_name: str, region: str = "ap-southeast-2"):
         """Initialize the DynamoDB inserter with table name and region."""
@@ -79,21 +119,35 @@ class DynamoDBInserter:
         
         return True
     
+    @staticmethod
+    def _floats_to_decimal(obj: Any) -> Any:
+        """Recursively convert float values to Decimal for DynamoDB compatibility."""
+        if isinstance(obj, float):
+            return Decimal(str(obj))
+        if isinstance(obj, dict):
+            return {k: DynamoDBInserter._floats_to_decimal(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [DynamoDBInserter._floats_to_decimal(v) for v in obj]
+        return obj
+
     def insert_item(self, item: Dict[str, Any], condition_expression: Optional[str] = None) -> Dict[str, Any]:
         """Insert a single item into DynamoDB."""
         try:
             # Validate item
             self.validate_item(item)
-            
+
+            # Convert floats to Decimal (DynamoDB does not support float types)
+            item = self._floats_to_decimal(item)
+
             # Add system attributes
             current_time = datetime.now().isoformat()
             item['created_date'] = current_time
             item['last_updated_date'] = current_time
             item['number_of_updates'] = 0
-            
+
             # Log the insertion attempt
             self.log(f"Attempting to insert item {item['id']} into table {self.table_name}")
-            
+
             # Prepare insert parameters
             insert_params = {
                 'Item': item
@@ -267,29 +321,49 @@ def create_api_gateway_response(status_code: int, body: Dict[str, Any]) -> Dict[
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """Lambda function handler for DynamoDB insert operations."""
     try:
+        # Extract and validate user from JWT claims (set by API Gateway Cognito authorizer)
+        email = extract_user_from_event(event)
+
+        if not email:
+            log_audit_event("AUTH_FAILURE", "", "N/A", "insert_portfolio", "denied",
+                            "No valid JWT token provided")
+            return create_api_gateway_response(401, {
+                'status': 'error',
+                'message': 'Authentication required. Please login.',
+                'error_code': 'UNAUTHORIZED',
+                'timestamp': datetime.utcnow().isoformat()
+            })
+
         # Parse Lambda event
         params = parse_lambda_event(event)
-        
+
         # Initialize inserter
         inserter = DynamoDBInserter(
             table_name=params['table_name'],
             region=params['region']
         )
-        
+
         # Perform the appropriate operation
         if params['operation'] == 'insert_item':
+            # Override adviser_name with the JWT email — client cannot spoof ownership
+            params['item']['adviser_name'] = email
+
             # Check if item already exists
             if inserter.check_item_exists(params['item']['id']):
                 return create_api_gateway_response(409, {
                     'status': 'error',
                     'message': f"Item with ID '{params['item']['id']}' already exists in table '{params['table_name']}'"
                 })
-            
+
             result = inserter.insert_item(
                 params['item'],
                 params.get('condition_expression')
             )
-            
+
+            log_audit_event("PORTFOLIO_CREATE", email, params['item']['id'],
+                            "insert_portfolio", "success",
+                            f"Portfolio '{params['item'].get('name')}' created")
+
             # Return success response
             return create_api_gateway_response(201, {
                 'status': 'success',
@@ -297,10 +371,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'item_id': params['item']['id'],
                 'result': result
             })
-        
+
         elif params['operation'] == 'batch_insert_items':
             result = inserter.batch_insert_items(params['items'])
-            
+
             # Return success response
             return create_api_gateway_response(201, {
                 'status': 'success',
@@ -308,7 +382,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'items_inserted': len(result),
                 'result': result
             })
-        
+
         else:
             return create_api_gateway_response(400, {
                 'status': 'error',
