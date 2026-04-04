@@ -13,11 +13,15 @@ CONFIG = {
     "domain_prefix": "advicegenie-auth-baportal-001",  # must be globally unique
     "callback_urls": [
         "http://localhost:3000/",
-        "https://advicegenie.com.au/"
+        "http://localhost:3000",
+        "https://ba.advicegenie.com.au/",
+        "https://ba.advicegenie.com.au"
     ],
     "logout_urls": [
         "http://localhost:3000/",
-        "https://advicegenie.com.au/"
+        "http://localhost:3000",
+        "https://ba.advicegenie.com.au/",
+        "https://ba.advicegenie.com.au"
     ],
     "allowed_oauth_scopes": ["openid", "email", "profile"],
 }
@@ -50,6 +54,21 @@ def find_app_client(user_pool_id):
         if c["ClientName"] == CONFIG["app_client_name"]:
             return c["ClientId"]
     return None
+
+
+def check_app_client(user_pool_id):
+    client_id = find_app_client(user_pool_id)
+    if not client_id:
+        print("App client not found.")
+        return
+
+    client_details = cognito.describe_user_pool_client(
+        UserPoolId=user_pool_id,
+        ClientId=client_id
+    )
+    client = client_details["UserPoolClient"]
+    print("Current Callback URLs:", client.get("CallbackURLs", []))
+    print("Current Logout URLs:", client.get("LogoutURLs", []))
 
 
 # ==========================================================
@@ -164,6 +183,47 @@ def delete_user_pool(user_pool_id):
     print("User pool deleted")
 
 
+def update_app_client(user_pool_id):
+    client_id = find_app_client(user_pool_id)
+    if not client_id:
+        print("App client not found.")
+        return
+
+    print("Updating app client...")
+    cognito.update_user_pool_client(
+        UserPoolId=user_pool_id,
+        ClientId=client_id,
+        AllowedOAuthFlowsUserPoolClient=True,
+        AllowedOAuthFlows=["code"],
+        AllowedOAuthScopes=CONFIG["allowed_oauth_scopes"],
+        CallbackURLs=CONFIG["callback_urls"],
+        LogoutURLs=CONFIG["logout_urls"],
+        SupportedIdentityProviders=["COGNITO"],
+    )
+    print("App client updated.")
+
+
+def update_all():
+    user_pool_id = find_user_pool()
+    if not user_pool_id:
+        print("User pool not found. Run create first.")
+        return
+
+    update_app_client(user_pool_id)
+    print("\n====================================")
+    print("UPDATE COMPLETE 🎉")
+    print("====================================")
+
+
+def check_all():
+    user_pool_id = find_user_pool()
+    if not user_pool_id:
+        print("User pool not found.")
+        return
+
+    check_app_client(user_pool_id)
+
+
 def destroy_all():
     user_pool_id = find_user_pool()
 
@@ -185,13 +245,17 @@ def destroy_all():
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python cognito_setup.py [create|destroy]")
+        print("Usage: python cognito_setup.py [create|update|check|destroy]")
         sys.exit(1)
 
     action = sys.argv[1].lower()
 
     if action == "create":
         create_all()
+    elif action == "update":
+        update_all()
+    elif action == "check":
+        check_all()
     elif action == "destroy":
         destroy_all()
     else:

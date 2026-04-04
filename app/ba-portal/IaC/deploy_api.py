@@ -290,7 +290,42 @@ class APIGatewayDeployer:
                     }
                 )
             except ClientError as e:
-                if e.response['Error']['Code'] != 'ConflictException':
+                if e.response['Error']['Code'] == 'ConflictException':
+                    for header in [
+                        'Access-Control-Allow-Headers',
+                        'Access-Control-Allow-Methods',
+                        'Access-Control-Allow-Origin',
+                        'Access-Control-Max-Age'
+                    ]:
+                        path = f"/responseParameters/method.response.header.{header}"
+                        try:
+                            self.api_client.update_method_response(
+                                restApiId=api_id,
+                                resourceId=resource_id,
+                                httpMethod='OPTIONS',
+                                statusCode='200',
+                                patchOperations=[
+                                    {'op': 'add', 'path': path, 'value': 'true'}
+                                ]
+                            )
+                        except ClientError as e2:
+                            if e2.response['Error']['Code'] == 'ConflictException':
+                                try:
+                                    self.api_client.update_method_response(
+                                        restApiId=api_id,
+                                        resourceId=resource_id,
+                                        httpMethod='OPTIONS',
+                                        statusCode='200',
+                                        patchOperations=[
+                                            {'op': 'replace', 'path': path, 'value': 'true'}
+                                        ]
+                                    )
+                                except ClientError as e3:
+                                    if e3.response['Error']['Code'] not in ('BadRequestException', 'ConflictException'):
+                                        print(f"Error updating OPTIONS method response: {e3}")
+                            elif e2.response['Error']['Code'] != 'BadRequestException':
+                                print(f"Error updating OPTIONS method response: {e2}")
+                else:
                     print(f"Error adding OPTIONS method response: {e}")
 
             # Add integration for OPTIONS (MOCK)
@@ -300,13 +335,19 @@ class APIGatewayDeployer:
                     resourceId=resource_id,
                     httpMethod='OPTIONS',
                     type='MOCK',
-                    requestTemplates={'application/json': '{"statusCode": 200}'}
+                    requestTemplates={
+                        'application/json': '{"statusCode": 200}',
+                        'application/xml': '{"statusCode": 200}',
+                        'text/plain': '{"statusCode": 200}',
+                        'application/x-www-form-urlencoded': '{"statusCode": 200}',
+                        'application/octet-stream': '{"statusCode": 200}'
+                    }
                 )
             except ClientError as e:
                 if e.response['Error']['Code'] != 'ConflictException':
                     print(f"Error adding OPTIONS integration: {e}")
 
-            # Add integration response for OPTIONS
+            # Add or update integration response for OPTIONS
             try:
                 self.api_client.put_integration_response(
                     restApiId=api_id,
@@ -322,7 +363,24 @@ class APIGatewayDeployer:
                     responseTemplates={'application/json': ''}
                 )
             except ClientError as e:
-                if e.response['Error']['Code'] != 'ConflictException':
+                if e.response['Error']['Code'] == 'ConflictException':
+                    try:
+                        self.api_client.update_integration_response(
+                            restApiId=api_id,
+                            resourceId=resource_id,
+                            httpMethod='OPTIONS',
+                            statusCode='200',
+                            patchOperations=[
+                                {'op': 'replace', 'path': '/responseParameters/method.response.header.Access-Control-Allow-Headers', 'value': f"'{', '.join(allowed_headers)}'"},
+                                {'op': 'replace', 'path': '/responseParameters/method.response.header.Access-Control-Allow-Methods', 'value': f"'{', '.join(allowed_methods)}'"},
+                                {'op': 'replace', 'path': '/responseParameters/method.response.header.Access-Control-Allow-Origin', 'value': "'*'"},
+                                {'op': 'replace', 'path': '/responseParameters/method.response.header.Access-Control-Max-Age', 'value': "'3600'"}
+                            ]
+                        )
+                    except ClientError as e2:
+                        if e2.response['Error']['Code'] != 'BadRequestException':
+                            print(f"Error updating OPTIONS integration response: {e2}")
+                else:
                     print(f"Error adding OPTIONS integration response: {e}")
 
             # Update existing methods with CORS headers

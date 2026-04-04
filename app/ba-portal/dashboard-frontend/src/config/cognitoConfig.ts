@@ -34,6 +34,8 @@ const cognitoConfig: CognitoConfig = {
   apiUrl: import.meta.env.VITE_API_URL || 'https://YOUR_API_ID.execute-api.ap-southeast-2.amazonaws.com/prod'
 };
 
+console.log('Cognito Config:', cognitoConfig);
+
 // Derived URLs
 export const getLoginUrl = (): string => {
   const params = new URLSearchParams({
@@ -43,7 +45,9 @@ export const getLoginUrl = (): string => {
     redirect_uri: cognitoConfig.redirectUri
   });
   
-  return `https://${cognitoConfig.domain}/login?${params.toString()}`;
+  const url = `https://${cognitoConfig.domain}/login?${params.toString()}`;
+  console.log('Cognito Login URL:', url);
+  return url;
 };
 
 export const getLogoutUrl = (): string => {
