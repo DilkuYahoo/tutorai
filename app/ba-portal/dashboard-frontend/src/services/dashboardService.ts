@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import authService from './authService';
+import { apiPost } from './apiClient';
 
 const FINANCE_URL = import.meta.env.VITE_REACT_APP_FINANCE_URL || "";
 const App_SYNC_REGION = import.meta.env.VITE_REACT_APP_APPSYNC_REGION || "";
@@ -38,6 +39,7 @@ export interface PortfolioInfo {
   name: string;
   last_updated?: string;
   updates?: number;
+  investors?: Array<{ name: string }>;
 }
 
 export interface PortfolioListResponse {
@@ -58,33 +60,11 @@ export interface InvestmentGoals {
 }
 
 export async function fetchDashboardData(): Promise<DashboardApiResponse> {
-  const idToken = authService.getIdToken();
-  
-  // Handle case where token is literally the string "null"
-  const validToken = (idToken && idToken !== "null" && idToken !== "undefined") ? idToken : null;
-  
-  const response = await fetch(`${FINANCE_URL}/read-table?t=${Date.now()}`, {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": validToken ? `Bearer ${validToken}` : ""
-    },
-    body: JSON.stringify({
-      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      id: REACT_APP_APPSYNC_FINANCE_ID,
-      region: App_SYNC_REGION,
-    }),
+  const result = await apiPost(`${FINANCE_URL}/read-table?t=${Date.now()}`, {
+    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+    id: REACT_APP_APPSYNC_FINANCE_ID,
+    region: App_SYNC_REGION,
   });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-
-  if (result.status !== "success") {
-    throw new Error(result.message || "API returned error status");
-  }
 
   return {
     chartData: result.result.chart1 || [],
@@ -97,34 +77,14 @@ export async function fetchDashboardData(): Promise<DashboardApiResponse> {
 }
 
 export async function fetchPortfolioList(adviserName?: string): Promise<PortfolioListResponse> {
-  const idToken = authService.getIdToken();
   const adviser = adviserName || REACT_APP_ADVISER_NAME;
   
-  let url = `${FINANCE_URL}/read-table?t=${Date.now()}`;
-  
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${idToken}`
-    },
-    body: JSON.stringify({
-      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      action: 'list_portfolios',
-      adviser_name: adviser,
-      region: App_SYNC_REGION,
-    }),
+  const result = await apiPost(`${FINANCE_URL}/read-table?t=${Date.now()}`, {
+    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+    action: 'list_portfolios',
+    adviser_name: adviser,
+    region: App_SYNC_REGION,
   });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-
-  if (result.status !== "success") {
-    throw new Error(result.message || "API returned error status");
-  }
 
   return {
     portfolios: result.portfolios || [],
@@ -132,30 +92,11 @@ export async function fetchPortfolioList(adviserName?: string): Promise<Portfoli
 }
 
 export async function fetchDashboardDataById(portfolioId: string): Promise<DashboardApiResponse> {
-  const idToken = authService.getIdToken();
-  
-  const response = await fetch(`${FINANCE_URL}/read-table?t=${Date.now()}`, {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${idToken}`
-    },
-    body: JSON.stringify({
-      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      id: portfolioId,
-      region: App_SYNC_REGION,
-    }),
+  const result = await apiPost(`${FINANCE_URL}/read-table?t=${Date.now()}`, {
+    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+    id: portfolioId,
+    region: App_SYNC_REGION,
   });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-
-  if (result.status !== "success") {
-    throw new Error(result.message || "API returned error status");
-  }
 
   return {
     chartData: result.result.chart1 || [],
@@ -175,7 +116,6 @@ export async function updateDashboardData(
   ourAdvice?: string,
   portfolioId?: string,
 ): Promise<void> {
-  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
   
   const attributes: any = {};
@@ -208,56 +148,21 @@ export async function updateDashboardData(
     attributes.our_advice = ourAdvice;
   }
 
-  const response = await fetch(`${FINANCE_URL}/update-table?t=${Date.now()}`, {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${idToken}`
-    },
-    body: JSON.stringify({
-      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      id: id,
-      attributes,
-    }),
+  await apiPost(`${FINANCE_URL}/update-table?t=${Date.now()}`, {
+    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+    id: id,
+    attributes,
   });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-
-  if (result.status !== "success") {
-    throw new Error(result.message || "API returned error status");
-  }
 }
 
 export async function fetchConfigParams(portfolioId?: string): Promise<ConfigApiResponse> {
-  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
   
-  const response = await fetch(`${FINANCE_URL}/read-table`, {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${idToken}`
-    },
-    body: JSON.stringify({
-      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      id: id,
-      region: App_SYNC_REGION,
-    }),
+  const result = await apiPost(`${FINANCE_URL}/read-table`, {
+    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+    id: id,
+    region: App_SYNC_REGION,
   });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-
-  if (result.status !== "success") {
-    throw new Error(result.message || "API returned error status");
-  }
 
   const data = result.result || {};
 
@@ -288,7 +193,6 @@ export async function saveConfigParams(
   portfolioDependantsEvents?: PortfolioDependantsEvents[],
   portfolioId?: string
 ): Promise<void> {
-  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
   
   const attributes: any = {
@@ -323,28 +227,11 @@ export async function saveConfigParams(
     attributes.portfolio_dependants_events = portfolioDependantsEvents;
   }
 
-  const response = await fetch(`${FINANCE_URL}/update-table`, {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${idToken}`
-    },
-    body: JSON.stringify({
-      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      id: id,
-      attributes,
-    }),
+  await apiPost(`${FINANCE_URL}/update-table`, {
+    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+    id: id,
+    attributes,
   });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-
-  if (result.status !== "success") {
-    throw new Error(result.message || "API returned error status");
-  }
 }
 
 const DEFAULT_INVESTORS = [
@@ -384,58 +271,31 @@ const DEFAULT_PROPERTY = {
 };
 
 export async function createPortfolio(name: string): Promise<string> {
-  const idToken = authService.getIdToken();
-  const validToken = (idToken && idToken !== "null" && idToken !== "undefined") ? idToken : null;
   const portfolioId = crypto.randomUUID();
   const userEmail = authService.getUserFromToken()?.email || REACT_APP_ADVISER_NAME;
 
-  const response = await fetch(`${FINANCE_URL}/insert-table`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": validToken ? `Bearer ${validToken}` : ""
-    },
-    body: JSON.stringify({
-      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      region: App_SYNC_REGION,
-      item: {
-        id: portfolioId,
-        name,
-        status: "active",
-        adviser_name: userEmail,
-        investors: DEFAULT_INVESTORS,
-        properties: [DEFAULT_PROPERTY],
-      }
-    }),
+  await apiPost(`${FINANCE_URL}/insert-table`, {
+    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+    region: App_SYNC_REGION,
+    item: {
+      id: portfolioId,
+      name,
+      status: "active",
+      adviser_name: userEmail,
+      investors: DEFAULT_INVESTORS,
+      properties: [DEFAULT_PROPERTY],
+    }
   });
-
-  if (!response.ok) throw new Error(`API error: ${response.statusText}`);
-  const result = await response.json();
-  if (result.status !== "success") throw new Error(result.message || "Portfolio creation failed");
   return portfolioId;
 }
 
 export async function renamePortfolio(portfolioId: string, newName: string): Promise<void> {
-  const idToken = authService.getIdToken();
-  const validToken = (idToken && idToken !== "null" && idToken !== "undefined") ? idToken : null;
-
-  const response = await fetch(`${FINANCE_URL}/update-table`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": validToken ? `Bearer ${validToken}` : ""
-    },
-    body: JSON.stringify({
-      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      id: portfolioId,
-      region: App_SYNC_REGION,
-      attributes: { name: newName }
-    }),
+  await apiPost(`${FINANCE_URL}/update-table`, {
+    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+    id: portfolioId,
+    region: App_SYNC_REGION,
+    attributes: { name: newName }
   });
-
-  if (!response.ok) throw new Error(`API error: ${response.statusText}`);
-  const result = await response.json();
-  if (result.status !== "success") throw new Error(result.message || "Rename failed");
 }
 
 export interface BaAgentProperty {
@@ -472,121 +332,49 @@ export interface AiRecommendationResponse {
 }
 
 export async function addPropertyWithBaAgent(portfolioId?: string): Promise<BaAgentProperty> {
-  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
   
-  const response = await fetch(`${FINANCE_URL}/ba-agent`, {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${idToken}`
-    },
-    body: JSON.stringify({
-      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      id: id,
-      property_action: "add",
-    }),
+  const result: BaAgentResponse = await apiPost(`${FINANCE_URL}/ba-agent`, {
+    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+    id: id,
+    property_action: "add",
   });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
-  }
-
-  const result: BaAgentResponse = await response.json();
-
-  if (result.status !== "success") {
-    throw new Error(result.property?.name ? "Failed to add property" : "API returned error status");
-  }
 
   return result.property;
 }
 
 export async function generateAiRecommendations(portfolioId?: string): Promise<AiRecommendationAnalysis> {
-  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
   
-  const response = await fetch(`${FINANCE_URL}/ba-agent`, {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${idToken}`
-    },
-    body: JSON.stringify({
-      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      id: id,
-      property_action: "optimize",
-    }),
+  const result: AiRecommendationResponse = await apiPost(`${FINANCE_URL}/ba-agent`, {
+    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+    id: id,
+    property_action: "optimize",
   });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
-  }
-
-  const result: AiRecommendationResponse = await response.json();
-
-  if (result.status !== "success") {
-    throw new Error(result.analysis ? "Failed to generate recommendations" : "API returned error status");
-  }
 
   return result.analysis;
 }
 
 export async function generatePortfolioSummary(portfolioId?: string): Promise<{ summary: string }> {
-  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
   
-  const response = await fetch(`${FINANCE_URL}/ba-agent`, {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${idToken}`
-    },
-    body: JSON.stringify({
-      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      id: id,
-      property_action: "summary",
-    }),
+  const result = await apiPost(`${FINANCE_URL}/ba-agent`, {
+    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+    id: id,
+    property_action: "summary",
   });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-
-  if (result.status !== "success") {
-    throw new Error(result.message || "API returned error status");
-  }
 
   return result;
 }
 
 export async function generateOurAdvice(portfolioId?: string): Promise<{ advice: string; cached?: boolean }> {
-  const idToken = authService.getIdToken();
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
   
-  const response = await fetch(`${FINANCE_URL}/ba-agent`, {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${idToken}`
-    },
-    body: JSON.stringify({
-      table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-      id: id,
-      property_action: "advice",
-    }),
+  const result = await apiPost(`${FINANCE_URL}/ba-agent`, {
+    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
+    id: id,
+    property_action: "advice",
   });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-
-  if (result.status !== "success") {
-    throw new Error(result.message || "API returned error status");
-  }
 
   return result;
 }

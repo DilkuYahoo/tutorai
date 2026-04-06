@@ -131,6 +131,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
   const [configSuccess, setConfigSuccess] = useState<string | null>(null);
+  const [splitErrors, setSplitErrors] = useState<{ [key: string]: string }>({});
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
   // Get latest property values from chartData (end of investment period)
@@ -336,12 +337,48 @@ const Sidebar: React.FC<SidebarProps> = ({
     setHasLocalChanges(true);
   }, [localInvestors]);
 
+  const redistributeInvestorSplits = useCallback((properties: any[], investors: any[]) => {
+    const investorNames = investors.map(inv => inv.name);
+    return properties.map(prop => {
+      if (!prop.investor_splits) return prop;
+      // Remove splits for deleted investors
+      let splits = prop.investor_splits.filter((split: any) => investorNames.includes(split.name));
+      // Calculate total percentage
+      const total = splits.reduce((sum: number, split: any) => sum + (split.percentage || 0), 0);
+      if (total === 100 || (total === 0 && splits.length === 0)) {
+        // If only one investor and no splits, add 100% split
+        if (splits.length === 0 && investorNames.length === 1) {
+          splits = [{ name: investorNames[0], percentage: 100 }];
+        }
+        return { ...prop, investor_splits: splits };
+      }
+      // Redistribute proportionally to reach 100%
+      if (total > 0) {
+        const factor = 100 / total;
+        splits = splits.map((split: any) => ({
+          ...split,
+          percentage: Math.round(split.percentage * factor * 100) / 100
+        }));
+        // Ensure exactly 100%
+        const newTotal = splits.reduce((sum: number, split: any) => sum + split.percentage, 0);
+        if (newTotal !== 100 && splits.length > 0) {
+          splits[0].percentage += 100 - newTotal;
+          splits[0].percentage = Math.round(splits[0].percentage * 100) / 100;
+        }
+      }
+      return { ...prop, investor_splits: splits };
+    });
+  }, []);
+
   const deleteInvestor = useCallback((index: number) => {
-    const updated = [...localInvestors];
-    updated.splice(index, 1);
-    setLocalInvestors(updated);
+    const updatedInvestors = [...localInvestors];
+    updatedInvestors.splice(index, 1);
+    setLocalInvestors(updatedInvestors);
+    // Clean up investor splits in properties
+    const updatedProperties = redistributeInvestorSplits(localProperties, updatedInvestors);
+    setLocalProperties(updatedProperties);
     setHasLocalChanges(true);
-  }, [localInvestors]);
+  }, [localInvestors, localProperties, redistributeInvestorSplits]);
 
   const updateProperty = useCallback((index: number, field: string, value: any) => {
     const updated = [...localProperties];
@@ -351,13 +388,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, [localProperties]);
 
   const addInvestorSplit = useCallback((propertyIndex: number) => {
+    if (localInvestors.length === 1) return; // Don't allow multiple splits for single investor
     const updated = [...localProperties];
     if (!updated[propertyIndex].investor_splits)
       updated[propertyIndex].investor_splits = [];
     updated[propertyIndex].investor_splits.push({ name: "", percentage: 0 });
     setLocalProperties(updated);
     setHasLocalChanges(true);
-  }, [localProperties]);
+  }, [localProperties, localInvestors]);
 
   const updateInvestorSplit = useCallback((
     propertyIndex: number,
@@ -366,6 +404,23 @@ const Sidebar: React.FC<SidebarProps> = ({
     value: any,
   ) => {
     const updated = [...localProperties];
+    if (field === 'percentage') {
+      // Calculate new total if this percentage is updated
+      const currentSplits = updated[propertyIndex].investor_splits;
+      const otherTotal = currentSplits.reduce((sum: number, split: any, idx: number) => 
+        idx !== splitIndex ? sum + (split.percentage || 0) : sum, 0);
+      const newTotal = otherTotal + parseFloat(value);
+      if (newTotal > 100) {
+        setSplitErrors(prev => ({ ...prev, [`${propertyIndex}-${splitIndex}`]: 'Total percentage cannot exceed 100%' }));
+        return; // Don't update
+      } else {
+        setSplitErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[`${propertyIndex}-${splitIndex}`];
+          return newErrors;
+        });
+      }
+    }
     updated[propertyIndex].investor_splits[splitIndex] = {
       ...updated[propertyIndex].investor_splits[splitIndex],
       [field]: value,
@@ -392,6 +447,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     setIsAddingProperty(true);
     try {
       const newProperty = await addPropertyWithBaAgent(selectedPortfolioId);
+      // If only one investor, set 100% split
+      if (localInvestors.length === 1) {
+        newProperty.investor_splits = [{ name: localInvestors[0].name, percentage: 100 }];
+      }
       setLocalProperties([...localProperties, newProperty]);
       setHasLocalChanges(true);
     } catch (error) {
@@ -413,7 +472,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           growth_rate: 0,
           other_expenses: 0,
           annual_principal_change: 0,
-          investor_splits: [],
+          investor_splits: localInvestors.length === 1 ? [{ name: localInvestors[0].name, percentage: 100 }] : [],
         };
       }
       setLocalProperties([...localProperties, fallbackProperty]);
@@ -421,7 +480,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     } finally {
       setIsAddingProperty(false);
     }
-  }, [localProperties, selectedPortfolioId]);
+  }, [localProperties, selectedPortfolioId, localInvestors]);
 
   const handleRefresh = useCallback(() => {
     if (onUpdate) {
@@ -1068,8 +1127,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </button>
                             <button
                               onClick={() => addInvestorSplit(index)}
-                              className="text-green-400 hover:text-green-300 ml-2 transition-colors"
-                              title="Add Investor Split"
+                              disabled={localInvestors.length === 1}
+                              className={`ml-2 transition-colors ${localInvestors.length === 1 ? 'text-gray-500 cursor-not-allowed' : 'text-green-400 hover:text-green-300'}`}
+                              title={localInvestors.length === 1 ? "Cannot add splits with single investor" : "Add Investor Split"}
                               aria-label="Add investor split"
                             >
                               <Plus size={16} />
@@ -1083,7 +1143,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                             }`}
                           >
                             <div className="mt-3 space-y-2">
-                              {prop.investor_splits && prop.investor_splits.length > 0 ? (
+                              {localInvestors.length === 1 ? (
+                                <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                                  Single investor property - ownership automatically set to 100%
+                                </div>
+                              ) : prop.investor_splits && prop.investor_splits.length > 0 ? (
                                 prop.investor_splits.map((split: any, sIdx: number) => (
                                   <div
                                     key={sIdx}
@@ -1125,6 +1189,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                                           aria-label="Investor split percentage"
                                         />
                                         <span style={{ color: 'var(--text-primary)' }}>%</span>
+                                        {splitErrors[`${index}-${sIdx}`] && (
+                                          <span className="text-red-500 text-xs ml-1">{splitErrors[`${index}-${sIdx}`]}</span>
+                                        )}
                                       </div>
                                     </div>
                                     <button

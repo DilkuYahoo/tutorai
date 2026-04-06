@@ -7,6 +7,7 @@ import Sidebar from "./Sidebar";
 import ChartSection from "./ChartSection";
 import Footer from "./Footer";
 import PortfolioSelector from "./PortfolioSelector";
+import EmptyPortfolioState from "./EmptyPortfolioState";
 import HouseholdExpensesForm from "./HouseholdExpensesForm";
 import {
   fetchDashboardDataById,
@@ -57,6 +58,8 @@ const Dashboard: React.FC = () => {
   // Portfolio state
   const [portfolios, setPortfolios] = useState<PortfolioInfo[]>([]);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
+  const [portfoliosLoading, setPortfoliosLoading] = useState(false);
+  const [portfoliosError, setPortfoliosError] = useState<string | null>(null);
   
   const [data, setData] = useState<DashboardData>({
     chartData: [],
@@ -116,16 +119,36 @@ const Dashboard: React.FC = () => {
   // Load portfolios on mount
   useEffect(() => {
     const loadPortfolios = async () => {
+      setPortfoliosLoading(true);
+      setPortfoliosError(null);
       try {
         const result = await fetchPortfolioList();
-        setPortfolios(result.portfolios);
+        
+        // Enrich portfolios with investor data for preview
+        const enrichedPortfolios = await Promise.all(
+          result.portfolios.map(async (portfolio) => {
+            try {
+              const dashboardData = await fetchDashboardDataById(portfolio.id);
+              return {
+                ...portfolio,
+                investors: (dashboardData.investors || []).map(inv => ({ name: inv.name }))
+              };
+            } catch (err) {
+              // If fetching investor data fails, return portfolio without investors
+              console.warn(`Failed to fetch investors for portfolio ${portfolio.id}:`, err);
+              return portfolio;
+            }
+          })
+        );
+        
+        setPortfolios(enrichedPortfolios);
       } catch (err) {
         console.error("Failed to load portfolios:", err);
-        // Fallback to default ID if available
-        const defaultId = import.meta.env.VITE_REACT_APP_APPSYNC_FINANCE_ID;
-        if (defaultId) {
-          setSelectedPortfolioId(defaultId);
-        }
+        const errorMessage = err instanceof Error ? err.message : "Failed to load portfolios";
+        setPortfoliosError(errorMessage);
+        setPortfolios([]);
+      } finally {
+        setPortfoliosLoading(false);
       }
     };
 
@@ -238,9 +261,43 @@ const Dashboard: React.FC = () => {
   }, [updateSuccess]);
 
   const handleCreatePortfolio = async (name: string) => {
-    await createPortfolio(name);
+    const newPortfolioId = await createPortfolio(name);
     const { portfolios: updated } = await fetchPortfolioList();
     setPortfolios(updated);
+    // Auto-select the newly created portfolio
+    setSelectedPortfolioId(newPortfolioId);
+  };
+
+  const handleRetryLoadPortfolios = async () => {
+    setPortfoliosLoading(true);
+    setPortfoliosError(null);
+    try {
+      const result = await fetchPortfolioList();
+      
+      // Enrich portfolios with investor data for preview
+      const enrichedPortfolios = await Promise.all(
+        result.portfolios.map(async (portfolio) => {
+          try {
+            const dashboardData = await fetchDashboardDataById(portfolio.id);
+            return {
+              ...portfolio,
+              investors: (dashboardData.investors || []).map(inv => ({ name: inv.name }))
+            };
+          } catch (err) {
+            console.warn(`Failed to fetch investors for portfolio ${portfolio.id}:`, err);
+            return portfolio;
+          }
+        })
+      );
+      
+      setPortfolios(enrichedPortfolios);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to load portfolios";
+      setPortfoliosError(errorMessage);
+      setPortfolios([]);
+    } finally {
+      setPortfoliosLoading(false);
+    }
   };
 
   const handleRenamePortfolio = async (portfolioId: string, newName: string) => {
@@ -469,9 +526,13 @@ const Dashboard: React.FC = () => {
     return <PortfolioSelector portfolios={portfolios} onSelectPortfolio={setSelectedPortfolioId} onRenamePortfolio={handleRenamePortfolio} onCreatePortfolio={handleCreatePortfolio} isDarkMode={isDarkMode} />;
   } else {
     return (
-      <div className="flex items-center justify-center h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-        <p>Loading portfolios...</p>
-      </div>
+      <EmptyPortfolioState
+        onCreatePortfolio={handleCreatePortfolio}
+        isDarkMode={isDarkMode}
+        isLoading={portfoliosLoading}
+        error={portfoliosError}
+        onRetry={handleRetryLoadPortfolios}
+      />
     );
   }
 };

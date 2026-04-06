@@ -161,10 +161,21 @@ const PortfolioSelector: React.FC<PortfolioSelectorProps> = ({
                 </div>
               )}
 
-              {/* Portfolio ID */}
-              <p className="text-sm mb-3 font-mono" style={{ color: textSecondary }}>
-                ID: {portfolio.id}
-              </p>
+              {/* Investors List */}
+              {portfolio.investors && portfolio.investors.length > 0 ? (
+                <div className="mb-3">
+                  <p className="text-xs font-medium mb-1" style={{ color: textSecondary }}>
+                    Investors
+                  </p>
+                  <p className="text-sm" style={{ color: textColor }}>
+                    {portfolio.investors.map(inv => inv.name).join(', ')}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm mb-3 font-mono" style={{ color: textSecondary }}>
+                  ID: {portfolio.id}
+                </p>
+              )}
 
               {/* Last Updated */}
               {portfolio.last_updated && (
