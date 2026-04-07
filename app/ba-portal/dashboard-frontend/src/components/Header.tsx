@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Sun, Moon, LogIn, LogOut, User, ChevronDown, FolderOpen, DollarSign, Home } from "lucide-react";
+import { Sun, Moon, LogIn, LogOut, User, ChevronDown, FolderOpen, DollarSign, Home, Users } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import type { PortfolioInfo } from "../services/dashboardService";
 
@@ -11,6 +11,7 @@ interface HeaderProps {
   onPortfolioChange?: (portfolioId: string) => void;
   onSwitchPortfolio?: () => void;
   onShowExpenses?: () => void;
+  onShowInvestorDetails?: () => void;
   onBackToDashboard?: () => void;
 }
 
@@ -22,6 +23,7 @@ const Header: React.FC<HeaderProps> = ({
   onPortfolioChange,
   onSwitchPortfolio,
   onShowExpenses,
+  onShowInvestorDetails,
   onBackToDashboard,
 }) => {
   const { isAuthenticated, user, login, logout } = useAuth();
@@ -212,6 +214,21 @@ const Header: React.FC<HeaderProps> = ({
                   >
                     <DollarSign size={16} />
                     Household Expenses
+                  </button>
+                )}
+                {onShowInvestorDetails && (
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      onShowInvestorDetails();
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors"
+                    style={{ color: textColor }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#334155' : '#f3f4f6'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <Users size={16} />
+                    Investor Details
                   </button>
                 )}
                 <button

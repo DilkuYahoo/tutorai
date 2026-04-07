@@ -40,6 +40,7 @@ const parseMarkdown = (text: string): string => {
 interface ChartSectionProps {
   chartData: any[];
   loading: boolean;
+  investors?: any[];
   executiveSummary?: string;
   ourAdvice?: string;
   selectedPortfolioId?: string;
@@ -47,7 +48,7 @@ interface ChartSectionProps {
   onAdviceGenerated?: (advice: string) => void;
 }
 
-const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executiveSummary, ourAdvice, selectedPortfolioId, onSummaryGenerated, onAdviceGenerated }) => {
+const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, investors, executiveSummary, ourAdvice, selectedPortfolioId, onSummaryGenerated, onAdviceGenerated }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
   
@@ -202,8 +203,11 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executi
     chartData && chartData.length > 0 ? chartData[chartData.length - 1] : {};
   const investorNames = Object.keys(latestData?.investor_net_incomes || {});
 
-  
-
+  // Map stale chart1 keys (old names) to current investor names by position
+  const chartKeyToDisplayName: Record<string, string> = {};
+  investorNames.forEach((chartKey, i) => {
+    chartKeyToDisplayName[chartKey] = investors?.[i]?.name || chartKey;
+  });
 
   const colors = ['#06b6d4', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'];
 
@@ -532,7 +536,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, executi
     ],
     series: [
       ...investorNames.map((name: string, index: number) => ({
-        name: name,
+        name: chartKeyToDisplayName[name],
         type: 'line',
         smooth: true,
         symbol: 'circle',

@@ -142,9 +142,11 @@ def get_data_from_dynamodb(table_name: str, item_id: str, region: str = "ap-sout
         'properties': item.get('properties', []),
         'chart1': item.get('chart1', {}),
         'status': status,
+        'adviser_name': item.get('adviser_name', ''),
         'portfolio_dependants': item.get('portfolio_dependants', 0),
         'portfolio_dependants_events': item.get('portfolio_dependants_events', []),
-        'investment_goals': item.get('investment_goals', None)
+        'investment_goals': item.get('investment_goals', None),
+        'investment_years': int(item['investment_years']) if 'investment_years' in item else 30,
     }
 
 
@@ -643,6 +645,14 @@ Output ONLY the recommendations text. No JSON required."""
 
 RISK PROFILE: {risk_tolerance}
 INVESTMENT GOAL: {investment_goal}
+INVESTMENT TIMEFRAME: {investment_years} years
+
+=== INVESTORS ===
+{format_investor_details(investors)}
+
+DEPENDANTS: {format_current_dependants(investors, portfolio_dependants)}
+INCOME EVENTS: {format_income_events(investors)}
+DEPENDANT EVENTS: {format_dependants_events(portfolio_dependants_events)}
 
 === FORECAST (Year 1) ===
 {json.dumps(chart1_metrics.get('yearly_forecast', [])[:1], indent=2)}
@@ -655,7 +665,7 @@ INVESTMENT GOAL: {investment_goal}
 === PROPERTIES ===
 {format_existing_properties(existing_properties)}
 
-Provide 3 actionable recommendations with reasoning based on risk profile ({risk_tolerance}) and goal ({investment_goal})."""
+Provide 3 actionable recommendations with reasoning based on risk profile ({risk_tolerance}), goal ({investment_goal}), and the {investment_years}-year timeframe."""
     
     return system_prompt, user_prompt
 
@@ -878,62 +888,53 @@ def lambda_handler(event: dict, context: any) -> dict:
             'message': 'Missing required parameter: id'
         })
     
-    # Validate portfolio ownership - user can only access their own portfolios
-    try:
-        data = get_data_from_dynamodb(table_name, item_id, region)
-        item_adviser = data.get('adviser_name', '')
-        if item_adviser and item_adviser.lower() != email.lower():
-            logger.warning(f"User {email} attempted to access portfolio owned by {item_adviser}")
-            
-            # Audit: Access denied
-            log_audit_event(
-                event_type="ACCESS_DENIED",
-                user_email=email,
-                portfolio_id=item_id,
-                action=f"ba_agent_{property_action}",
-                status="denied",
-                message=f"User {email} attempted to access portfolio owned by {item_adviser}"
-            )
-            
-            return create_response(403, {
-                'status': 'error',
-                'message': 'Access denied. You do not have permission to access this portfolio.',
-                'error_code': 'FORBIDDEN',
-                'timestamp': datetime.utcnow().isoformat()
-            })
-    except ValueError as e:
-        # If item doesn't exist, we'll let it fail later in the main logic
-        data = {}
-    except Exception as e:
-        logger.error(f"Error checking portfolio ownership: {e}")
-        data = {}
-    
     if property_action not in ['add', 'optimize', 'summary', 'advice']:
         return create_response(400, {
-            'status': 'error', 
+            'status': 'error',
             'message': f"Invalid property_action: {property_action}. Must be 'add', 'optimize', 'summary', or 'advice'"
         })
-    
-    # Fetch data from DynamoDB
+
+    # Single DynamoDB fetch — used for both ownership check and main logic
     try:
         data = get_data_from_dynamodb(table_name, item_id, region)
     except ValueError as e:
         logger.error(f"ValueError: {str(e)}")
         return create_response(404, {
-            'status': 'error', 
+            'status': 'error',
             'message': str(e)
         })
     except Exception as e:
         logger.error(f"DynamoDB error: {str(e)}")
         return create_response(500, {
-            'status': 'error', 
+            'status': 'error',
             'message': f'DynamoDB error: {str(e)}'
+        })
+
+    # Validate portfolio ownership
+    item_adviser = data.get('adviser_name', '')
+    if item_adviser and item_adviser.lower() != email.lower():
+        logger.warning(f"User {email} attempted to access portfolio owned by {item_adviser}")
+        log_audit_event(
+            event_type="ACCESS_DENIED",
+            user_email=email,
+            portfolio_id=item_id,
+            action=f"ba_agent_{property_action}",
+            status="denied",
+            message=f"User {email} attempted to access portfolio owned by {item_adviser}"
+        )
+        return create_response(403, {
+            'status': 'error',
+            'message': 'Access denied. You do not have permission to access this portfolio.',
+            'error_code': 'FORBIDDEN',
+            'timestamp': datetime.utcnow().isoformat()
         })
     
     # Convert Decimal values
     investors = convert_decimal_to_float(data.get('investors', []))
     properties = convert_decimal_to_float(data.get('properties', []))
     chart1 = convert_decimal_to_float(data.get('chart1', {}))
+    portfolio_dependants_clean = convert_decimal_to_float(data.get('portfolio_dependants', 0))
+    portfolio_dependants_events_clean = convert_decimal_to_float(data.get('portfolio_dependants_events', []))
     
     # Extract metrics from chart1
     chart1_metrics = extract_metrics_from_chart1(chart1)
@@ -964,18 +965,14 @@ def lambda_handler(event: dict, context: any) -> dict:
         # Get investment_years from the data (default to 30)
         investment_years = data.get('investment_years', 30)
         
-        # Get portfolio-level dependants (NEW)
-        portfolio_dependants = data.get('portfolio_dependants', 0)
-        portfolio_dependants_events = data.get('portfolio_dependants_events', [])
-        
         system_prompt, user_prompt = build_summary_prompt(
             investors=investors,
             chart1_metrics=chart1_metrics,
             existing_properties=properties,
             investment_goals=investment_goals,
-            investment_years=investment_years,
-            portfolio_dependants=portfolio_dependants,
-            portfolio_dependants_events=portfolio_dependants_events
+            investment_years=data.get('investment_years', 30),
+            portfolio_dependants=portfolio_dependants_clean,
+            portfolio_dependants_events=portfolio_dependants_events_clean
         )
         
         # Invoke Bedrock
@@ -1044,19 +1041,15 @@ def lambda_handler(event: dict, context: any) -> dict:
         # Get investment_years from the data (default to 30)
         investment_years = data.get('investment_years', 30)
         
-        # Get portfolio-level dependants
-        portfolio_dependants = data.get('portfolio_dependants', 0)
-        portfolio_dependants_events = data.get('portfolio_dependants_events', [])
-        
         # Build prompts
         system_prompt, user_prompt = build_advice_prompt(
             investors=investors,
             chart1_metrics=chart1_metrics,
             existing_properties=properties,
             investment_goals=investment_goals,
-            investment_years=investment_years,
-            portfolio_dependants=portfolio_dependants,
-            portfolio_dependants_events=portfolio_dependants_events
+            investment_years=data.get('investment_years', 30),
+            portfolio_dependants=portfolio_dependants_clean,
+            portfolio_dependants_events=portfolio_dependants_events_clean
         )
         
         # Invoke Bedrock

@@ -9,6 +9,7 @@ import Footer from "./Footer";
 import PortfolioSelector from "./PortfolioSelector";
 import EmptyPortfolioState from "./EmptyPortfolioState";
 import HouseholdExpensesForm from "./HouseholdExpensesForm";
+import InvestorDetailsForm from "./InvestorDetailsForm";
 import {
   fetchDashboardDataById,
   fetchPortfolioList,
@@ -83,6 +84,7 @@ const Dashboard: React.FC = () => {
   const [progress, setProgress] = useState(100);
   const [investmentYears, setInvestmentYears] = useState(30);
   const [showExpensesForm, setShowExpensesForm] = useState(false);
+  const [showInvestorDetails, setShowInvestorDetails] = useState(false);
   const [configParams, setConfigParams] = useState<ConfigParams>({
     medicareLevyRate: 0.02,
     cpiRate: 0.03,
@@ -371,6 +373,30 @@ const Dashboard: React.FC = () => {
   };
 
   if (selectedPortfolioId) {
+    if (showInvestorDetails) {
+      return (
+        <div className="flex flex-col h-screen transition-colors duration-300 overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+          <Header
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={toggleDarkMode}
+            onBackToDashboard={() => setShowInvestorDetails(false)}
+          />
+          <div className="flex-1 overflow-auto">
+            <InvestorDetailsForm
+              investors={data.investors}
+              onSave={(updatedInvestors) => {
+                handleUpdate(updatedInvestors, data.properties, () => {
+                  setShowInvestorDetails(false);
+                }, () => {});
+              }}
+              onClose={() => setShowInvestorDetails(false)}
+            />
+          </div>
+          <Footer />
+        </div>
+      );
+    }
+
     if (showExpensesForm) {
       return (
         <div className="flex flex-col h-screen transition-colors duration-300 overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
@@ -419,6 +445,7 @@ const Dashboard: React.FC = () => {
           onToggleDarkMode={toggleDarkMode}
           onSwitchPortfolio={handleSwitchPortfolio}
           onShowExpenses={() => setShowExpensesForm(true)}
+          onShowInvestorDetails={() => setShowInvestorDetails(true)}
         />
         <div className="flex flex-1 overflow-hidden">
         {/* Main Error Toast */}
@@ -507,6 +534,7 @@ const Dashboard: React.FC = () => {
 
         <ChartSection
           chartData={data.chartData}
+          investors={data.investors}
           loading={data.loading}
           executiveSummary={data.executiveSummary}
           ourAdvice={data.ourAdvice}

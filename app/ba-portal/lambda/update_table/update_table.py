@@ -422,6 +422,23 @@ class DynamoDBUpdater:
                 investors = copy.deepcopy(attributes['investors'])
                 properties = copy.deepcopy(attributes['properties'])
 
+                # Reconcile stale investor names in property splits.
+                # When an investor is renamed the investors array has the new name but
+                # investor_splits in properties may still carry the old name, causing
+                # a KeyError in the chart calculation.  Fix: for each property, find
+                # splits that reference an unknown name and remap them to the investor
+                # name that has no matching split (positional / by elimination).
+                investor_name_set = {inv['name'] for inv in investors}
+                for prop in properties:
+                    splits = prop.get('investor_splits', [])
+                    stale_splits = [s for s in splits if s.get('name') not in investor_name_set]
+                    if stale_splits:
+                        covered = {s['name'] for s in splits if s.get('name') in investor_name_set}
+                        uncovered = [n for n in [inv['name'] for inv in investors] if n not in covered]
+                        for stale_split, new_name in zip(stale_splits, uncovered):
+                            self.log(f"Remapping stale split name '{stale_split.get('name')}' -> '{new_name}' in property '{prop.get('name')}'")
+                            stale_split['name'] = new_name
+
                 self.log(f"DEBUG: Processing {len(investors)} investors")
                 for inv in investors:
                     self.log(f"DEBUG: Investor: {inv.get('name', 'unknown')}, income: {inv.get('base_income')}, dependants: {inv.get('dependants')}")
