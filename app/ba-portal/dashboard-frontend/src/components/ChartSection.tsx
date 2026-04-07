@@ -261,34 +261,16 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
     ]
   };
 
-  // Get cashflow data
-  const getCashflowData = () => {
-    return transformedData.map((d: any) => {
-      const borrowingCapacity = (() => {
-        const capacities = d.investor_borrowing_capacities;
-        if (capacities && capacities.M) {
-          return Object.values(capacities.M).reduce((sum: number, inv: any) => {
-            return sum + (inv && inv.N !== undefined ? Number(inv.N) : 0);
-          }, 0);
-        }
-        return Object.values(capacities || {}).reduce((sum: number, val: any) => {
-          return sum + (Number(val) || 0);
-        }, 0);
-      })();
-      
-      return {
-        combinedIncome: d.combined_income || 0,
-        essentialExpenses: d.total_essential_expenses || 0,
-        nonessentialExpenses: d.total_nonessential_expenses || 0,
-        propertyCashflow: d.property_cashflow || 0,
-        householdSurplus: d.household_surplus || 0,
-        borrowingCapacity,
-        lvr: d.lvr || 0
-      };
-    });
-  };
-
-  const cashflowData = getCashflowData();
+  // Cashflow data — borrowingCapacity already resolved in transformedData
+  const cashflowData = transformedData.map((d: any) => ({
+    combinedIncome: d.combined_income || 0,
+    essentialExpenses: d.total_essential_expenses || 0,
+    nonessentialExpenses: d.total_nonessential_expenses || 0,
+    propertyCashflow: d.property_cashflow || 0,
+    householdSurplus: d.household_surplus || 0,
+    borrowingCapacity: d.borrowing_capacity || 0,
+    lvr: d.lvr || 0,
+  }));
 
   // Cashflow Chart
   const cashflowOption = {
@@ -548,23 +530,17 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
     setSnapshotError(null);
     try {
       const result = await generatePortfolioSummary(selectedPortfolioId);
-      console.log("[DEBUG] Generated summary:", result.summary?.substring(0, 100) + "...");
-      
-      // Save summary to DynamoDB so it persists
+
       if (result.summary && selectedPortfolioId) {
         try {
           await updateDashboardData(undefined, undefined, undefined, result.summary, undefined, selectedPortfolioId);
-          console.log("[DEBUG] Saved summary to DynamoDB");
         } catch (saveError) {
-          console.error("[DEBUG] Failed to save summary to DynamoDB:", saveError);
+          console.error("Failed to save summary:", saveError);
         }
       }
-      
+
       setSnapshotSummary(result.summary);
-      // Notify parent component that summary was generated
-      if (onSummaryGenerated) {
-        onSummaryGenerated(result.summary);
-      }
+      onSummaryGenerated?.(result.summary);
     } catch (error) {
       console.error("Failed to generate portfolio summary:", error);
       setSnapshotError("Unable to generate summary. Please try again.");
@@ -577,17 +553,12 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
     setAdviceLoading(true);
     setAdviceError(null);
     try {
-      console.log("[DEBUG] handleGenerateOurAdvice - calling API...");
       const result = await generateOurAdvice(selectedPortfolioId);
-      console.log("[DEBUG] Generated advice:", result.advice?.substring(0, 100) + "...");
       setAdviceText(result.advice);
-      if (onAdviceGenerated) {
-        onAdviceGenerated(result.advice);
-      }
+      onAdviceGenerated?.(result.advice);
     } catch (error: any) {
-      console.error("[DEBUG] Failed to generate advice:", error);
-      const errorMessage = error?.message || error?.toString() || 'Unknown error';
-      setAdviceError(`Unable to generate advice: ${errorMessage}`);
+      console.error("Failed to generate advice:", error);
+      setAdviceError(`Unable to generate advice: ${error?.message || 'Unknown error'}`);
     } finally {
       setAdviceLoading(false);
     }
@@ -782,7 +753,37 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
                     <li><span style={{ color: '#f59e0b' }}>Total Loan Balance</span> - Outstanding loan amounts across properties</li>
                     <li><span style={{ color: '#10b981' }}>Total Equity</span> - Property value minus loan balance</li>
                   </ul>
-                  <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: Rising equity indicates portfolio growth and risk reduction.</p>
+                  <p className="mt-3 mb-1"><strong style={{ color: cardText }}>Formulas:</strong></p>
+                  <ul className="list-disc list-inside ml-2 space-y-2">
+                    <li>
+                      <strong>Total Property Value</strong>
+                      <div className="mt-1 ml-4 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                        SUM( initial_value × (1 + growth_rate)^n ) for each property in year n
+                      </div>
+                      <p className="ml-4 text-xs mt-1">Properties are only included from their purchase year onwards.</p>
+                    </li>
+                    <li>
+                      <strong>Total Loan Balance</strong>
+                      <div className="mt-1 ml-4 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                        SUM( loan_amount + annual_principal_change × years ) per property
+                      </div>
+                      <p className="ml-4 text-xs mt-1">Annual principal change can be negative (repayment) or positive (refinance draw-down).</p>
+                    </li>
+                    <li>
+                      <strong>Total Equity</strong>
+                      <div className="mt-1 ml-4 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                        Total Property Value − Total Loan Balance
+                      </div>
+                    </li>
+                    <li>
+                      <strong>Accessible Equity</strong>
+                      <div className="mt-1 ml-4 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                        max( 0, Total Property Value × Accessible Equity Rate − Total Loan Balance )
+                      </div>
+                      <p className="ml-4 text-xs mt-1">Default rate: 80% — configurable in Settings. Represents equity available to borrow against.</p>
+                    </li>
+                  </ul>
+                  <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: Rising equity indicates portfolio growth and risk reduction. Accessible equity drives your ability to buy more properties.</p>
                 </div>
               )}
               <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
@@ -813,15 +814,70 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
                   <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Income, expenses, and borrowing capacity to assess your ability to service debt and maintain positive cashflow.</p>
                   <p className="mb-2"><strong style={{ color: cardText }}>Data sources:</strong></p>
                   <ul className="list-disc list-inside ml-2 space-y-1">
-                    <li><span style={{ color: '#10b981' }}>Combined Income</span> - Total household income from all investors</li>
+                    <li><span style={{ color: '#10b981' }}>Combined Income</span> - Total after-tax household income from all investors</li>
                     <li><span style={{ color: '#f59e0b' }}>Essential Expenses</span> - Necessary living costs (mortgage, utilities, insurance)</li>
                     <li><span style={{ color: '#ef4444' }}>Nonessential Expenses</span> - Discretionary spending</li>
-                    <li><span style={{ color: '#8b5cf6' }}>Property Cashflow</span> - Net property income (rent - costs)</li>
+                    <li><span style={{ color: '#8b5cf6' }}>Property Cashflow</span> - Net property income (rent − costs)</li>
                     <li><span style={{ color: '#06b6d4' }}>LVR</span> - Loan-to-Value Ratio (secondary axis, %)</li>
                     <li><span style={{ color: '#22c55e' }}>Household Surplus</span> - Remaining income after all expenses</li>
                     <li><span style={{ color: '#ec4899' }}>Borrowing Capacity</span> - Maximum additional borrowing based on income</li>
                   </ul>
-                  <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: Positive household surplus indicates room for additional investment or savings. Borrowing capacity shows your ability to take on more debt.</p>
+                  <p className="mt-3 mb-1"><strong style={{ color: cardText }}>Formulas:</strong></p>
+                  <ul className="list-disc list-inside ml-2 space-y-3">
+                    <li>
+                      <strong>Combined Income (after-tax)</strong>
+                      <ul className="list-none ml-4 mt-1 space-y-1 text-sm">
+                        <li>Year 1: base_income per investor</li>
+                        <li>Year 2+: income × (1 + annual_growth_rate), ± scheduled income events</li>
+                        <li className="mt-1"><em>Australian income tax brackets applied:</em></li>
+                        <li className="ml-2">$0 – $18,200 → 0%</li>
+                        <li className="ml-2">$18,201 – $45,000 → 16%</li>
+                        <li className="ml-2">$45,001 – $135,000 → 30%</li>
+                        <li className="ml-2">$135,001 – $190,000 → 37%</li>
+                        <li className="ml-2">$190,001+ → 45%</li>
+                        <div className="mt-1 p-2 rounded" style={{ fontFamily: 'monospace', fontSize: '0.75rem', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                          Medicare Levy = gross_income × Medicare Levy Rate (default 2%)<br/>
+                          Net after-tax = gross_income − income_tax − medicare_levy
+                        </div>
+                      </ul>
+                    </li>
+                    <li>
+                      <strong>Essential &amp; Nonessential Expenses</strong>
+                      <div className="mt-1 ml-4 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                        Year 2+: expenses × (1 + CPI Rate) compounded annually (default 3%)
+                      </div>
+                    </li>
+                    <li>
+                      <strong>Property Cashflow</strong>
+                      <div className="mt-1 ml-4 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                        Total Rent − Total Interest Cost − Total Other Expenses<br/>
+                        Total Interest = SUM( loan_balance × interest_rate ) per property<br/>
+                        Rent &amp; other expenses grow by CPI each year
+                      </div>
+                    </li>
+                    <li>
+                      <strong>Household Surplus</strong>
+                      <div className="mt-1 ml-4 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                        Combined Net Income − Essential Expenses − Nonessential Expenses + Property Cashflow
+                      </div>
+                    </li>
+                    <li>
+                      <strong>LVR (Loan-to-Value Ratio)</strong>
+                      <div className="mt-1 ml-4 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                        ( Total Loan Balance / Total Property Value ) × 100
+                      </div>
+                    </li>
+                    <li>
+                      <strong>Borrowing Capacity</strong>
+                      <div className="mt-1 ml-4 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                        Borrowing Multiple = max( Multiplier Min, Multiplier Base − dependants × Dependant Reduction )<br/>
+                        &nbsp;&nbsp;Defaults: max( 3.5, 5.0 − dependants × 0.25 ) — configurable in Settings<br/>
+                        Per investor: max( 0, net_income × borrowing_multiple − current_debt )<br/>
+                        Combined: SUM of all investor borrowing capacities
+                      </div>
+                    </li>
+                  </ul>
+                  <p className="mt-3 text-sm" style={{ color: cardTextSecondary }}>Tip: Positive household surplus indicates room for additional investment or savings. Borrowing capacity shows your ability to take on more debt.</p>
                 </div>
               )}
               <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
@@ -849,20 +905,26 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
               </div>
               {expandedSection === 'dti' && (
                 <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}>
-                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Debt-to-Income (DTI) ratio showing the proportion of gross household income used to service debt, along with total borrowing capacity.</p>
-                  <p className="mb-2"><strong style={{ color: cardText }}>Formula:</strong></p>
+                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Debt-to-Income (DTI) ratio showing how many times your annual gross income your total debt represents, along with combined borrowing capacity over time.</p>
+                  <p className="mb-2"><strong style={{ color: cardText }}>Data sources:</strong></p>
                   <ul className="list-disc list-inside ml-2 space-y-1">
-                    <li><strong>DTI Ratio = Total Debt / Combined Income</strong></li>
-                    <li><span style={{ color: '#f59e0b' }}>DTI Ratio</span> - Proportion of income going to debt repayment</li>
+                    <li><span style={{ color: '#f59e0b' }}>DTI Ratio</span> - Debt as a multiple of gross annual income</li>
                     <li><span style={{ color: '#06b6d4' }}>Total Borrowing Capacity</span> - Sum of all investors' borrowing capacities (secondary axis)</li>
                   </ul>
-                  <p className="mt-2 text-sm"><strong style={{ color: cardText }}>Interpretation:</strong></p>
+                  <p className="mt-3 mb-1"><strong style={{ color: cardText }}>Formula:</strong></p>
+                  <div className="ml-2 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                    DTI = Total Debt / Annual Gross Combined Income<br/>
+                    Total Debt = SUM( loan_balance ) across all properties<br/>
+                    Annual Gross Income = combined income before tax
+                  </div>
+                  <p className="ml-2 text-xs mt-1">Result is a multiplier — e.g. a DTI of 4.5 means total debt is 4.5× annual gross income.</p>
+                  <p className="mt-3 mb-1"><strong style={{ color: cardText }}>Interpretation:</strong></p>
                   <ul className="list-disc list-inside ml-2 space-y-1">
-                    <li>DTI &lt; 0.30: Safe zone - comfortable debt servicing</li>
-                    <li>DTI 0.30-0.43: Caution - may affect borrowing capacity</li>
-                    <li>DTI &gt; 0.43: High risk - likely to struggle with additional debt</li>
+                    <li>DTI &lt; 3.0: <span style={{ color: '#10b981' }}>Safe zone</span> — comfortable debt level, good borrowing headroom</li>
+                    <li>DTI 3.0 – 4.3: <span style={{ color: '#f59e0b' }}>Caution</span> — elevated leverage, may limit new borrowing</li>
+                    <li>DTI &gt; 4.3: <span style={{ color: '#ef4444' }}>High risk</span> — lenders likely to restrict further credit</li>
                   </ul>
-                  <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: The Total Borrowing Capacity line shows your purchasing power. Higher values with lower DTI indicate room for additional investment.</p>
+                  <p className="mt-3 text-sm" style={{ color: cardTextSecondary }}>Tip: The Total Borrowing Capacity line shows your purchasing power. Higher capacity with lower DTI indicates the best position for additional investment.</p>
                 </div>
               )}
               <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
@@ -894,9 +956,32 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
                   <p className="mb-2"><strong style={{ color: cardText }}>Data sources:</strong></p>
                   <ul className="list-disc list-inside ml-2 space-y-1">
                     <li>Individual investor net income lines showing income progression</li>
-                    <li><span style={{ color: '#8b5cf6' }}>Max Purchase Price</span> - Maximum property price affordable based on borrowing capacity (secondary axis)</li>
+                    <li><span style={{ color: '#8b5cf6' }}>Max Purchase Price</span> - Maximum property price affordable based on accessible equity (secondary axis)</li>
                   </ul>
-                  <p className="mt-2 text-sm" style={{ color: cardTextSecondary }}>Tip: Rising net income indicates improving financial position for each investor.</p>
+                  <p className="mt-3 mb-1"><strong style={{ color: cardText }}>Formulas:</strong></p>
+                  <ul className="list-disc list-inside ml-2 space-y-3">
+                    <li>
+                      <strong>Investor Net Income</strong>
+                      <div className="mt-1 ml-4 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                        gross_income − income_tax − medicare_levy<br/>
+                        − essential_expenses − nonessential_expenses<br/>
+                        + investor_property_income_share
+                      </div>
+                      <p className="ml-4 text-xs mt-1">
+                        investor_property_income_share = ( rent − interest − other_expenses ) × ownership_split %<br/>
+                        Expenses and property costs are each investor's proportional share based on their ownership split per property.
+                      </p>
+                    </li>
+                    <li>
+                      <strong>Max Purchase Price</strong>
+                      <div className="mt-1 ml-4 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                        Accessible Equity = max( 0, Total Property Value × 80% − Total Loan Balance )<br/>
+                        Max Purchase Price = Accessible Equity / 0.25&nbsp;&nbsp;( = Accessible Equity × 4 )
+                      </div>
+                      <p className="ml-4 text-xs mt-1">Assumes the accessible equity is used as a 25% deposit on a new property purchase.</p>
+                    </li>
+                  </ul>
+                  <p className="mt-3 text-sm" style={{ color: cardTextSecondary }}>Tip: Rising net income indicates improving financial position for each investor. Max Purchase Price tracks how much property you can buy using existing equity without additional savings.</p>
                 </div>
               )}
               <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
