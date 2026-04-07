@@ -40,6 +40,7 @@ const parseMarkdown = (text: string): string => {
 interface ChartSectionProps {
   chartData: any[];
   loading: boolean;
+  isDarkMode?: boolean;
   investors?: any[];
   executiveSummary?: string;
   ourAdvice?: string;
@@ -48,10 +49,9 @@ interface ChartSectionProps {
   onAdviceGenerated?: (advice: string) => void;
 }
 
-const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, investors, executiveSummary, ourAdvice, selectedPortfolioId, onSummaryGenerated, onAdviceGenerated }) => {
+const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkMode = false, investors, executiveSummary, ourAdvice, selectedPortfolioId, onSummaryGenerated, onAdviceGenerated }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  
+
   // Current Snapshot state
   const [snapshotSummary, setSnapshotSummary] = useState<string>('');
   const [snapshotLoading, setSnapshotLoading] = useState<boolean>(false);
@@ -103,27 +103,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, investo
       setAdviceText('');
     }
   }, [ourAdvice, selectedPortfolioId]);
-
-  useEffect(() => {
-    // Check initial dark mode state
-    const checkDarkMode = () => {
-      setIsDarkMode(document.documentElement.classList.contains('dark'));
-    };
-    checkDarkMode();
-
-    // Listen for dark mode changes
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
-          checkDarkMode();
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, { attributes: true });
-
-    return () => observer.disconnect();
-  }, []);
 
   // Chart colors that work in both modes
   const chartColors = {

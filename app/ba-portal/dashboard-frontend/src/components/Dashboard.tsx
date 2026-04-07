@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { X, AlertCircle, RefreshCw, LogIn } from "lucide-react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
@@ -34,34 +34,43 @@ interface DashboardData {
   error: string | null;
 }
 
+const DEFAULT_CONFIG_PARAMS: ConfigParams = {
+  medicareLevyRate: 0.02,
+  cpiRate: 0.03,
+  accessibleEquityRate: 0.80,
+  borrowingPowerMultiplierMin: 3.5,
+  borrowingPowerMultiplierBase: 5.0,
+  borrowingPowerMultiplierDependantReduction: 0.25,
+};
+
+// Shared full-screen page layout used by all sub-views.
+// contentClassName controls the inner content area; defaults to a scrollable column.
+const PageLayout: React.FC<{
+  header: React.ReactNode;
+  children: React.ReactNode;
+  contentClassName?: string;
+}> = ({ header, children, contentClassName = 'flex-1 overflow-auto' }) => (
+  <div
+    className="flex flex-col h-screen transition-colors duration-300 overflow-hidden"
+    style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+  >
+    {header}
+    <div className={contentClassName}>
+      {children}
+    </div>
+    <Footer />
+  </div>
+);
+
 const Dashboard: React.FC = () => {
   const { handleAuthCallback, isLoading: authLoading, isAuthenticated, login } = useAuth();
 
-  // Render login prompt for unauthenticated users
-  if (!authLoading && !isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-        <div className="text-center p-8">
-          <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
-          <p className="mb-6">Please log in to access the Platform.</p>
-          <button
-            onClick={login}
-            className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-          >
-            <LogIn size={20} />
-            Log In
-          </button>
-        </div>
-      </div>
-    );
-  }
-  
-  // Portfolio state
+  // All hooks must be declared unconditionally before any early returns
   const [portfolios, setPortfolios] = useState<PortfolioInfo[]>([]);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
   const [portfoliosLoading, setPortfoliosLoading] = useState(false);
   const [portfoliosError, setPortfoliosError] = useState<string | null>(null);
-  
+
   const [data, setData] = useState<DashboardData>({
     chartData: [],
     investors: [],
@@ -85,95 +94,73 @@ const Dashboard: React.FC = () => {
   const [investmentYears, setInvestmentYears] = useState(30);
   const [showExpensesForm, setShowExpensesForm] = useState(false);
   const [showInvestorDetails, setShowInvestorDetails] = useState(false);
-  const [configParams, setConfigParams] = useState<ConfigParams>({
-    medicareLevyRate: 0.02,
-    cpiRate: 0.03,
-    accessibleEquityRate: 0.80,
-    borrowingPowerMultiplierMin: 3.5,
-    borrowingPowerMultiplierBase: 5.0,
-    borrowingPowerMultiplierDependantReduction: 0.25,
-  });
-  
-  // Portfolio-level dependants state
+  const [configParams, setConfigParams] = useState<ConfigParams>(DEFAULT_CONFIG_PARAMS);
   const [portfolioDependants, setPortfolioDependants] = useState<number>(0);
   const [portfolioDependantsEvents, setPortfolioDependantsEvents] = useState<PortfolioDependantsEvents[]>([]);
-  
+
   // Handle OAuth callback on mount
   useEffect(() => {
     const handleCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
-      
       if (code) {
         try {
           await handleAuthCallback(code);
-          // Clear the URL parameters after successful auth
           window.history.replaceState({}, document.title, window.location.pathname);
         } catch (error) {
           console.error('Authentication error:', error);
         }
       }
     };
-    
     handleCallback();
   }, [handleAuthCallback]);
 
-  // Load portfolios on mount
-  useEffect(() => {
-    const loadPortfolios = async () => {
-      setPortfoliosLoading(true);
-      setPortfoliosError(null);
-      try {
-        const result = await fetchPortfolioList();
-        
-        // Enrich portfolios with investor data for preview
-        const enrichedPortfolios = await Promise.all(
-          result.portfolios.map(async (portfolio) => {
-            try {
-              const dashboardData = await fetchDashboardDataById(portfolio.id);
-              return {
-                ...portfolio,
-                investors: (dashboardData.investors || []).map(inv => ({ name: inv.name }))
-              };
-            } catch (err) {
-              // If fetching investor data fails, return portfolio without investors
-              console.warn(`Failed to fetch investors for portfolio ${portfolio.id}:`, err);
-              return portfolio;
-            }
-          })
-        );
-        
-        setPortfolios(enrichedPortfolios);
-      } catch (err) {
-        console.error("Failed to load portfolios:", err);
-        const errorMessage = err instanceof Error ? err.message : "Failed to load portfolios";
-        setPortfoliosError(errorMessage);
-        setPortfolios([]);
-      } finally {
-        setPortfoliosLoading(false);
-      }
-    };
+  // Load and enrich portfolios — extracted to avoid duplication
+  const loadPortfolios = useCallback(async () => {
+    setPortfoliosLoading(true);
+    setPortfoliosError(null);
+    try {
+      const result = await fetchPortfolioList();
+      const enrichedPortfolios = await Promise.all(
+        result.portfolios.map(async (portfolio) => {
+          try {
+            const dashboardData = await fetchDashboardDataById(portfolio.id);
+            return {
+              ...portfolio,
+              investors: (dashboardData.investors || []).map(inv => ({ name: inv.name })),
+            };
+          } catch (err) {
+            console.warn(`Failed to fetch investors for portfolio ${portfolio.id}:`, err);
+            return portfolio;
+          }
+        })
+      );
+      setPortfolios(enrichedPortfolios);
+    } catch (err) {
+      console.error("Failed to load portfolios:", err);
+      setPortfoliosError(err instanceof Error ? err.message : "Failed to load portfolios");
+      setPortfolios([]);
+    } finally {
+      setPortfoliosLoading(false);
+    }
+  }, []);
 
+  // Load portfolios once authenticated
+  useEffect(() => {
     if (!authLoading && isAuthenticated) {
       loadPortfolios();
     }
-  }, [authLoading, isAuthenticated]);
+  }, [authLoading, isAuthenticated, loadPortfolios]);
 
+  // Load dashboard data when portfolio selection changes
   useEffect(() => {
+    if (!selectedPortfolioId || authLoading || !isAuthenticated) return;
+
     const load = async () => {
-      // Don't load until we have a selected portfolio
-      if (!selectedPortfolioId) return;
-      
-      // Don't load if not authenticated
-      if (!isAuthenticated) {
-        return;
-      }
-      
       try {
         setData((prev) => ({ ...prev, loading: true, error: null }));
 
         const result = await fetchDashboardDataById(selectedPortfolioId);
-
         setData({
           ...result,
           investmentYears: result.investmentYears || 30,
@@ -183,12 +170,10 @@ const Dashboard: React.FC = () => {
           error: null,
         });
 
-        // Update local state if investmentYears exists in response
         if (result.investmentYears !== undefined) {
           setInvestmentYears(result.investmentYears);
         }
-        
-        // Load portfolio-level dependants from config
+
         const configResult = await fetchConfigParams(selectedPortfolioId);
         if (configResult.portfolioDependants !== undefined) {
           setPortfolioDependants(configResult.portfolioDependants);
@@ -208,98 +193,63 @@ const Dashboard: React.FC = () => {
       }
     };
 
-    // Only load data if auth is not loading and we have a selected portfolio
-    if (!authLoading && selectedPortfolioId && isAuthenticated) {
-      load();
-    }
+    load();
   }, [authLoading, selectedPortfolioId, isAuthenticated]);
 
   // Auto-dismiss update error with progress bar
   useEffect(() => {
-    if (updateError) {
-      setProgress(100);
-      const duration = 5000;
-      const interval = 50;
-      const step = (interval / duration) * 100;
-
-      const timer = setInterval(() => {
-        setProgress((prev) => {
-          const next = prev - step;
-          if (next <= 0) {
-            clearInterval(timer);
-            setUpdateError(null);
-            return 0;
-          }
-          return next;
-        });
-      }, interval);
-
-      return () => clearInterval(timer);
-    }
+    if (!updateError) return;
+    setProgress(100);
+    const duration = 5000;
+    const interval = 50;
+    const step = (interval / duration) * 100;
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        const next = prev - step;
+        if (next <= 0) {
+          clearInterval(timer);
+          setUpdateError(null);
+          return 0;
+        }
+        return next;
+      });
+    }, interval);
+    return () => clearInterval(timer);
   }, [updateError]);
 
   // Auto-dismiss update success with progress bar
   useEffect(() => {
-    if (updateSuccess) {
-      setProgress(100);
-      const duration = 3000; // Shorter duration for success messages
-      const interval = 50;
-      const step = (interval / duration) * 100;
-
-      const timer = setInterval(() => {
-        setProgress((prev) => {
-          const next = prev - step;
-          if (next <= 0) {
-            clearInterval(timer);
-            setUpdateSuccess(null);
-            return 0;
-          }
-          return next;
-        });
-      }, interval);
-
-      return () => clearInterval(timer);
-    }
+    if (!updateSuccess) return;
+    setProgress(100);
+    const duration = 3000;
+    const interval = 50;
+    const step = (interval / duration) * 100;
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        const next = prev - step;
+        if (next <= 0) {
+          clearInterval(timer);
+          setUpdateSuccess(null);
+          return 0;
+        }
+        return next;
+      });
+    }, interval);
+    return () => clearInterval(timer);
   }, [updateSuccess]);
+
+  // Apply dark mode class and persist preference in a single effect
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
+
+  const toggleDarkMode = useCallback(() => setIsDarkMode((prev: boolean) => !prev), []);
 
   const handleCreatePortfolio = async (name: string) => {
     const newPortfolioId = await createPortfolio(name);
-    const { portfolios: updated } = await fetchPortfolioList();
-    setPortfolios(updated);
-    // Auto-select the newly created portfolio
+    await loadPortfolios();
     setSelectedPortfolioId(newPortfolioId);
-  };
-
-  const handleRetryLoadPortfolios = async () => {
-    setPortfoliosLoading(true);
-    setPortfoliosError(null);
-    try {
-      const result = await fetchPortfolioList();
-      
-      // Enrich portfolios with investor data for preview
-      const enrichedPortfolios = await Promise.all(
-        result.portfolios.map(async (portfolio) => {
-          try {
-            const dashboardData = await fetchDashboardDataById(portfolio.id);
-            return {
-              ...portfolio,
-              investors: (dashboardData.investors || []).map(inv => ({ name: inv.name }))
-            };
-          } catch (err) {
-            console.warn(`Failed to fetch investors for portfolio ${portfolio.id}:`, err);
-            return portfolio;
-          }
-        })
-      );
-      
-      setPortfolios(enrichedPortfolios);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to load portfolios";
-      setPortfoliosError(errorMessage);
-      setPortfolios([]);
-    } finally {
-      setPortfoliosLoading(false);
-    }
   };
 
   const handleRenamePortfolio = async (portfolioId: string, newName: string) => {
@@ -319,30 +269,26 @@ const Dashboard: React.FC = () => {
       setUpdating(true);
       setUpdateError(null);
       setUpdateSuccess(null);
-      
-      // Don't pass chart1 - let the Lambda calculate it fresh from investors/properties
+
       await updateDashboardData(investors, properties, investmentYears, '', '', selectedPortfolioId);
-      
-      // Fetch fresh data from DynamoDB after update (includes newly calculated chart1)
+
       const freshData = await fetchDashboardDataById(selectedPortfolioId);
-      
-      // Update local state with fresh data from DynamoDB
       setData(prev => ({
         ...prev,
         investors: freshData.investors,
         properties: freshData.properties,
         chartData: freshData.chartData,
         investmentYears: freshData.investmentYears || investmentYears,
-        executiveSummary: '',  // Clear summary - needs regeneration
-        ourAdvice: '',  // Clear advice - needs regeneration
+        executiveSummary: '',
+        ourAdvice: '',
         loading: false,
         error: null,
       }));
-      
+
       setUpdateSuccess("Data updated successfully!");
       onSuccess?.();
     } catch (err) {
-      console.log("Error message:", err);
+      console.error("Update failed:", err);
       setUpdateError("Update failed. Please try again.");
       onError?.();
     } finally {
@@ -350,104 +296,97 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    // Apply dark mode class to document
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
+  const handleSwitchPortfolio = useCallback(() => setSelectedPortfolioId(''), []);
 
-  useEffect(() => {
-    // Save dark mode preference to localStorage
-    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
-  }, [isDarkMode]);
-
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-  };
-
-  const handleSwitchPortfolio = () => {
-    setSelectedPortfolioId('');
-  };
+  // --- Render: unauthenticated guard (safe to place here after all hooks) ---
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+        <div className="text-center p-8">
+          <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
+          <p className="mb-6">Please log in to access the Platform.</p>
+          <button
+            onClick={login}
+            className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          >
+            <LogIn size={20} />
+            Log In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (selectedPortfolioId) {
     if (showInvestorDetails) {
       return (
-        <div className="flex flex-col h-screen transition-colors duration-300 overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+        <PageLayout header={
           <Header
             isDarkMode={isDarkMode}
             onToggleDarkMode={toggleDarkMode}
             onBackToDashboard={() => setShowInvestorDetails(false)}
           />
-          <div className="flex-1 overflow-auto">
-            <InvestorDetailsForm
-              investors={data.investors}
-              onSave={(updatedInvestors) => {
-                handleUpdate(updatedInvestors, data.properties, () => {
-                  setShowInvestorDetails(false);
-                }, () => {});
-              }}
-              onClose={() => setShowInvestorDetails(false)}
-            />
-          </div>
-          <Footer />
-        </div>
+        }>
+          <InvestorDetailsForm
+            investors={data.investors}
+            onSave={(updatedInvestors) => {
+              handleUpdate(updatedInvestors, data.properties, () => {
+                setShowInvestorDetails(false);
+              }, () => {});
+            }}
+            onClose={() => setShowInvestorDetails(false)}
+          />
+        </PageLayout>
       );
     }
 
     if (showExpensesForm) {
+      const totalEssential = data.investors.reduce((sum, inv) => sum + (inv.essential_expenditure || 0), 0);
+      const totalNonEssential = data.investors.reduce((sum, inv) => sum + (inv.nonessential_expenditure || 0), 0);
+
       return (
-        <div className="flex flex-col h-screen transition-colors duration-300 overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+        <PageLayout header={
           <Header
             isDarkMode={isDarkMode}
             onToggleDarkMode={toggleDarkMode}
             onBackToDashboard={() => setShowExpensesForm(false)}
           />
-          <div className="flex-1 overflow-auto">
-            {(() => {
-              const totalEssential = data.investors.reduce((sum, inv) => sum + (inv.essential_expenditure || 0), 0);
-              const totalNonEssential = data.investors.reduce((sum, inv) => sum + (inv.nonessential_expenditure || 0), 0);
-              return (
-                <HouseholdExpensesForm
-                  onSave={(expensesData) => {
-                    const annualEssential = expensesData.totals.essentialTotal * 12;
-                    const annualNonEssential = expensesData.totals.nonEssentialTotal * 12;
-                    const numInv = data.investors.length;
-                    const updatedInvestors = data.investors.map(inv => ({
-                      ...inv,
-                      essential_expenditure: annualEssential / numInv,
-                      nonessential_expenditure: annualNonEssential / numInv
-                    }));
-                    handleUpdate(updatedInvestors, data.properties, () => {
-                      setShowExpensesForm(false);
-                    }, () => {
-                      // error handling if needed
-                    });
-                  }}
-                  numInvestors={data.investors.length}
-                  initialEssentialTotal={totalEssential}
-                  initialNonEssentialTotal={totalNonEssential}
-                />
-              );
-            })()}
-          </div>
-          <Footer />
-        </div>
+        }>
+          <HouseholdExpensesForm
+            onSave={(expensesData) => {
+              const annualEssential = expensesData.totals.essentialTotal * 12;
+              const annualNonEssential = expensesData.totals.nonEssentialTotal * 12;
+              const numInv = data.investors.length;
+              const updatedInvestors = data.investors.map(inv => ({
+                ...inv,
+                essential_expenditure: annualEssential / numInv,
+                nonessential_expenditure: annualNonEssential / numInv,
+              }));
+              handleUpdate(updatedInvestors, data.properties, () => {
+                setShowExpensesForm(false);
+              }, () => {});
+            }}
+            numInvestors={data.investors.length}
+            initialEssentialTotal={totalEssential}
+            initialNonEssentialTotal={totalNonEssential}
+          />
+        </PageLayout>
       );
     }
 
     return (
-      <div className="flex flex-col h-screen transition-colors duration-300 overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-        <Header
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={toggleDarkMode}
-          onSwitchPortfolio={handleSwitchPortfolio}
-          onShowExpenses={() => setShowExpensesForm(true)}
-          onShowInvestorDetails={() => setShowInvestorDetails(true)}
-        />
-        <div className="flex flex-1 overflow-hidden">
+      <PageLayout
+        contentClassName="flex flex-1 overflow-hidden"
+        header={
+          <Header
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={toggleDarkMode}
+            onSwitchPortfolio={handleSwitchPortfolio}
+            onShowExpenses={() => setShowExpensesForm(true)}
+            onShowInvestorDetails={() => setShowInvestorDetails(true)}
+          />
+        }
+      >
         {/* Main Error Toast */}
         {data.error && (
           <div className="fixed top-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-xl z-50 w-100 animate-in slide-in-from-top-2 fade-in">
@@ -455,9 +394,7 @@ const Dashboard: React.FC = () => {
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm">Error Loading Data</h3>
-                <p className="text-xs text-red-100 mt-1 line-clamp-2">
-                  {data.error}
-                </p>
+                <p className="text-xs text-red-100 mt-1 line-clamp-2">{data.error}</p>
               </div>
               <button
                 onClick={() => setData((prev) => ({ ...prev, error: null }))}
@@ -493,8 +430,6 @@ const Dashboard: React.FC = () => {
                 <X size={18} />
               </button>
             </div>
-
-            {/* Progress bar */}
             <div className="mt-2 h-1 bg-white/20 rounded-full overflow-hidden">
               <div
                 className="h-full bg-white/70 rounded-full transition-all duration-75 ease-linear"
@@ -536,6 +471,7 @@ const Dashboard: React.FC = () => {
           chartData={data.chartData}
           investors={data.investors}
           loading={data.loading}
+          isDarkMode={isDarkMode}
           executiveSummary={data.executiveSummary}
           ourAdvice={data.ourAdvice}
           selectedPortfolioId={selectedPortfolioId}
@@ -546,23 +482,31 @@ const Dashboard: React.FC = () => {
             setData(prev => ({ ...prev, ourAdvice: advice }));
           }}
         />
-        </div>
-        <Footer />
-      </div>
+      </PageLayout>
     );
-  } else if (portfolios.length > 0) {
-    return <PortfolioSelector portfolios={portfolios} onSelectPortfolio={setSelectedPortfolioId} onRenamePortfolio={handleRenamePortfolio} onCreatePortfolio={handleCreatePortfolio} isDarkMode={isDarkMode} />;
-  } else {
+  }
+
+  if (portfolios.length > 0) {
     return (
-      <EmptyPortfolioState
+      <PortfolioSelector
+        portfolios={portfolios}
+        onSelectPortfolio={setSelectedPortfolioId}
+        onRenamePortfolio={handleRenamePortfolio}
         onCreatePortfolio={handleCreatePortfolio}
         isDarkMode={isDarkMode}
-        isLoading={portfoliosLoading}
-        error={portfoliosError}
-        onRetry={handleRetryLoadPortfolios}
       />
     );
   }
+
+  return (
+    <EmptyPortfolioState
+      onCreatePortfolio={handleCreatePortfolio}
+      isDarkMode={isDarkMode}
+      isLoading={portfoliosLoading}
+      error={portfoliosError}
+      onRetry={loadPortfolios}
+    />
+  );
 };
 
 export default Dashboard;

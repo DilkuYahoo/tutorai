@@ -16,7 +16,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({
-  isDarkMode: propIsDarkMode,
+  isDarkMode = false,
   onToggleDarkMode,
   portfolios,
   selectedPortfolioId,
@@ -27,48 +27,20 @@ const Header: React.FC<HeaderProps> = ({
   onBackToDashboard,
 }) => {
   const { isAuthenticated, user, login, logout } = useAuth();
-  const [localIsDarkMode, setLocalIsDarkMode] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
-
-  useEffect(() => {
-    const checkDarkMode = () => {
-      const hasDarkClass = document.documentElement.classList.contains('dark');
-      setLocalIsDarkMode(hasDarkClass);
-      if (propIsDarkMode !== undefined) {
-        propIsDarkMode = hasDarkClass;
-      }
-    };
-    checkDarkMode();
-
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
-          checkDarkMode();
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, { attributes: true });
-
-    return () => observer.disconnect();
-  }, []);
 
   // Close user menu when clicking outside
   useEffect(() => {
+    if (!showUserMenu) return;
     const handleClickOutside = (event: MouseEvent) => {
-      if (showUserMenu) {
-        const target = event.target as HTMLElement;
-        if (!target.closest('.user-menu-container')) {
-          setShowUserMenu(false);
-        }
+      const target = event.target as HTMLElement;
+      if (!target.closest('.user-menu-container')) {
+        setShowUserMenu(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserMenu]);
-
-  const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : localIsDarkMode;
 
   // Theme-aware colors
   const bgColor = isDarkMode ? '#1e293b' : '#f9fafb';
