@@ -107,6 +107,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [localProperties, setLocalProperties] = useState<any[]>([]);
   const [originalProperties, setOriginalProperties] = useState<any[]>([]);
   const [hasLocalChanges, setHasLocalChanges] = useState(false);
+  const [dirtyInvestorIndices, setDirtyInvestorIndices] = useState<Set<number>>(new Set());
+  const markInvestorDirty = (index: number) => setDirtyInvestorIndices(prev => new Set(prev).add(index));
   const [isAddingProperty, setIsAddingProperty] = useState(false);
 
   // Configuration state
@@ -297,8 +299,22 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const updateInvestor = useCallback((index: number, field: string, value: any) => {
     const updated = [...localInvestors];
+    const oldName = updated[index].name;
     updated[index] = { ...updated[index], [field]: value };
     setLocalInvestors(updated);
+
+    if (field === "name" && value !== oldName) {
+      setLocalProperties(prev =>
+        prev.map(prop => ({
+          ...prop,
+          investor_splits: (prop.investor_splits || []).map((split: any) =>
+            split.name === oldName ? { ...split, name: value } : split
+          ),
+        }))
+      );
+    }
+
+    markInvestorDirty(index);
     setHasLocalChanges(true);
   }, [localInvestors]);
 
@@ -312,6 +328,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       type: "increase",
     });
     setLocalInvestors(updated);
+    markInvestorDirty(investorIndex);
     setHasLocalChanges(true);
   }, [localInvestors]);
 
@@ -327,6 +344,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       [field]: value,
     };
     setLocalInvestors(updated);
+    markInvestorDirty(investorIndex);
     setHasLocalChanges(true);
   }, [localInvestors]);
 
@@ -334,6 +352,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     const updated = [...localInvestors];
     updated[investorIndex].income_events.splice(eventIndex, 1);
     setLocalInvestors(updated);
+    markInvestorDirty(investorIndex);
     setHasLocalChanges(true);
   }, [localInvestors]);
 
@@ -492,6 +511,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           setOriginalInvestors([...localInvestors]);
           setOriginalProperties([...localProperties]);
           setHasLocalChanges(false);
+          setDirtyInvestorIndices(new Set());
           saveToCache();
         },
         () => {
@@ -638,7 +658,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 onChange={(e) =>
                                   updateInvestor(index, "name", e.target.value)
                                 }
-                                disabled={investor?.name === "Bob" || investor?.name === "Alice"}
                                 className="bg-slate-600 text-white rounded px-2 py-1 w-full disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                                 style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                                 aria-label="Investor name"
@@ -647,6 +666,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
+                            {dirtyInvestorIndices.has(index) && (
+                              <button
+                                onClick={handleRefresh}
+                                className="text-xs bg-cyan-500 hover:bg-cyan-600 text-white px-2 py-1 rounded transition-colors"
+                                title="Save investor"
+                                aria-label="Save investor"
+                              >
+                                Save
+                              </button>
+                            )}
                             <button
                               onClick={() => deleteInvestor(index)}
                               className="text-red-400 hover:text-red-300 transition-colors"

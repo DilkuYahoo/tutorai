@@ -19,7 +19,6 @@ interface HouseholdExpensesData {
   };
   split: {
     enabled: boolean;
-    members: number;
     perPersonExpense: number;
   };
 }
@@ -148,7 +147,6 @@ const HouseholdExpensesForm: React.FC<HouseholdExpensesFormProps> = ({
       },
       split: {
         enabled: false,
-        members: 1,
         perPersonExpense: 0
       },
       ...initialData
@@ -170,8 +168,8 @@ const HouseholdExpensesForm: React.FC<HouseholdExpensesFormProps> = ({
       });
 
       const overallTotal = essentialTotal + nonEssentialTotal;
-      const perPersonExpense = data.split.enabled && data.split.members > 0
-        ? overallTotal / data.split.members
+      const perPersonExpense = data.split.enabled && numInvestors > 1
+        ? overallTotal / numInvestors
         : 0;
 
       setData(prev => ({
@@ -189,7 +187,7 @@ const HouseholdExpensesForm: React.FC<HouseholdExpensesFormProps> = ({
     };
 
     calculateTotals();
-  }, [data.essentials, data.nonEssentials, data.split.members, data.split.enabled]);
+  }, [data.essentials, data.nonEssentials, data.split.enabled, numInvestors]);
 
   // Update expense item
   const updateExpense = (
@@ -220,7 +218,7 @@ const HouseholdExpensesForm: React.FC<HouseholdExpensesFormProps> = ({
   };
 
   // Update split settings
-  const updateSplit = (field: 'enabled' | 'members', value: boolean | number) => {
+  const updateSplit = (field: 'enabled', value: boolean) => {
     setData(prev => ({
       ...prev,
       split: {
@@ -292,6 +290,67 @@ const HouseholdExpensesForm: React.FC<HouseholdExpensesFormProps> = ({
         </p>
       </div>
 
+      {numInvestors > 1 && (
+        <>
+          {/* Household Splitting */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+              Household Splitting
+            </h3>
+            <div className="flex items-center space-x-4">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={data.split.enabled}
+                  onChange={(e) => updateSplit('enabled', e.target.checked)}
+                  className="rounded border-gray-300 dark:border-gray-600 text-cyan-600 focus:ring-cyan-500 dark:bg-gray-700"
+                />
+                <span style={{ color: 'var(--text-primary)' }}>Split between household members?</span>
+              </label>
+            </div>
+            {data.split.enabled && (
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-4 p-4 rounded-lg border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                    Per Person Annual
+                  </label>
+                  <div className="text-2xl font-bold py-2" style={{ color: 'var(--accent-primary)' }}>
+                    {formatCurrency(data.split.perPersonExpense * 12)}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Overall Summary */}
+      <div className="p-6 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+        <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+          Annual Summary
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center p-4 rounded-lg" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Essential</div>
+            <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              {formatCurrency(data.totals.essentialTotal * 12)}
+            </div>
+          </div>
+          <div className="text-center p-4 rounded-lg" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Non-Essential</div>
+            <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              {formatCurrency(data.totals.nonEssentialTotal * 12)}
+            </div>
+          </div>
+          <div className="text-center p-4 rounded-lg border-2" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--accent-primary)', color: 'var(--accent-primary)' }}>
+            <div className="text-sm">Total</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(data.totals.overallTotal * 12)}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Essential Expenses */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -327,79 +386,6 @@ const HouseholdExpensesForm: React.FC<HouseholdExpensesFormProps> = ({
           {NON_ESSENTIAL_CATEGORIES.map(cat => renderExpenseRow('nonEssentials', cat, CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS]))}
         </div>
       </div>
-
-      {/* Overall Summary */}
-      <div className="p-6 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-        <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-          Annual Summary
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-4 rounded-lg" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Essential</div>
-            <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              {formatCurrency(data.totals.essentialTotal * 12)}
-            </div>
-          </div>
-          <div className="text-center p-4 rounded-lg" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Non-Essential</div>
-            <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              {formatCurrency(data.totals.nonEssentialTotal * 12)}
-            </div>
-          </div>
-          <div className="text-center p-4 rounded-lg border-2" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--accent-primary)', color: 'var(--accent-primary)' }}>
-            <div className="text-sm">Total</div>
-            <div className="text-2xl font-bold">
-              {formatCurrency(data.totals.overallTotal * 12)}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {numInvestors > 1 && (
-        <>
-          {/* Household Splitting */}
-          <div className="space-y-4">
-            <h3 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-              Household Splitting
-            </h3>
-            <div className="flex items-center space-x-4">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={data.split.enabled}
-                  onChange={(e) => updateSplit('enabled', e.target.checked)}
-                  className="rounded border-gray-300 dark:border-gray-600 text-cyan-600 focus:ring-cyan-500 dark:bg-gray-700"
-                />
-                <span style={{ color: 'var(--text-primary)' }}>Split between household members?</span>
-              </label>
-            </div>
-            {data.split.enabled && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg border" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
-                    Number of Members
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={data.split.members}
-                    onChange={(e) => updateSplit('members', parseInt(e.target.value) || 1)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
-                    Per Person Annual
-                  </label>
-                  <div className="text-2xl font-bold py-2" style={{ color: 'var(--accent-primary)' }}>
-                    {formatCurrency(data.split.perPersonExpense * 12)}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </>
-      )}
 
       {/* Save Button */}
       <div className="text-center">
