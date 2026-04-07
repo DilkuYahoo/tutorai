@@ -121,7 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     borrowingPowerMultiplierDependantReduction: 0.25,
   });
   const [investmentGoals, setInvestmentGoals] = useState<InvestmentGoals>({
-    goal: '',
+    goal: 'Passive Income',
     riskTolerance: 'moderate',
   });
   const [portfolioDependants, setPortfolioDependants] = useState<number>(propPortfolioDependants || 0);
@@ -232,7 +232,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     if (selectedPortfolioId) {
       setInvestmentGoals({
-        goal: '',
+        goal: 'Passive Income',
         riskTolerance: 'moderate',
       });
     }
@@ -1298,22 +1298,24 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className="space-y-4">
                 {/* Investment Years */}
                 <div>
-                  <label className="text-xs text-cyan-400 block mb-1">Years to Invest</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="1"
-                      max="50"
-                      value={localInvestmentYears || 30}
-                      onChange={(e) => {
-                        const newValue = parseInt(e.target.value) || 30;
-                        setLocalInvestmentYears(newValue);
-                        onInvestmentYearsChange?.(newValue);
-                      }}
-                      className="w-full px-3 py-2 rounded text-sm"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)', borderWidth: '1px' }}
-                    />
-                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>yrs</span>
+                  <label className="text-xs text-cyan-400 block mb-1">
+                    Years to Invest: <span className="font-semibold">{localInvestmentYears || 30} yrs</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="5"
+                    max="30"
+                    value={localInvestmentYears || 30}
+                    onChange={(e) => {
+                      const newValue = parseInt(e.target.value);
+                      setLocalInvestmentYears(newValue);
+                      onInvestmentYearsChange?.(newValue);
+                    }}
+                    className="w-full accent-cyan-400"
+                  />
+                  <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                    <span>5 yrs</span>
+                    <span>30 yrs</span>
                   </div>
                 </div>
 

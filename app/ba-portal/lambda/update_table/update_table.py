@@ -422,6 +422,10 @@ class DynamoDBUpdater:
                 investors = copy.deepcopy(attributes['investors'])
                 properties = copy.deepcopy(attributes['properties'])
 
+                # Handle case where investors is stored as a dict keyed by name
+                if isinstance(investors, dict):
+                    investors = list(investors.values())
+
                 # Reconcile stale investor names in property splits.
                 # When an investor is renamed the investors array has the new name but
                 # investor_splits in properties may still carry the old name, causing
@@ -438,6 +442,13 @@ class DynamoDBUpdater:
                         for stale_split, new_name in zip(stale_splits, uncovered):
                             self.log(f"Remapping stale split name '{stale_split.get('name')}' -> '{new_name}' in property '{prop.get('name')}'")
                             stale_split['name'] = new_name
+                        # Remove any stale splits that couldn't be remapped (e.g. single-investor
+                        # portfolio where the only investor already has a split entry).
+                        remapped = set(new_name for _, new_name in zip(stale_splits, uncovered))
+                        still_stale = {s.get('name') for s in stale_splits} - remapped
+                        if still_stale:
+                            prop['investor_splits'] = [s for s in splits if s.get('name') not in still_stale]
+                            self.log(f"Removed unresolvable stale splits {still_stale} from property '{prop.get('name')}')")
 
                 self.log(f"DEBUG: Processing {len(investors)} investors")
                 for inv in investors:
