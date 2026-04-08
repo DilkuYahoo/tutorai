@@ -188,8 +188,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
     chartKeyToDisplayName[chartKey] = investors?.[i]?.name || chartKey;
   });
 
-  const colors = ['#06b6d4', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'];
-
   // ECharts options - Portfolio Growth vs Debt
   const portfolioOption = {
     tooltip: {
@@ -361,6 +359,85 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
     ]
   };
 
+  // LVR Chart
+  const lvrOption = {
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: isDarkMode ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+      borderColor: isDarkMode ? '#475569' : '#e5e7eb',
+      textStyle: { color: isDarkMode ? '#f1f5f9' : '#1f2937' },
+      formatter: (params: any) => {
+        let result = `<div style="font-weight: 600; margin-bottom: 8px;">${params[0].name}</div>`;
+        params.forEach((param: any) => {
+          result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${param.color};"></span>
+            ${param.seriesName}: <strong>${param.value.toFixed(1)}%</strong>
+          </div>`;
+        });
+        return result;
+      }
+    },
+    legend: {
+      textStyle: { color: chartColors.legend },
+      top: 0
+    },
+    grid: { left: 60, right: 40, top: 40 },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: transformedData.map((d: any) => d.year),
+      axisLabel: { color: chartColors.axisLabel, fontSize: 12 },
+      axisLine: { lineStyle: { color: isDarkMode ? '#475569' : '#d1d5db' } }
+    },
+    yAxis: [
+      {
+        type: 'value',
+        name: 'LVR (%)',
+        nameTextStyle: { color: chartColors.text },
+        axisLabel: { formatter: (value: number) => `${value.toFixed(0)}%`, color: chartColors.axisLabel, fontSize: 12 },
+        splitLine: { lineStyle: { color: isDarkMode ? '#334155' : '#e5e7eb', type: 'dashed' } },
+        min: 0,
+        max: (value: any) => Math.max(100, Math.ceil(value.max / 10) * 10)
+      }
+    ],
+    series: [
+      {
+        name: 'LVR',
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 8,
+        data: transformedData.map((d: any) => d.lvr || 0),
+        lineStyle: { color: '#06b6d4', width: 3 },
+        itemStyle: { color: '#06b6d4' },
+        areaStyle: { color: '#06b6d4', opacity: 0.15 },
+        markLine: {
+          silent: true,
+          data: [
+            {
+              yAxis: 60,
+              name: 'Low Risk',
+              lineStyle: { color: '#10b981', type: 'dashed', width: 2 },
+              label: { formatter: 'Low Risk (60%)', color: '#10b981', fontSize: 11, position: 'end' }
+            },
+            {
+              yAxis: 80,
+              name: 'Caution (LMI)',
+              lineStyle: { color: '#f59e0b', type: 'dashed', width: 2 },
+              label: { formatter: 'LMI Threshold (80%)', color: '#f59e0b', fontSize: 11, position: 'end' }
+            },
+            {
+              yAxis: 90,
+              name: 'Critical',
+              lineStyle: { color: '#ef4444', type: 'dashed', width: 2 },
+              label: { formatter: 'Critical (90%)', color: '#ef4444', fontSize: 11, position: 'end' }
+            }
+          ]
+        }
+      }
+    ]
+  };
+
   // DTI Ratio Chart
   const dtiRatioOption = {
     tooltip: {
@@ -428,8 +505,8 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
         areaStyle: { color: '#f59e0b', opacity: 0.2 },
         markLine: {
           data: [
-            { yAxis: 0.30, name: 'Safe Zone', lineStyle: { color: '#10b981', type: 'dashed' } },
-            { yAxis: 0.43, name: 'Caution', lineStyle: { color: '#f59e0b', type: 'dashed' } }
+            { yAxis: 3.0, name: 'Safe Zone', lineStyle: { color: '#10b981', type: 'dashed' } },
+            { yAxis: 4.3, name: 'Caution', lineStyle: { color: '#f59e0b', type: 'dashed' } }
           ],
           label: { color: chartColors.markLineLabel, fontSize: 10 }
         }
@@ -445,79 +522,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
         lineStyle: { color: '#06b6d4', width: 3, type: 'dashed' },
         itemStyle: { color: '#06b6d4' },
         areaStyle: { color: '#06b6d4', opacity: 0.1 }
-      }
-    ]
-  };
-
-  // Investor Net Income Chart
-  const investorNetIncomeOption = {
-    tooltip: {
-      trigger: 'axis',
-      backgroundColor: isDarkMode ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-      borderColor: isDarkMode ? '#475569' : '#e5e7eb',
-      textStyle: { color: isDarkMode ? '#f1f5f9' : '#1f2937' },
-      formatter: (params: any) => {
-        let result = `<div style="font-weight: 600; margin-bottom: 8px;">${params[0].name}</div>`;
-        params.forEach((param: any) => {
-          result += `<div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
-            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${param.color};"></span>
-            ${param.seriesName}: $${param.value.toLocaleString()}
-          </div>`;
-        });
-        return result;
-      }
-    },
-    legend: { 
-      textStyle: { color: chartColors.legend },
-      top: 0
-    },
-    grid: { left: 60, right: 60, top: 40 },
-    xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: transformedData.map((d: any) => d.year),
-      axisLabel: { color: chartColors.axisLabel, fontSize: 12 },
-      axisLine: { lineStyle: { color: isDarkMode ? '#475569' : '#d1d5db' } }
-    },
-    yAxis: [
-      {
-        type: 'value',
-        name: 'Net Income ($)',
-        nameTextStyle: { color: chartColors.text },
-        axisLabel: { formatter: (value: number) => `${(value / 1000).toFixed(0)}k`, color: chartColors.axisLabel, fontSize: 12 },
-        splitLine: { lineStyle: { color: isDarkMode ? '#334155' : '#e5e7eb', type: 'dashed' } }
-      },
-      {
-        type: 'value',
-        name: 'Purchase Price ($)',
-        nameTextStyle: { color: chartColors.text },
-        axisLabel: { formatter: (value: number) => `${(value / 1000).toFixed(0)}k`, color: chartColors.axisLabel, fontSize: 12 },
-        splitLine: { show: false }
-      }
-    ],
-    series: [
-      ...investorNames.map((name: string, index: number) => ({
-        name: chartKeyToDisplayName[name],
-        type: 'line',
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 6,
-        data: transformedData.map((d: any) => d.investor_net_incomes?.[name] || 0),
-        areaStyle: { opacity: 0.1, color: colors[index % colors.length] },
-        lineStyle: { width: 2 },
-        itemStyle: { color: colors[index % colors.length] }
-      })),
-      {
-        name: 'Max Purchase Price',
-        type: 'line',
-        smooth: true,
-        symbol: 'triangle',
-        symbolSize: 10,
-        yAxisIndex: 1,
-        data: transformedData.map((d: any) => d.max_purchase_price || 0),
-        lineStyle: { color: '#8b5cf6', width: 3 },
-        itemStyle: { color: '#8b5cf6' },
-        areaStyle: { color: '#8b5cf6', opacity: 0.1 }
       }
     ]
   };
@@ -933,61 +937,44 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
               <ReactECharts option={dtiRatioOption} style={{ height: '300px' }} />
             </div>
 
-            {/* Investor Net Income Chart */}
+            {/* LVR Over Time Chart */}
             <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
               <div className="flex justify-between items-center mb-2">
                 <h2 className="text-xl font-bold" style={{ color: cardText }}>
-                  Investor Net Income
+                  LVR Over Time
                 </h2>
                 <button
-                  onClick={() => toggleSection('investorNetIncome')}
+                  onClick={() => toggleSection('lvr')}
                   className="transition-colors"
                   style={{ color: cardTextSecondary }}
                   title="Learn more about this chart"
                 >
-                  <svg className={`w-6 h-6 transform transition-transform ${expandedSection === 'investorNetIncome' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className={`w-6 h-6 transform transition-transform ${expandedSection === 'lvr' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </button>
               </div>
-              {expandedSection === 'investorNetIncome' && (
+              {expandedSection === 'lvr' && (
                 <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}>
-                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Net income trends for each investor and maximum purchase price over time.</p>
-                  <p className="mb-2"><strong style={{ color: cardText }}>Data sources:</strong></p>
+                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> Loan-to-Value Ratio (LVR) tracks the proportion of your total loan balance relative to your total property value over time.</p>
+                  <p className="mb-2"><strong style={{ color: cardText }}>Formula:</strong></p>
+                  <div className="ml-2 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
+                    LVR = ( Total Loan Balance / Total Property Value ) × 100
+                  </div>
+                  <p className="mt-3 mb-1"><strong style={{ color: cardText }}>Thresholds:</strong></p>
                   <ul className="list-disc list-inside ml-2 space-y-1">
-                    <li>Individual investor net income lines showing income progression</li>
-                    <li><span style={{ color: '#8b5cf6' }}>Max Purchase Price</span> - Maximum property price affordable based on accessible equity (secondary axis)</li>
+                    <li>LVR &lt; 60%: <span style={{ color: '#10b981' }}>Low risk</span> — strong equity position, best lending rates</li>
+                    <li>LVR 60% – 80%: <span style={{ color: '#f59e0b' }}>Caution</span> — approaching LMI territory, monitor closely</li>
+                    <li>LVR 80% – 90%: <span style={{ color: '#f97316' }}>LMI required</span> — Lender's Mortgage Insurance applies above 80%</li>
+                    <li>LVR &gt; 90%: <span style={{ color: '#ef4444' }}>Critical</span> — many lenders will restrict further credit</li>
                   </ul>
-                  <p className="mt-3 mb-1"><strong style={{ color: cardText }}>Formulas:</strong></p>
-                  <ul className="list-disc list-inside ml-2 space-y-3">
-                    <li>
-                      <strong>Investor Net Income</strong>
-                      <div className="mt-1 ml-4 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
-                        gross_income − income_tax − medicare_levy<br/>
-                        − essential_expenses − nonessential_expenses<br/>
-                        + investor_property_income_share
-                      </div>
-                      <p className="ml-4 text-xs mt-1">
-                        investor_property_income_share = ( rent − interest − other_expenses ) × ownership_split %<br/>
-                        Expenses and property costs are each investor's proportional share based on their ownership split per property.
-                      </p>
-                    </li>
-                    <li>
-                      <strong>Max Purchase Price</strong>
-                      <div className="mt-1 ml-4 p-2 rounded text-sm" style={{ fontFamily: 'monospace', backgroundColor: isDarkMode ? '#1e293b' : '#d1d5db' }}>
-                        Accessible Equity = max( 0, Total Property Value × 80% − Total Loan Balance )<br/>
-                        Max Purchase Price = Accessible Equity / 0.25&nbsp;&nbsp;( = Accessible Equity × 4 )
-                      </div>
-                      <p className="ml-4 text-xs mt-1">Assumes the accessible equity is used as a 25% deposit on a new property purchase.</p>
-                    </li>
-                  </ul>
-                  <p className="mt-3 text-sm" style={{ color: cardTextSecondary }}>Tip: Rising net income indicates improving financial position for each investor. Max Purchase Price tracks how much property you can buy using existing equity without additional savings.</p>
+                  <p className="mt-3 text-sm" style={{ color: cardTextSecondary }}>Tip: A declining LVR over time indicates improving equity and reduced risk. Keeping LVR below 80% avoids Lender's Mortgage Insurance costs.</p>
                 </div>
               )}
               <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
-                Shows net income trends for each investor and max purchase price over time.
+                Tracks LVR over the investment period. Lower LVR indicates stronger equity and reduced lender risk.
               </p>
-              <ReactECharts option={investorNetIncomeOption} style={{ height: '300px' }} />
+              <ReactECharts option={lvrOption} style={{ height: '300px' }} />
             </div>
           </>
         )}
