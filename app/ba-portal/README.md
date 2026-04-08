@@ -4,13 +4,13 @@ A comprehensive financial analytics platform for property investment advisors, b
 
 ## Table of Contents
 
-- [Generate AI Recommendations](#generate-ai-recommendations)
 - [Purpose](#purpose)
 - [Architecture](#architecture)
 - [Features](#features)
 - [Technology Stack](#technology-stack)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
+- [Financial Formulas](#financial-formulas)
 - [Configuration](#configuration)
 - [API Reference](#api-reference)
 - [Authentication](#authentication)
@@ -20,478 +20,61 @@ A comprehensive financial analytics platform for property investment advisors, b
 
 ---
 
-## Generate AI Recommendations
-
-The **Generate AI Recommendations** feature allows users to analyze their Property Portfolio and receive AI-powered insights on bottlenecks, optimization opportunities, and strategies to maximize portfolio performance using the **optimize** property action.
-
-This feature **replaces the existing "Executive Summary of the Portfolio"** section in the main dashboard's ChartSection component.
-
-### How It Works
-
-1. **Click the Button** - Users click the "Generate AI Recommendations" button on the dashboard (in the Executive Summary card)
-2. **Connect to BA Agent** - The button triggers a call to the [`ba_agent`](app/ba-portal/lambda/ba_agent/main.py) Lambda function with `property_action: "optimize"`
-3. **Portfolio Analysis** - The system analyzes the current portfolio's Chart1 financial data including:
-   - Debt-to-Income (DTI) ratio
-   - Borrowing capacity
-   - Accessible equity
-   - Property cashflow
-   - Loan-to-Value Ratio (LVR)
-4. **AI Processing** - AWS Bedrock (Claude) processes the data and generates recommendations
-5. **Recommendations Displayed** - Results are shown to the user with actionable insights
-
-### Implementation Steps
-
-Building the "Generate AI Recommendations" feature requires modifying the **ChartSection.tsx** component in the main dashboard (NOT the RightSidebar).
-
-#### Step 1: Add API Function in dashboardService.ts
-
-Add a new function to call the `/ba-agent` endpoint with the "optimize" action.
-
-**File:** [`dashboardService.ts`](app/ba-portal/dashboard-frontend/src/services/dashboardService.ts)
-
-```typescript
-export async function generateAiRecommendations(
-  portfolioId: string,
-  tableName: string = "BA-PORTAL-BASETABLE",
-  region: string = "ap-southeast-2"
-): Promise<any> {
-  const apiUrl = import.meta.env.VITE_API_URL;
-  
-  const response = await axios.post(`${apiUrl}/ba-agent`, {
-    table_name: tableName,
-    id: portfolioId,
-    property_action: "optimize",
-    region: region
-  });
-  
-  return response.data;
-}
-```
-
-#### Step 2: Modify ChartSection.tsx - Replace Executive Summary Button
-
-The button should replace the existing "Generate Summary" button in the Executive Summary card.
-
-**File:** [`ChartSection.tsx`](app/ba-portal/dashboard-frontend/src/components/ChartSection.tsx:546)
-
-**Current location (lines 546-563):**
-```tsx
-{/* Executive Summary Card */}
-<div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
-  <div className="flex justify-between items-center mb-4">
-    <h2 className="text-xl font-bold" style={{ color: cardText }}>Executive Summary of the Portfolio</h2>
-    <button
-      onClick={generateSummary}
-      className="px-4 py-2 rounded-lg font-medium transition-colors"
-      style={{ backgroundColor: '#06b6d4', color: 'white' }}
-    >
-      Generate Summary
-    </button>
-  </div>
-  {executiveSummary && (
-    <div style={{ color: cardTextSecondary, whiteSpace: 'pre-line' }}>
-      {executiveSummary}
-    </div>
-  )}
-</div>
-```
-
-**Replace with:**
-```tsx
-// Add state for AI recommendations
-const [aiRecommendations, setAiRecommendations] = useState<any>(null);
-const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-
-// Add handler function
-const generateAIRecommendations = async () => {
-  setIsGeneratingAI(true);
-  try {
-    const result = await generateAiRecommendations(id);
-    setAiRecommendations(result.analysis);
-  } catch (error) {
-    console.error("Failed to generate AI recommendations:", error);
-  } finally {
-    setIsGeneratingAI(false);
-  }
-};
-
-// Replace the button in the Executive Summary card
-<button
-  onClick={generateAIRecommendations}
-  disabled={isGeneratingAI}
-  className="px-4 py-2 rounded-lg font-medium transition-colors"
-  style={{ backgroundColor: '#8b5cf6', color: 'white' }}
->
-  {isGeneratingAI ? 'Generating...' : 'Generate AI Recommendations'}
-</button>
-```
-
-#### Step 3: Add Recommendations Display Section
-
-Add a section to display the AI-generated recommendations in the same card.
-
-**File:** [`ChartSection.tsx`](app/ba-portal/dashboard-frontend/src/components/ChartSection.tsx)
-
-```tsx
-{aiRecommendations && (
-  <div className="mt-4 space-y-3">
-    {/* Portfolio Summary Section */}
-    <div>
-      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Portfolio Summary</h4>
-      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.portfolio_summary}</p>
-    </div>
-    {/* Key Metrics */}
-    <div className="grid grid-cols-2 gap-2">
-      <div>
-        <h4 className="text-sm font-semibold" style={{ color: cardText }}>DTI Ratio</h4>
-        <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.dti_ratio}</p>
-      </div>
-      <div>
-        <h4 className="text-sm font-semibold" style={{ color: cardText }}>LVR</h4>
-        <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.lvr}</p>
-      </div>
-      <div>
-        <h4 className="text-sm font-semibold" style={{ color: cardText }}>Cashflow</h4>
-        <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.cashflow_health}</p>
-      </div>
-      <div>
-        <h4 className="text-sm font-semibold" style={{ color: cardText }}>Borrowing Capacity</h4>
-        <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.borrowing_capacity}</p>
-      </div>
-    </div>
-    {/* Bottlenecks */}
-    <div>
-      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Bottlenecks</h4>
-      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.bottlenecks}</p>
-    </div>
-    {/* Detailed Recommendations with Reasoning */}
-    <div>
-      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Recommended Actions</h4>
-      {aiRecommendations.recommendations?.map((rec: { action: string; reasoning: string }, i: number) => (
-        <div key={i} className="mt-2 p-2 rounded" style={{ backgroundColor: cardBg }}>
-          <p className="text-sm font-medium" style={{ color: cardText }}>{rec.action}</p>
-          <p className="text-xs" style={{ color: cardTextSecondary }}>{rec.reasoning}</p>
-        </div>
-      ))}
-    </div>
-    {/* Property Acquisition Strategy */}
-    <div>
-      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Property Acquisition Strategy</h4>
-      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.acquisition_strategy}</p>
-    </div>
-    {/* Portfolio Optimization */}
-    <div>
-      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Portfolio Optimization</h4>
-      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.optimization}</p>
-    </div>
-    {/* Timing Decisions */}
-    <div>
-      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Optimal Timing</h4>
-      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.optimal_timing}</p>
-    </div>
-    {/* Max Purchase Price */}
-    <div>
-      <h4 className="text-sm font-semibold" style={{ color: cardText }}>Max Purchase Price</h4>
-      <p className="text-sm" style={{ color: cardTextSecondary }}>{aiRecommendations.max_purchase_price}</p>
-    </div>
-  </div>
-)}
-```
-
-#### Step 4: BA Agent Lambda (Already Implemented)
-
-The backend Lambda function is already implemented. It handles the "optimize" action:
-
-**File:** [`ba_agent/main.py`](app/ba-portal/lambda/ba_agent/main.py)
-
-- [`build_property_prompt()`](app/ba-portal/lambda/ba_agent/main.py:293) - Creates AI prompt with action="optimize"
-- [`extract_metrics_from_chart1()`](app/ba-portal/lambda/ba_agent/main.py:96) - Extracts portfolio metrics
-- [`invoke_bedrock()`](app/ba-portal/lambda/ba_agent/lib/bedrock_client.py:30) - Calls AWS Bedrock
-
-#### Step 5: API Endpoint (Already Configured)
-
-The `/ba-agent` endpoint is already configured in API Gateway.
-
-**File:** [`IaC/api-config.json`](app/ba-portal/IaC/api-config.json)
-
-No changes needed - the endpoint accepts `property_action: "optimize"`.
-
-### Implementation Checklist
-
-| Step | Component | Status |
-|------|-----------|--------|
-| 1 | Add `generateAiRecommendations()` to dashboardService.ts | ⬜ Not Started |
-| 2 | Replace "Generate Summary" button in ChartSection.tsx | ⬜ Not Started |
-| 3 | Add recommendations display section in ChartSection.tsx | ⬜ Not Started |
-| 4 | BA Agent Lambda (optimize action) | ✅ Already Implemented |
-| 5 | API Gateway endpoint | ✅ Already Configured |
-
-### Frontend Dashboard Layout
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  HEADER                                                                        │
-├────────────┬─────────────────────────────────────────────────┬───────────────┤
-│  LEFT      │  MAIN CONTENT AREA (ChartSection.tsx)         │  RIGHT        │
-│  SIDEBAR   │                                                 │  SIDEBAR      │
-│            │  ┌─────────────────────────────────────────────┐ │               │
-│            │  │         EXECUTIVE SUMMARY CARD             │ │               │
-│            │  │  - Title: Executive Summary of Portfolio  │ │               │
-│            │  │  - Button: Generate AI Recommendations    │ │               │
-│            │  │  - AI Recommendations Display             │ │               │
-│            │  └─────────────────────────────────────────────┘ │               │
-│            │                                                 │               │
-│            │  ┌─────────────────────────────────────────────┐ │               │
-│            │  │           30-Year Financial Projection     │ │               │
-│            │  └─────────────────────────────────────────────┘ │               │
-└────────────┴─────────────────────────────────────────────────┴───────────────┘
-```
-
-### BA Agent Integration
-
-The "Generate AI Recommendations" button calls the [`ba_agent`](app/ba-portal/lambda/ba_agent/main.py) Lambda with the **`optimize`** property action:
-
-| Property Action | Function Called | Purpose |
-|-----------------|-----------------|---------|
-| **`optimize`** | [`build_property_prompt()`](app/ba-portal/lambda/ba_agent/main.py:293) with action="optimize" | Analyzes EXISTING properties for bottlenecks and optimization opportunities |
-
-#### Request Payload
-
-```json
-{
-  "table_name": "BA-PORTAL-BASETABLE",
-  "id": "B57153AB-B66E-4085-A4C1-929EC158FC3E",
-  "property_action": "optimize"
-}
-```
-
-#### Response
-
-```json
-{
-  "status": "success",
-  "action": "optimize",
-  "analysis": {
-    "portfolio_summary": "Your portfolio currently has 2 properties with a combined value of $1,750,000 and total debt of $960,000. The portfolio is generating positive cashflow of $18,000 annually.",
-    "dti_ratio": "32.5%",
-    "lvr": "54.8% average across properties",
-    "cashflow_health": "Positive - $18,000 annual surplus",
-    "borrowing_capacity": "$340,000 available",
-    "bottlenecks": "High DTI ratio of 32.5% limits borrowing capacity. Consider paying down debt to reduce DTI below 30%.",
-    "recommendations": [
-      {
-        "action": "Reduce interest rate on Property A from 6.5% to 5.5%",
-        "reasoning": "This would reduce annual interest costs by $8,000, improving cashflow and lowering DTI by 2%"
-      },
-      {
-        "action": "Increase rent on Property B by $200/month",
-        "reasoning": "Current rent is 3.2% of property value, below the 4-6% market benchmark. This would add $2,400 annually to cashflow"
-      },
-      {
-        "action": "Access $80,000 in accessible equity for deposit",
-        "reasoning": "With current accessible equity of $150,000, using $80,000 as a 25% deposit would enable a $320,000 property purchase while maintaining DTI below 35%"
-      }
-    ],
-    "acquisition_strategy": "Wait until Year 2 when DTI drops below 28% to maximize borrowing capacity. Target properties in the $700,000-$800,000 range to maintain LVR below 80% and avoid LMI.",
-    "optimization": "Focus on rent optimization and debt reduction. Consider refinancing Property A to a lower rate. Increase rental income on underperforming properties to meet 4-6% of property value annually.",
-    "optimal_timing": "Year 2 - when DTI drops below 28%, providing maximum borrowing power of $420,000",
-    "max_purchase_price": "$600,000 based on accessible equity of $150,000 and projected borrowing capacity"
-  }
-}
-```
-
-### What It Displays
-
-The AI Advice and Insights section provides a comprehensive analysis of your portfolio:
-
-#### Portfolio Summary
-
-The AI first summarizes the current state of your portfolio, including:
-
-| Metric | Description |
-|--------|-------------|
-| **DTI Ratio** | Debt-to-Income ratio showing your borrowing health |
-| **LVR Analysis** | Loan-to-Value ratios across all properties |
-| **Cashflow Health** | Rental income vs expenses and surplus projections |
-| **Equity Position** | Total and accessible equity for future purchases |
-| **Borrowing Capacity** | How much additional debt the portfolio can sustain |
-
-#### Recommended Actions
-
-Based on the analysis, the AI provides detailed recommendations with reasoning:
-
-1. **Property Acquisition Strategies** - When and what property to buy next based on financial capacity
-   - Optimal purchase timing based on DTI projections
-   - Target property value within borrowing power + equity
-   - Recommended loan amounts to maintain sustainable DTI
-
-2. **Portfolio Optimization** - Adjust rent, expenses, and interest rates to align with market benchmarks:
-   - Rent should be 4-6% of property value annually
-   - Expenses should be 1-2% of property value annually
-   - Growth rates should align with historical averages (3-7%)
-   - Interest rates should reflect current market (5-7%)
-
-3. **Sell/Hold Strategy** - Recommendations on existing properties
-
-4. **Timing Decisions** - Best time to make moves based on financial projections
-
-### What It Analyzes
-
-The AI recommendations analyze your portfolio to identify:
-
-| Metric | Description |
-|--------|-------------|
-| **Bottlenecks** | Areas limiting portfolio growth (high DTI, low equity, negative cashflow) |
-| **Borrowing Capacity** | How much additional debt the portfolio can sustain |
-| **LVR Analysis** | Loan-to-Value ratios and LMI implications |
-| **Cashflow Health** | Rental income vs expenses and surplus projections |
-| **Equity Position** | Total and accessible equity for future purchases |
-| **Optimization Opportunities** | Adjustments to align with market benchmarks |
-
-### Recommended Actions
-
-Based on the analysis, the BA Agent provides recommendations for:
-
-1. **Property Acquisition** - When and what property to buy next based on financial capacity
-2. **Portfolio Optimization** - Adjust rent, expenses, and interest rates to align with market benchmarks:
-   - Rent should be 4-6% of property value annually
-   - Expenses should be 1-2% of property value annually
-   - Growth rates should align with historical averages (3-7%)
-   - Interest rates should reflect current market (5-7%)
-3. **Sell/Hold Strategy** - Recommendations on existing properties
-4. **Timing Decisions** - Best time to make moves based on financial projections
-
-### API Integration
-
-The "Generate AI Recommendations" feature uses the `/ba-agent` endpoint with the **`optimize`** action:
-
-| Action | Description |
-|--------|-------------|
-| `optimize` | Analyze and optimize existing properties with market benchmarks - identifies bottlenecks, provides recommendations to maximize portfolio performance |
-
-#### Example Request
-
-```json
-{
-  "table_name": "BA-PORTAL-BASETABLE",
-  "id": "B57153AB-B66E-4085-A4C1-929EC158FC3E",
-  "property_action": "optimize"
-}
-```
-
-#### Example Response
-
-```json
-{
-  "status": "success",
-  "action": "optimize",
-  "analysis": {
-    "portfolio_summary": "Your portfolio currently has 2 properties with a combined value of $1,750,000 and total debt of $960,000. The portfolio is generating positive cashflow of $18,000 annually.",
-    "dti_ratio": "32.5%",
-    "lvr": "54.8% average across properties",
-    "cashflow_health": "Positive - $18,000 annual surplus",
-    "borrowing_capacity": "$340,000 available",
-    "bottlenecks": "High DTI ratio of 32.5% limits borrowing capacity",
-    "recommendations": [
-      {
-        "action": "Consider paying down debt to reduce DTI below 30%",
-        "reasoning": "Reducing DTI from 32.5% to 28% would increase borrowing capacity by $80,000"
-      },
-      {
-        "action": "Accessible equity of $150,000 available for next purchase",
-        "reasoning": "This equity can fund a 25% deposit on a $600,000 property"
-      },
-      {
-        "action": "Property cashflow is negative, consider increasing rent",
-        "reasoning": "Current rental yield of 3.2% is below the 4-6% market benchmark"
-      }
-    ],
-    "acquisition_strategy": "Wait until Year 2 when DTI drops below 28% to maximize borrowing capacity. Target properties in the $700,000-$800,000 range.",
-    "optimization": "Focus on rent optimization and debt reduction. Consider refinancing to lower interest rates.",
-    "optimal_timing": "Year 3 - when DTI drops below 30%",
-    "max_purchase_price": "$600,000 based on accessible equity"
-  }
-}
-```
-
-### Frontend Integration
-
-The "Generate AI Recommendations" button is integrated into the dashboard interface. When clicked, it:
-
-1. Shows a loading state while processing
-2. Calls the BA Agent API endpoint
-3. Displays the AI-generated recommendations in a user-friendly format
-4. Allows users to apply recommendations directly to their portfolio
-
----
-
 ## Purpose
 
 The BA Portal is designed for **Buyer Agents** (property investment advisors) to:
 
 1. **Manage Client Portfolios** - Track multiple investors and their property investments
 2. **Analyze Financial Capacity** - Calculate borrowing power, DTI ratios, and accessible equity
-3. **Visualize Projections** - Display 30-year financial forecasts with interactive charts
-4. **AI-Powered Recommendations** - Generate property acquisition suggestions using AWS Bedrock
-5. **Configure Parameters** - Adjust financial assumptions like CPI rates, borrowing multipliers
+3. **Visualize Projections** - Display configurable-year financial forecasts with interactive charts
+4. **AI-Powered Insights** - Generate portfolio summaries and tailored advice using AWS Bedrock
+5. **Add AI-Recommended Properties** - Use AI to suggest the next optimal property to acquire
+6. **Configure Parameters** - Adjust financial assumptions like CPI rates, borrowing multipliers, and investment horizon
 
 The platform uses a serverless AWS backend with DynamoDB for data storage and Lambda functions for business logic, while the frontend provides an intuitive dashboard interface.
 
 ---
 
-## Frontend Wireframe
+## Frontend Layout
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │  HEADER (Fixed Top)                                                                                    │
 │  ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐  │
-│  │ [Logo] Dashboard                    [User Menu ▼] [Settings] [Config] [☀/🌙]                │  │
-│  │        Financial Analytics Platform                                                              │  │
+│  │ [Logo] Dashboard  [Portfolio ▼]  [Switch Portfolio] [Expenses] [Investor Details]  [☀/🌙] [User]│  │
 │  └──────────────────────────────────────────────────────────────────────────────────────────────────┘  │
-├────────────┬─────────────────────────────────────────────────────────────┬───────────────────────────┤
-│ LEFT       │  MAIN CONTENT AREA                                         │ RIGHT SIDEBAR             │
-│ SIDEBAR    │                                                             │ (Properties Panel)        │
-│            │  ┌─────────────────────────────────────────────────────────┐ │                           │
-│ ▼ Dashboard│  │                    CHART SECTION                         │ │ ┌───────────────────────┐ │
-│   Overview │  │                                                         │ │ │ Properties    [►]      │ │
-│            │  │     ┌───────────────────────────────────────────────┐    │ │ ├───────────────────────┤ │
-│ ▼ Analytics│  │     │                                               │    │ │ │ [+ Add Property]      │ │
-│   Reports  │  │     │           30-Year Financial Projection       │    │ │ │                       │ │
-│            │  │     │              (Interactive Chart)             │    │ │ │ ┌───────────────────┐ │ │
-│ ▼ Settings │  │     │                                               │    │ │ │ │ Property A         │ │ │
-│            │  │     │   DTI   Borrowing   Equity   Cashflow        │    │ │ │ │ $1,200,000         │ │ │
-│ ▼ Users    │  │     │   Line   Bar       Area      Line            │    │ │ │ │ Purchase Year: 1   │ │ │
-│            │  │     │                                               │    │ │ │ │ Loan: $600,000     │ │ │
-│            │  │     └───────────────────────────────────────────────┘    │ │ │ │ Rent: $30,000/yr   │ │ │
-│            │  │                                                         │    │ │ │                     │ │ │
-│            │  └─────────────────────────────────────────────────────────┘    │ │ │ │ Investor Splits ▼   │ │ │
-│            │                                                             │    │ │ │   Bob: 50%         │ │ │
-│            │  ┌─────────────────────────────────────────────────────────┐    │ │ │   Alice: 50%        │ │ │
-│            │  │              INVESTORS SECTION                        │    │ │ └───────────────────┘ │ │
-│            │  │                                                         │    │ │                       │ │
-│            │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │    │ │ ┌───────────────────┐ │ │
-│            │  │  │   BOB         │  │   ALICE      │  │    + Add    │ │    │ │ │ [+ Add Property]  │ │ │
-│            │  │  │  $120,000/yr  │  │  $100,000/yr │  │   Investor   │ │    │ │ └───────────────────┘ │ │
-│            │  │  │  Borrowing:   │  │  Borrowing:   │  │              │ │    │ │                       │ │
-│            │  │  │    $450,000   │  │    $375,000   │  │              │ │    │ │ [Update Data]        │ │
-│            │  │  │  DTI: 28.5%   │  │  DTI: 32.0%   │  │              │ │    │ └───────────────────────┘ │
-│            │  │  └──────────────┘  └──────────────┘  └──────────────┘ │    │                           │
-│            │  └─────────────────────────────────────────────────────────┘    │                           │
-├────────────┴─────────────────────────────────────────────────────────────┴───────────────────────────┤
-│  FOOTER                                                                                               │
-│  © 2024 BA Portal | Financial Analytics Platform | Version 1.0.0                                    │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  MAIN CONTENT (scrollable)                                                                             │
+│                                                                                                        │
+│  ┌────────────────────────────────────────────────────┐   ┌─────────────────────────────────────────┐ │
+│  │                 CHART SECTION                       │   │     SIDEBAR (collapsible right panel)   │ │
+│  │                                                     │   │                                         │ │
+│  │  ┌───────────────────────────────────────────────┐  │   │  ┌─────────────────────────────────┐   │ │
+│  │  │  Summary Cards (DTI, Equity, Surplus, etc.)   │  │   │  │  Properties Panel               │   │ │
+│  │  └───────────────────────────────────────────────┘  │   │  │  [+ Add Property (AI)]          │   │ │
+│  │                                                     │   │  │  Property A, Property B...      │   │ │
+│  │  ┌───────────────────────────────────────────────┐  │   │  └─────────────────────────────────┘   │ │
+│  │  │  30-Year Financial Projection (main chart)    │  │   │                                         │ │
+│  │  └───────────────────────────────────────────────┘  │   │  ┌─────────────────────────────────┐   │ │
+│  │                                                     │   │  │  Investors Panel                │   │ │
+│  │  ┌───────────────────────────────────────────────┐  │   │  └─────────────────────────────────┘   │ │
+│  │  │  Executive Summary Card                       │  │   │                                         │ │
+│  │  │  [🤖 Summarise]                               │  │   │  ┌─────────────────────────────────┐   │ │
+│  │  └───────────────────────────────────────────────┘  │   │  │  Configuration Panel            │   │ │
+│  │                                                     │   │  │  Investment Years slider        │   │ │
+│  │  ┌───────────────────────────────────────────────┐  │   │  │  CPI, Equity Rate, etc.         │   │ │
+│  │  │  Our Advice Card                              │  │   │  │  Investment Goals & Risk        │   │ │
+│  │  │  [💡 Get Advice]                              │  │   │  └─────────────────────────────────┘   │ │
+│  │  └───────────────────────────────────────────────┘  │   │                                         │ │
+│  │                                                     │   │  [Update Data]                          │ │
+│  │  ┌───────────────────────────────────────────────┐  │   └─────────────────────────────────────────┘ │
+│  │  │  LVR Over Time Chart                          │  │                                               │
+│  │  └───────────────────────────────────────────────┘  │                                               │
+│  └────────────────────────────────────────────────────┘                                               │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  FOOTER                                                                                                │
+│  © 2024 BA Portal | Financial Analytics Platform                                                       │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────┘
-
-Legend:
-[Logo]       - Company logo/branding
-[User Menu]  - User dropdown (profile, logout)
-[Settings]   - Application settings
-[Config]     - Configuration panel (CPI, borrowing multipliers)
-[☀/🌙]      - Dark/Light mode toggle
-
-LEFT SIDEBAR - Navigation menu
-MAIN CONTENT - Chart visualization + Investors cards
-RIGHT SIDEBAR - Properties panel with Add Property (AI) and Update buttons
 ```
 
 ---
@@ -520,22 +103,26 @@ RIGHT SIDEBAR - Properties panel with Add Property (AI) and Update buttons
 │                                │  │  │   Lambda     │ │  Lambda   │ │  │   │
 │                                │  │  └──────────────┘ └───────────┘ │  │   │
 │                                │  │                                  │  │   │
+│                                │  │  ┌─────────────┐ ┌────────────┐ │  │   │
+│                                │  │  │ Insert Table│ │Update Chart│ │  │   │
+│                                │  │  │   Lambda    │ │  Lambda   │ │  │   │
+│                                │  │  └─────────────┘ └────────────┘ │  │   │
+│                                │  │                                  │  │   │
 │                                │  │  ┌────────────────────────────┐ │  │   │
 │                                │  │  │      BA Agent Lambda       │ │  │   │
-│                                │  │  │  (AI Property Generation) │ │  │   │
+│                                │  │  │  add / optimize /          │ │  │   │
+│                                │  │  │  summary / advice          │ │  │   │
 │                                │  │  └────────────────────────────┘ │  │   │
 │                                │  └──────────────────────────────────┘  │   │
 │                                │               │                          │   │
 │                                │  ┌────────────┴────────────────────┐    │   │
 │                                │  │       DynamoDB                  │    │   │
 │                                │  │  • BA-PORTAL-BASETABLE          │    │   │
-│                                │  │  • ba-dashboard-users-table     │    │   │
-│                                │  │  • ba-dashboard-verification-codes-table  │   │
 │                                │  └─────────────────────────────────┘    │   │
 │                                │                                           │   │
 │                                │  ┌─────────────────────────────────┐    │   │
 │                                │  │        Amazon Bedrock            │    │   │
-│                                │  │  (Claude for AI Recommendations)│    │   │
+│                                │  │  (Claude for AI features)        │    │   │
 │                                │  └─────────────────────────────────┘    │   │
 │                                └──────────────────────────────────────────┘   │
 │                                                                             │
@@ -562,16 +149,23 @@ flowchart LR
 
 | Feature | Description |
 |---------|-------------|
-| **Dashboard Analytics** | Interactive charts showing 30-year financial projections |
+| **Dashboard Analytics** | Interactive charts showing configurable-year financial projections (default 30 years) |
+| **LVR Chart** | Dedicated Loan-to-Value Ratio over time chart with risk zone annotations |
 | **Investor Management** | Add, edit, and manage multiple investors per portfolio |
-| **Property Tracking** | Track property investments with purchase details, loans, and rental income |
-| **Chart1 Calculations** | Automatic calculation of borrowing capacity, DTI, LVR, and cashflow projections |
-| **AI Recommendations** | Generate property acquisition recommendations using AWS Bedrock |
-| **Portfolio Optimization** | Optimize existing properties based on market benchmarks |
-| **Investment Goals** | Set personal investment goals and risk tolerance for personalized AI advice |
-| **Configuration Parameters** | Adjust financial assumptions (CPI, borrowing multipliers, equity rates) |
+| **Property Tracking** | Track property investments with purchase details, loans, rental income, and investor splits |
+| **Chart1 Calculations** | Automatic calculation of borrowing capacity, DTI, LVR, accessible equity, and cashflow projections |
+| **AI Property Suggestions** | AI-generated property recommendations via the "Add Property" button in the Sidebar |
+| **Portfolio Optimization** | Analyze and optimize existing properties against market benchmarks |
+| **Executive Summary** | AI-generated plain-English summary of the portfolio's current financial position |
+| **Our Advice** | AI-generated actionable recommendations with reasoning, personalized to investment goals |
+| **Investment Goals** | Set investment goals and risk tolerance in the Sidebar for personalized AI advice |
+| **Investment Years Slider** | Adjust the forecast horizon (1–30 years) via a slider in the Sidebar |
+| **Configuration Parameters** | Adjust financial assumptions (CPI, borrowing multipliers, accessible equity rate) |
 | **Dark/Light Mode** | Toggle between dark and light themes |
-| **Secure Authentication** | Passwordless login with email verification via AWS Cognito |
+| **Secure Authentication** | Passwordless login with email verification codes |
+| **Portfolio Selector** | Switch between multiple client portfolios |
+| **Household Expenses Form** | Dedicated form for entering essential and non-essential expenditure |
+| **Investor Details Form** | Dedicated form for managing investor income, dependants, and growth rate |
 
 ### API Endpoints
 
@@ -579,40 +173,100 @@ flowchart LR
 |----------|--------|-------------|
 | `/update-table` | POST | Update DynamoDB items with automatic Chart1 calculation |
 | `/read-table` | POST | Read active portfolio data including Chart1, investors, properties |
-| `/ba-agent` | POST | AI-powered property recommendations via Bedrock |
+| `/insert-table` | POST | Insert a new portfolio record |
+| `/ba-agent` | POST | AI-powered actions via Bedrock (add, optimize, summary, advice) |
 
-### Adding Properties
+### AI Features
 
-The Right Sidebar panel in the dashboard provides an **"Add Property"** button that uses the BA Agent endpoint to generate AI-powered property recommendations.
+The BA Portal uses AWS Bedrock (Claude) for four AI-powered actions, all accessible via the `/ba-agent` endpoint:
 
-#### How It Works
+| `property_action` | Triggered By | Description |
+|-------------------|-------------|-------------|
+| `add` | "Add Property" button in Sidebar | Generates ONE new property recommendation based on current portfolio financials |
+| `optimize` | (internal analysis use) | Analyzes and optimizes existing properties against market benchmarks |
+| `summary` | "🤖 Summarise" button in Executive Summary card | Generates a plain-English portfolio summary incorporating investment goals |
+| `advice` | "💡 Get Advice" button in Our Advice card | Generates 3 actionable recommendations with reasoning based on forecast, risk profile, and goals |
 
-1. **Click "Add Property"** - The button triggers a call to the BA Agent Lambda
-2. **AI Analysis** - The system reads the current portfolio's Chart1 data (DTI, borrowing capacity, accessible equity)
-3. **Bedrock Processing** - AWS Bedrock (Claude) analyzes financial metrics and generates optimal property attributes
-4. **Recommendation Returned** - The AI returns a recommended property with:
-   - Optimal purchase year based on financial capacity
-   - Loan amount within sustainable DTI limits
-   - Property value within borrowing power + equity
-   - Rental income estimates for positive cashflow
-   - Appropriate LVR to avoid LMI
-5. **User Review** - The recommended property is displayed for user approval
-6. **Save to Portfolio** - User can modify and save the property to their portfolio
+#### Add Property
 
-#### Property Fields
+The **"Add Property"** button in the Sidebar calls the BA Agent with `property_action: "add"`. The AI analyzes the current portfolio's Chart1 data (DTI, borrowing capacity, accessible equity) and returns a recommended property ready to be added to the portfolio.
 
-| Field | Description |
-|-------|-------------|
-| Name | Property identifier (e.g., "Property A") |
-| Purchase Year | Year to acquire the property (1-30) |
-| Initial Value | Starting property value |
-| Loan Amount | Initial loan principal |
-| Interest Rate | Annual interest rate (decimal, e.g., 0.06 for 6%) |
-| Annual Rent | Rental income per year |
-| Growth Rate | Annual appreciation rate (decimal) |
-| Other Expenses | Annual expenses excluding interest |
-| Annual Principal Change | Annual loan repayment amount |
-| Investor Splits | Ownership percentages per investor |
+**Request:**
+```json
+{
+  "table_name": "BA-PORTAL-BASETABLE",
+  "id": "B57153AB-B66E-4085-A4C1-929EC158FC3E",
+  "property_action": "add"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "action": "add",
+  "property": {
+    "name": "Property D",
+    "purchase_year": 8,
+    "loan_amount": 800000,
+    "annual_principal_change": 0,
+    "rent": 40000,
+    "interest_rate": 5.5,
+    "other_expenses": 10000,
+    "property_value": 1000000,
+    "initial_value": 950000,
+    "growth_rate": 5,
+    "investor_splits": [
+      {"name": "Bob", "percentage": 50},
+      {"name": "Alice", "percentage": 50}
+    ]
+  }
+}
+```
+
+#### Executive Summary
+
+The **"🤖 Summarise"** button in the Executive Summary card calls the BA Agent with `property_action: "summary"`. It reads the portfolio's Chart1 data and investment goals, then returns a markdown-formatted plain-English summary.
+
+**Request:**
+```json
+{
+  "table_name": "BA-PORTAL-BASETABLE",
+  "id": "B57153AB-B66E-4085-A4C1-929EC158FC3E",
+  "property_action": "summary"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "action": "summary",
+  "summary": "Your portfolio currently holds 2 properties with a combined value of $1,750,000..."
+}
+```
+
+#### Our Advice
+
+The **"💡 Get Advice"** button in the Our Advice card calls the BA Agent with `property_action: "advice"`. It incorporates the portfolio's investment goals and risk tolerance to generate 3 tailored recommendations.
+
+**Request:**
+```json
+{
+  "table_name": "BA-PORTAL-BASETABLE",
+  "id": "B57153AB-B66E-4085-A4C1-929EC158FC3E",
+  "property_action": "advice"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "action": "advice",
+  "advice": "## Recommendation 1: Refinance Property A\n\nRefinancing from 6% to 5.5% would save $8,000 annually..."
+}
+```
 
 ---
 
@@ -627,7 +281,7 @@ The Right Sidebar panel in the dashboard provides an **"Add Property"** button t
 | [Vite](https://vitejs.dev/) | 7.2.4 | Build tool and dev server |
 | [Tailwind CSS](https://tailwindcss.com/) | 4.1.x | Utility-first CSS framework |
 | [Recharts](https://recharts.org/) | 3.6.0 | Charting library |
-| [ECharts](https://echarts.apache.org/) | 6.0.0 | Advanced charting |
+| [ECharts](https://echarts.apache.org/) | 6.0.0 | Advanced charting (LVR chart) |
 | [Lucide React](https://lucide.dev/) | 0.562.0 | Icon library |
 | [Axios](https://axios-http.com/) | 1.13.x | HTTP client |
 | [AWS Amplify](https://aws.amazon.com/amplify/) | 6.19.x | AWS authentication |
@@ -652,27 +306,32 @@ app/ba-portal/
 ├── dashboard-frontend/          # React TypeScript frontend
 │   ├── src/
 │   │   ├── components/          # React components
-│   │   │   ├── ChartSection.tsx     # Chart visualization
-│   │   │   ├── Dashboard.tsx        # Main dashboard
-│   │   │   ├── Footer.tsx           # Footer component
-│   │   │   ├── Header.tsx           # Header with auth & config
-│   │   │   ├── LeftSidebar.tsx      # Navigation sidebar
-│   │   │   └── RightSidebar.tsx     # Details panel
+│   │   │   ├── ChartSection.tsx       # Chart visualization and AI summary/advice cards
+│   │   │   ├── Dashboard.tsx          # Main dashboard orchestrator
+│   │   │   ├── EmptyPortfolioState.tsx # UI shown when no portfolios exist
+│   │   │   ├── Footer.tsx             # Footer component
+│   │   │   ├── Header.tsx             # Header with portfolio selector and auth
+│   │   │   ├── HouseholdExpensesForm.tsx # Form for entering household expenses
+│   │   │   ├── InvestorDetailsForm.tsx   # Form for managing investor details
+│   │   │   ├── PortfolioSelector.tsx     # Portfolio selection screen
+│   │   │   └── Sidebar.tsx            # Right panel: properties, investors, config
 │   │   ├── config/
-│   │   │   └── cognitoConfig.ts     # Cognito configuration
+│   │   │   └── cognitoConfig.ts       # Cognito configuration
 │   │   ├── contexts/
-│   │   │   └── AuthContext.tsx      # Authentication context
+│   │   │   └── AuthContext.tsx        # Authentication context
 │   │   ├── hooks/
-│   │   │   └── useFinancialData.ts  # Data fetching hook
+│   │   │   ├── useApiClientInitialize.ts # API client setup hook
+│   │   │   └── useFinancialData.ts       # Data fetching hook
 │   │   ├── pages/
-│   │   │   ├── Analytics.tsx        # Analytics page
-│   │   │   ├── Reports.tsx           # Reports page
-│   │   │   ├── Settings.tsx         # Settings page
-│   │   │   └── Users.tsx            # Users page
+│   │   │   ├── Analytics.tsx          # Analytics page
+│   │   │   ├── Reports.tsx            # Reports page
+│   │   │   ├── Settings.tsx           # Settings page
+│   │   │   └── Users.tsx              # Users page
 │   │   └── services/
-│   │       ├── authService.ts       # Authentication service
-│   │       ├── dashboardService.ts  # Dashboard API service
-│   │       └── financialApi.ts       # Financial data API
+│   │       ├── apiClient.ts           # Axios client with auth interceptors
+│   │       ├── authService.ts         # Authentication service
+│   │       ├── dashboardService.ts    # Dashboard API service (all data + AI calls)
+│   │       └── financialApi.ts        # Financial data API
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── vite.config.ts
@@ -684,8 +343,8 @@ app/ba-portal/
 │   └── teardown_api.py        # API teardown script
 │
 └── lambda/                     # AWS Lambda functions
-    ├── ba_agent/               # AI property generation
-    │   ├── main.py             # Main handler
+    ├── ba_agent/               # AI features (add/optimize/summary/advice)
+    │   ├── main.py             # Main handler with all 4 actions
     │   ├── lib/
     │   │   └── bedrock_client.py
     │   └── README.md
@@ -693,18 +352,21 @@ app/ba-portal/
     ├── update_table/           # DynamoDB update with Chart1 calculation
     │   ├── update_table.py     # Main handler
     │   ├── libs/
-    │   │   └── superchart1.py # Chart calculation library
-    │   ├── deploy_lambda.py    # Deployment script
+    │   │   └── superchart1.py  # Chart calculation library
+    │   ├── utils/
+    │   ├── deploy_lambda.py
     │   └── README.md
+    │
+    ├── update_chart/           # Chart-specific update Lambda
+    │   └── lambda_handler.py
     │
     ├── read_table/             # DynamoDB read operations
     │   ├── read_table.py
     │   ├── deploy_lambda.py
     │   └── README.md
     │
-    └── insert_table/           # Insert new records
-        ├── insert_table.py
-        └── README.md
+    └── insert_table/           # Insert new portfolio records
+        └── insert_table.py
 ```
 
 ---
@@ -773,7 +435,7 @@ This section documents all the financial formulas used in the BA Portal's Chart1
 
 ### Configuration Parameters
 
-The following parameters can be configured in the dashboard header and affect the calculations below:
+The following parameters can be configured in the Sidebar and affect the calculations below:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -783,6 +445,7 @@ The following parameters can be configured in the dashboard header and affect th
 | Borrowing Power Min | 3.5 | Minimum income multiple for borrowing capacity |
 | Borrowing Power Base | 5.0 | Base income multiple before dependants reduction |
 | Dependant Reduction | 0.25 | Borrowing power reduction per dependant |
+| Investment Years | 30 | Number of years to forecast (1–30, adjusted via slider) |
 
 ---
 
@@ -827,22 +490,6 @@ The DTI ratio is stored as a **decimal** (e.g., 5.0 for 500%), not as a percenta
 - Total Debt: $600,000
 - Annual Gross Income: $120,000
 - DTI = 600,000 / 120,000 = 5.0 (stored as 5.0, displayed as 500%)
-
-**Source Code (superchart1.py:392-398):**
-```python
-# Calculate DTI using gross income
-gross_income = sum(investor_income_snapshot.values())
-dti_result = calculate_dti(
-    total_debt=total_debt,
-    annual_income=gross_income
-)
-```
-
-**Frontend Display (ChartSection.tsx):**
-```typescript
-// Displays the raw decimal DTI ratio (e.g., 5.0 = 500%)
-data: transformedData.map((d: any) => d.dti_ratio || 0),
-```
 
 **Note:** A lower DTI indicates healthier borrowing capacity. Typically, lenders prefer DTI below 0.30-0.40 (30-40%). A DTI above 1.0 (100%) means debt exceeds annual income.
 
@@ -895,11 +542,6 @@ The total equity in a property (property value minus loan balance).
 Raw Equity = Property Value - Loan Amount
 ```
 
-**Example:**
-- Property Value: $1,000,000
-- Loan Amount: $600,000
-- Raw Equity: $1,000,000 - $600,000 = $400,000
-
 **Source:** [`superchart1.py:174-202`](app/ba-portal/lambda/update_table/libs/superchart1.py:174)
 
 ---
@@ -934,10 +576,6 @@ The maximum price that can be paid for a new property based on accessible equity
 Max Purchase Price = Accessible Equity / 0.25
 ```
 
-**Example:**
-- Accessible Equity: $200,000
-- Max Purchase Price: $200,000 / 0.25 = $800,000
-
 **Logic:** The accessible equity represents a 25% deposit, so dividing by 0.25 gives the maximum property purchase price that can be supported.
 
 **Source:** [`superchart1.py:174-202`](app/ba-portal/lambda/update_table/libs/superchart1.py:174)
@@ -950,17 +588,14 @@ Measures the loan amount as a percentage of the property value.
 
 **Formula:**
 ```
-LVR = (Loan Amount / Property Value) × 100
+LVR = (Total Loan Balance / Total Property Value) × 100
 ```
 
-**Example:**
-- Property Value: $1,000,000
-- Loan Amount: $600,000
-- LVR: ($600,000 / $1,000,000) × 100 = 60%
-
-**Note:** 
-- LVR above 80% typically requires Lenders Mortgage Insurance (LMI)
-- Lower LVR means lower risk for lenders
+**LVR Risk Zones:**
+- LVR < 60%: Low risk — strong equity position, best lending rates
+- LVR 60%–80%: Caution — approaching LMI territory
+- LVR 80%–90%: LMI required — Lender's Mortgage Insurance applies above 80%
+- LVR > 90%: Critical — many lenders will restrict further credit
 
 **Source:** [`superchart1.py:400-408`](app/ba-portal/lambda/update_table/libs/superchart1.py:400)
 
@@ -975,17 +610,6 @@ The net cashflow generated by all properties (rental income minus costs).
 Property Cashflow = Total Rent - Total Interest Cost - Total Other Expenses
 ```
 
-**Components:**
-- **Total Rent:** Sum of all rental income from properties
-- **Total Interest Cost:** Sum of all interest payments on loans
-- **Total Other Expenses:** Sum of all other property expenses
-
-**Example:**
-- Total Rent: $30,000
-- Total Interest Cost: $36,000
-- Total Other Expenses: $10,000
-- Property Cashflow: $30,000 - $36,000 - $10,000 = -$16,000 (negative cashflow)
-
 **Source:** [`superchart1.py:441-447`](app/ba-portal/lambda/update_table/libs/superchart1.py:441)
 
 ---
@@ -998,19 +622,6 @@ The remaining funds after all expenses from the combined investor net incomes.
 ```
 Household Surplus = Combined Net Income - Essential Expenses - Nonessential Expenses + Property Cashflow
 ```
-
-**Components:**
-- **Combined Net Income:** Sum of all investors' net incomes after tax
-- **Essential Expenses:** Total essential expenditure from all investors
-- **Nonessential Expenses:** Total non-essential expenditure from all investors
-- **Property Cashflow:** Net cashflow from properties (can be positive or negative)
-
-**Example:**
-- Combined Net Income: $170,000
-- Essential Expenses: $60,000
-- Nonessential Expenses: $30,000
-- Property Cashflow: $20,000
-- Household Surplus: $170,000 - $60,000 - $30,000 + $20,000 = $100,000
 
 **Source:** [`superchart1.py:447-448`](app/ba-portal/lambda/update_table/libs/superchart1.py:447)
 
@@ -1025,20 +636,11 @@ The maximum amount an investor can borrow based on their net income and existing
 Borrowing Capacity = max(0, Net Income × Borrowing Multiple - Existing Debt)
 ```
 
-**Components:**
-- **Net Income:** Investor's net income after tax and expenses
-- **Borrowing Multiple:** Calculated based on number of dependants (see Section 1)
-- **Existing Debt:** Current total debt owed by the investor
-
 **Example:**
 - Net Income: $90,000
 - Borrowing Multiple: 5.0
 - Existing Debt: $0
 - Borrowing Capacity: max(0, $90,000 × 5.0 - $0) = $450,000
-
-With existing debt:
-- Existing Debt: $100,000
-- Borrowing Capacity: max(0, $90,000 × 5.0 - $100,000) = $350,000
 
 **Source:** [`superchart1.py:451-464`](app/ba-portal/lambda/update_table/libs/superchart1.py:451)
 
@@ -1053,14 +655,6 @@ The net income for each investor after all deductions, including property-relate
 Investor Net Income = Net Income After Tax - Essential Expenditure - Nonessential Expenditure 
                     + Rental Income Share - Interest Cost Share - Other Expenses Share
 ```
-
-**Components:**
-- **Net Income After Tax:** Gross income minus income tax and Medicare levy
-- **Essential Expenditure:** Personal essential living costs
-- **Nonessential Expenditure:** Personal discretionary spending
-- **Rental Income Share:** Proportional rental income from properties (based on investor splits)
-- **Interest Cost Share:** Proportional interest costs from loans (based on investor splits)
-- **Other Expenses Share:** Proportional other property expenses (based on investor splits)
 
 **Source:** [`superchart1.py:426-439`](app/ba-portal/lambda/update_table/libs/superchart1.py:426)
 
@@ -1091,11 +685,11 @@ Year N Expense = Year (N-1) Expense × (1 + CPI Rate)
 
 ### 13. Yearly Forecast Data Structure
 
-Each year in the 30-year forecast contains the following calculated fields:
+Each year in the forecast contains the following calculated fields:
 
 | Field | Description |
 |-------|-------------|
-| year | Forecast year (1-30) |
+| year | Forecast year (1–N) |
 | investor_net_incomes | Net income per investor |
 | combined_income | Combined net income of all investors |
 | investor_borrowing_capacities | Borrowing capacity per investor |
@@ -1122,20 +716,18 @@ Each year in the 30-year forecast contains the following calculated fields:
 
 ## Configuration
 
-### Header Configuration Panel
+### Sidebar Configuration Panel
 
-The BA Portal includes a configuration panel in the header that allows users to set both financial parameters and investment goals. This panel is accessible via the gear icon in the header.
+The BA Portal's configuration panel is located in the **Sidebar** (collapsible right panel). It is accessible by opening the sidebar from the main dashboard.
 
 #### Investment Goals Settings
 
-Users can set their investment goals to receive personalized AI recommendations:
+Users can set their investment goals to receive personalized AI advice from the "Our Advice" feature:
 
 | Setting | Type | Options | Description |
 |---------|------|---------|-------------|
-| **Investment Goal** | Multi-select | Passive Income, Capital Growth, Tax Benefits, Wealth Accumulation, Retirement Planning, Lifestyle & Personal Use | Primary objectives for the portfolio |
+| **Investment Goal** | Single-select text | e.g., Passive Income, Capital Growth | Primary objective for the portfolio |
 | **Risk Tolerance** | Single-select | Conservative, Moderate, Aggressive | Investment risk preference |
-
-#### Storing Investment Goals in DynamoDB
 
 Investment goals are stored in the `BA-PORTAL-BASETABLE` DynamoDB table:
 
@@ -1143,41 +735,35 @@ Investment goals are stored in the `BA-PORTAL-BASETABLE` DynamoDB table:
 {
   "id": "B57153AB-B66E-4085-A4C1-929EC158FC3E",
   "investment_goals": {
-    "goals": ["Passive Income", "Capital Growth", "Retirement Planning"],
+    "goal": "Passive Income",
     "risk_tolerance": "moderate"
   }
 }
 ```
 
-#### Using Investment Goals in AI Recommendations
-
-The BA Agent Lambda reads the investment goals from DynamoDB and incorporates them into the AI prompt to generate personalized recommendations:
+The BA Agent Lambda reads investment goals and incorporates them into the `summary` and `advice` prompts.
 
 **File:** [`ba_agent/main.py`](app/ba-portal/lambda/ba_agent/main.py)
 
-```python
-# Extract investment goals from portfolio
-investment_goals = item.get('investment_goals', {})
-goals = investment_goals.get('goals', [])
-risk_tolerance = investment_goals.get('risk_tolerance', 'moderate')
+#### Investment Years
 
-# Include in AI prompt for personalized recommendations
-prompt += f"""
-Investment Goals:
-- Goals: {', '.join(goals)}
-- Risk Tolerance: {risk_tolerance}
-"""
-```
+The **Investment Years** slider in the Sidebar controls the forecast horizon. The value is stored in DynamoDB as `investment_years` and passed to the Chart1 calculation lambda.
 
-### Implementation Checklist
+- **Range:** 1–30 years
+- **Default:** 30 years
+- **Effect:** The `update-table` endpoint recalculates Chart1 for the specified number of years
 
-| Step | Component | Status |
-|------|-----------|--------|
-| 1 | Add Investment Goals fields to Header.tsx config panel | ⬜ Not Started |
-| 2 | Add `investment_goals` to ConfigParams type in dashboardService.ts | ⬜ Not Started |
-| 3 | Update saveConfigParams in dashboardService.ts to save goals | ⬜ Not Started |
-| 4 | Update update_table.py Lambda to handle investment_goals | ⬜ Not Started |
-| 5 | Update ba_agent/main.py to read and use goals in AI prompts | ⬜ Not Started |
+#### Dashboard Configuration Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| Medicare Levy Rate | 0.02 (2%) | Australian Medicare levy percentage |
+| CPI Rate | 0.03 (3%) | Consumer Price Index growth rate |
+| Accessible Equity Rate | 0.80 (80%) | Percentage of equity accessible for new purchases |
+| Borrowing Power Min | 3.5 | Minimum income multiple for borrowing capacity |
+| Borrowing Power Base | 5.0 | Base income multiple for borrowing capacity |
+| Dependant Reduction | 0.25 | Borrowing power reduction per dependant |
+| Investment Years | 30 | Number of years to forecast |
 
 ### Cognito Setup
 
@@ -1190,20 +776,6 @@ The application uses AWS Cognito for authentication with the following configura
 | Region | `ap-southeast-2` |
 | Auth Flow | Authorization Code Grant |
 | Scopes | `openid`, `email`, `profile` |
-
-### Dashboard Configuration Parameters
-
-The following parameters can be configured in the dashboard header:
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| Medicare Levy Rate | 0.02 (2%) | Australian Medicare levy percentage |
-| CPI Rate | 0.03 (3%) | Consumer Price Index growth rate |
-| Accessible Equity Rate | 0.80 (80%) | Percentage of equity accessible for new purchases |
-| Borrowing Power Min | 3.5 | Minimum income multiple for borrowing capacity |
-| Borrowing Power Base | 5.0 | Base income multiple for borrowing capacity |
-| Dependant Reduction | 0.25 | Borrowing power reduction per dependant |
-| Investment Years | 30 | Number of years to forecast |
 
 ---
 
@@ -1224,6 +796,11 @@ Updates a DynamoDB item and automatically calculates Chart1 financial projection
   "attributes": {
     "status": "active",
     "adviser_name": "John Doe",
+    "investment_years": 30,
+    "investment_goals": {
+      "goal": "Passive Income",
+      "risk_tolerance": "moderate"
+    },
     "investors": [
       {
         "name": "Bob",
@@ -1310,9 +887,11 @@ Reads active portfolio data from DynamoDB.
   "item_id": "B57153AB-B66E-4085-A4C1-929EC158FC3E",
   "result": {
     "id": "B57153AB-B66E-4085-A4C1-929EC158FC3E",
-    "chart1": {...},
-    "investors": [...],
-    "properties": [...]
+    "chart1": {"..."},
+    "investors": ["..."],
+    "properties": ["..."],
+    "investment_years": 30,
+    "investment_goals": {"goal": "Passive Income", "risk_tolerance": "moderate"}
   }
 }
 ```
@@ -1321,7 +900,16 @@ Reads active portfolio data from DynamoDB.
 
 **POST** `/ba-agent`
 
-Generates AI-powered property recommendations using AWS Bedrock (Claude). This endpoint is called when users click the "Add Property" button in the Right Sidebar.
+Triggers AI-powered actions using AWS Bedrock (Claude).
+
+#### Actions
+
+| Action | Description |
+|--------|-------------|
+| `add` | Generate ONE new property recommendation based on current portfolio financial analysis |
+| `optimize` | Analyze and optimize existing properties against market benchmarks |
+| `summary` | Generate a plain-English executive summary of the portfolio |
+| `advice` | Generate 3 actionable recommendations with reasoning based on forecast, risk profile, and investment goals |
 
 #### Request
 
@@ -1329,16 +917,9 @@ Generates AI-powered property recommendations using AWS Bedrock (Claude). This e
 {
   "table_name": "BA-PORTAL-BASETABLE",
   "id": "B57153AB-B66E-4085-A4C1-929EC158FC3E",
-  "property_action": "add"
+  "property_action": "add | optimize | summary | advice"
 }
 ```
-
-#### Actions
-
-| Action | Description |
-|--------|-------------|
-| `add` | Generate ONE new property recommendation based on current portfolio financial analysis |
-| `optimize` | Analyze and optimize existing properties with market benchmarks |
 
 #### Response for `add` Action
 
@@ -1354,7 +935,6 @@ Generates AI-powered property recommendations using AWS Bedrock (Claude). This e
     "rent": 40000,
     "interest_rate": 5.5,
     "other_expenses": 10000,
-    "property_value": 1000000,
     "initial_value": 950000,
     "growth_rate": 5,
     "investor_splits": [
@@ -1365,46 +945,44 @@ Generates AI-powered property recommendations using AWS Bedrock (Claude). This e
 }
 ```
 
-#### Response for `optimize` Action
+#### Response for `summary` Action
 
 ```json
 {
   "status": "success",
-  "action": "optimize",
-  "properties": [
-    {
-      "name": "Property A",
-      "purchase_year": 1,
-      "loan_amount": 1600000,
-      "rent": 30000,
-      "interest_rate": 5.5,
-      ...
-    }
-  ],
-  "analysis": {
-    "portfolio_summary": "Your portfolio currently has 2 properties with a combined value of $1,750,000 and total debt of $960,000.",
-    "dti_ratio": "32.5%",
-    "lvr": "54.8%",
-    "cashflow_health": "Positive - $18,000 annual surplus",
-    "borrowing_capacity": "$340,000 available",
-    "recommended_changes": "Reduced interest rate from 6% to 5.5%, adjusted rent to market rate",
-    "rationale": "Properties now more aligned with market benchmarks",
-    "recommendations": [
-      {
-        "action": "Refinance Property A to lower rate",
-        "reasoning": "Current 6% rate is above market average of 5.5%, saving $8,000 annually"
-      }
-    ],
-    "acquisition_strategy": "Target properties in $700,000-$800,000 range in Year 2",
-    "optimal_timing": "Year 2 when DTI drops below 28%",
-    "max_purchase_price": "$600,000"
-  }
+  "action": "summary",
+  "summary": "Your portfolio currently holds 2 properties with a combined value of $1,750,000..."
 }
 ```
 
-#### AI Recommendation Logic
+#### Response for `advice` Action
 
-The BA Agent analyzes the following financial metrics from Chart1:
+```json
+{
+  "status": "success",
+  "action": "advice",
+  "advice": "## Recommendation 1: Refinance Property A\n\nRefinancing from 6% to 5.5% would save $8,000 annually...\n\n## Recommendation 2: ..."
+}
+```
+
+#### Property Fields
+
+| Field | Description |
+|-------|-------------|
+| Name | Property identifier (e.g., "Property A") |
+| Purchase Year | Year to acquire the property (1–30) |
+| Initial Value | Starting property value |
+| Loan Amount | Initial loan principal |
+| Interest Rate | Annual interest rate (decimal, e.g., 0.06 for 6%) |
+| Annual Rent | Rental income per year |
+| Growth Rate | Annual appreciation rate (decimal) |
+| Other Expenses | Annual expenses excluding interest |
+| Annual Principal Change | Annual loan repayment amount |
+| Investor Splits | Ownership percentages per investor |
+
+#### AI Analysis Inputs
+
+The BA Agent reads these metrics from Chart1 to drive AI analysis:
 
 | Metric | Source | Description |
 |--------|--------|-------------|
@@ -1415,12 +993,8 @@ The BA Agent analyzes the following financial metrics from Chart1:
 | Property Count | `len(properties)` | Number of existing properties |
 | Total Property Values | Sum of `property_values` | Current portfolio value |
 | Total Loan Balances | Sum of `property_loan_balances` | Current total debt |
-
-The AI uses these metrics to recommend properties that:
-- Keep DTI ≤ 30% for sustainable borrowing
-- Maintain LVR ≤ 80% to avoid LMI
-- Generate positive cashflow from rental income
-- Align with purchase timing based on financial capacity
+| Investment Goals | `investment_goals.goal` | User's stated investment objective |
+| Risk Tolerance | `investment_goals.risk_tolerance` | User's risk preference |
 
 ---
 
@@ -1435,14 +1009,6 @@ The BA Portal uses a secure passwordless authentication system:
 3. **Code sent to user's email** via DynamoDB
 4. **User enters code** to complete login
 5. **System issues JWT tokens** for session management
-
-### DynamoDB Tables for Auth
-
-| Table | Purpose |
-|-------|---------|
-| `ba-dashboard-users-table` | User profiles and adviser information |
-| `ba-dashboard-verification-codes-table` | Temporary verification codes with TTL |
-| `ba-dashboard-login-attempts-table` | Audit log of login attempts |
 
 ---
 
@@ -1465,6 +1031,10 @@ python deploy_lambda.py
 # Read Table Lambda
 cd app/ba-portal/lambda/read_table
 python deploy_lambda.py
+
+# BA Agent Lambda
+cd app/ba-portal/lambda/ba_agent
+python deploy_lambda.py
 ```
 
 ### Deploy Frontend
@@ -1484,20 +1054,24 @@ npm run build
 ### Running Tests
 
 ```bash
-# Frontend
+# Frontend linting
 cd app/ba-portal/dashboard-frontend
 npm run lint
 
-# Backend Lambda (if tests exist)
+# Backend Lambda tests
 cd app/ba-portal/lambda/update_table
 python test_update_table.py
+
+cd app/ba-portal/lambda/ba_agent
+python test_ba_agent_api.py
 ```
 
 ### Adding New Features
 
 1. **Frontend Components**: Add to `src/components/`
-2. **API Endpoints**: Add Lambda function in `lambda/` and configure in `IaC/`
-3. **Database Fields**: Update DynamoDB item structure and update_table Lambda
+2. **API Endpoints**: Add Lambda function in `lambda/` and configure in `IaC/api-config.json`
+3. **Database Fields**: Update DynamoDB item structure and `update_table` Lambda
+4. **New AI Actions**: Add action handler in `lambda/ba_agent/main.py` and a corresponding service function in `dashboardService.ts`
 
 ---
 
@@ -1512,13 +1086,15 @@ python test_update_table.py
 | Lambda timeout | Increase timeout in deploy.config |
 | Chart not rendering | Check Chart1 data structure in DynamoDB |
 | Environment variables not loading | Ensure `.env` file is in correct location |
-| Error calculating chart1 value: unsupported operand type(s) for += | Ensure all investor and property fields have valid numeric values (not null). Check that base_income, loan_amount, annual_principal_change, rent, interest_rate, growth_rate, etc. are all defined with numeric values in DynamoDB. |
+| `unsupported operand type(s) for +=` in chart1 calculation | Ensure all investor and property fields have valid numeric values (not null). Check that `base_income`, `loan_amount`, `annual_principal_change`, `rent`, `interest_rate`, `growth_rate`, etc. are all defined with numeric values in DynamoDB. |
+| AI features returning empty response | Verify Bedrock model access is enabled in the AWS region; check CloudWatch logs for the BA Agent Lambda |
 
 ### Checking Logs
 
 ```bash
 # CloudWatch Logs
 aws logs tail /aws/lambda/ba-portal-update-table-lambda-function --follow
+aws logs tail /aws/lambda/ba-portal-ba-agent-lambda-function --follow
 ```
 
 ---
@@ -1533,5 +1109,4 @@ This project is part of the BA Portal system. All rights reserved.
 
 For issues and questions:
 - Check the [Lambda README files](./lambda/) for backend documentation
-- Review the [Plan Document](./PLAN-login-system.md) for architecture details
-- Examine the [API Configuration](./IaC/api-config.json) for endpoint specifications
+- Review CloudWatch logs for Lambda errors
