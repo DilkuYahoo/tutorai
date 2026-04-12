@@ -1,0 +1,21 @@
+version = 0.1
+
+[default.global.parameters]
+stack_name = "ratescan-pipeline"
+region = "ap-southeast-2"
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.deploy.parameters]
+region                = "ap-southeast-2"
+confirm_changeset     = false
+resolve_s3            = true
+resolve_image_repos   = true
+capabilities          = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides   = "DataBucketName=\"ratescan.com.au\" IcebergWarehouse=\"s3://ratescan.com.au/iceberg/\" IcebergCatalog=\"OpenBanking\" IcebergDb=\"obdb\" IcebergTable=\"daily_rates\" AlertEmail=\"info@ratescan.com.au\""
+
+# To add a failure alert email, set AlertEmail:
+# parameter_overrides = [..., "AlertEmail=you@example.com"]
+s3_prefix = "ratescan-pipeline"

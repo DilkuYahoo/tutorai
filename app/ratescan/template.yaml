@@ -1,0 +1,416 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Ratescan daily Open Banking data pipeline
+
+Parameters:
+  DataBucketName:
+    Type: String
+    Default: ratescan.com.au
+  IcebergWarehouse:
+    Type: String
+    Default: s3://ratescan.com.au/iceberg/
+  IcebergDb:
+    Type: String
+    Default: obdb
+  IcebergTable:
+    Type: String
+    Default: daily_rates
+  IcebergCatalog:
+    Type: String
+    Default: OpenBanking
+    Description: PyIceberg catalog name (client-side identifier for the AWS Glue catalog)
+  AlertEmail:
+    Type: String
+    Description: Email address to notify on pipeline failure
+    Default: ""
+
+Globals:
+  Function:
+    MemorySize: 512
+    Environment:
+      Variables:
+        S3_BUCKET: !Ref DataBucketName
+        S3_PREFIX: products
+        CONFIG_S3_KEY: config.json
+        REQUEST_TIMEOUT: "30"
+
+Resources:
+
+  # ── ECR Repository ─────────────────────────────────────────────────────────
+  PipelineImageRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: ratescan-pipeline
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {"rules":[{"rulePriority":1,"description":"Keep last 5 images",
+            "selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":5},
+            "action":{"type":"expire"}}]}
+
+  # ── SNS Alert Topic ────────────────────────────────────────────────────────
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: ratescan-pipeline-alerts
+
+  AlertEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlertEmail
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: email
+      Endpoint: !Ref AlertEmail
+
+  # ── Lambda: GenerateBankList (zip — no heavy deps) ─────────────────────────
+  GenerateBankListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ratescan-generate-bank-list
+      Handler: generate_bank_list.lambda_handler
+      Runtime: python3.13
+      CodeUri: functions/generate_bank_list/
+      Timeout: 30
+      MemorySize: 256
+      Role: !GetAtt GenerateBankListRole.Arn
+
+  # ── Lambda: Stage 1 — Fetch Product Lists (container image) ───────────────
+  Stage1FetchProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ratescan-stage1-fetch-products
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ratescan-pipeline:latest"
+      ImageConfig:
+        Command: ["main.lambda_handler"]
+      Timeout: 300
+      Role: !GetAtt Stage1Role.Arn
+    Metadata:
+      DockerContext: ./
+      Dockerfile: Dockerfile
+
+  # ── Lambda: Stage 2 — Fetch Product Details (container image) ─────────────
+  Stage2FetchDetailsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ratescan-stage2-fetch-details
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ratescan-pipeline:latest"
+      ImageConfig:
+        Command: ["main_prod_details.lambda_handler"]
+      Timeout: 840
+      Role: !GetAtt Stage2Role.Arn
+    Metadata:
+      DockerContext: ./
+      Dockerfile: Dockerfile
+
+  # ── Lambda: Stage 3 — Flatten JSON to CSV (container image) ───────────────
+  Stage3FlattenCsvFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ratescan-stage3-flatten-csv
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ratescan-pipeline:latest"
+      ImageConfig:
+        Command: ["flatten_json_to_csv.lambda_handler"]
+      Timeout: 600
+      MemorySize: 2048
+      Role: !GetAtt Stage3Role.Arn
+    Metadata:
+      DockerContext: ./
+      Dockerfile: Dockerfile
+
+  # ── Lambda: Stage 4 — Upsert Iceberg (container image) ────────────────────
+  Stage4UpsertFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ratescan-stage4-upsert
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ratescan-pipeline:latest"
+      ImageConfig:
+        Command: ["upsert_dataset.lambda_handler"]
+      Timeout: 600
+      MemorySize: 3008
+      Role: !GetAtt Stage4Role.Arn
+      Environment:
+        Variables:
+          WAREHOUSE: !Ref IcebergWarehouse
+          ICEBERG_CATALOG: !Ref IcebergCatalog
+          ICEBERG_DB: !Ref IcebergDb
+          ICEBERG_TABLE: !Ref IcebergTable
+    Metadata:
+      DockerContext: ./
+      Dockerfile: Dockerfile
+
+  # ── Step Functions State Machine ───────────────────────────────────────────
+  RatescanStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: RatescanPipeline
+      Type: STANDARD
+      DefinitionUri: statemachine/ratescan_pipeline.asl.json
+      DefinitionSubstitutions:
+        GenerateBankListArn: !GetAtt GenerateBankListFunction.Arn
+        Stage1Arn: !GetAtt Stage1FetchProductsFunction.Arn
+        Stage2Arn: !GetAtt Stage2FetchDetailsFunction.Arn
+        Stage3Arn: !GetAtt Stage3FlattenCsvFunction.Arn
+        Stage4Arn: !GetAtt Stage4UpsertFunction.Arn
+        AlertTopicArn: !Ref AlertTopic
+      Role: !GetAtt StateMachineRole.Arn
+      Logging:
+        Level: ERROR
+        IncludeExecutionData: true
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt StateMachineLogGroup.Arn
+
+  StateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/states/RatescanPipeline
+      RetentionInDays: 30
+
+  # ── EventBridge Scheduler ──────────────────────────────────────────────────
+  DailySchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: ratescan-daily
+      Description: Trigger Ratescan pipeline at 07:00 AEST daily
+      ScheduleExpression: "cron(0 7 * * ? *)"
+      ScheduleExpressionTimezone: "Australia/Sydney"
+      FlexibleTimeWindow:
+        Mode: "OFF"
+      Target:
+        Arn: !GetAtt RatescanStateMachine.Arn
+        RoleArn: !GetAtt SchedulerRole.Arn
+        Input: "{}"
+
+  # ── IAM Roles ──────────────────────────────────────────────────────────────
+  GenerateBankListRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ratescan-generate-bank-list-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ReadConfig
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/config.json"
+
+  Stage1Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ratescan-stage1-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: Stage1S3
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/config.json"
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/products/*"
+
+  Stage2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ratescan-stage2-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: Stage2S3
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DataBucketName}/config.json"
+                  - !Sub "arn:aws:s3:::${DataBucketName}/products/*"
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/products/*"
+
+  Stage3Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ratescan-stage3-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: Stage3S3
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}"
+                Condition:
+                  StringLike:
+                    s3:prefix: ["products/*"]
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/products/*"
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/product-master-*.csv"
+
+  Stage4Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ratescan-stage4-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: Stage4S3
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/product-master-*.csv"
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject, s3:DeleteObject]
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/iceberg/*"
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}"
+        - PolicyName: Stage4Glue
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - glue:GetDatabase
+                  - glue:CreateDatabase
+                  - glue:GetTable
+                  - glue:CreateTable
+                  - glue:UpdateTable
+                  - glue:DeleteTable
+                  - glue:GetPartitions
+                  - glue:BatchCreatePartition
+                Resource:
+                  - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog"
+                  - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${IcebergDb}"
+                  - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${IcebergDb}/${IcebergTable}"
+
+  StateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ratescan-statemachine-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeLambdas
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt GenerateBankListFunction.Arn
+                  - !GetAtt Stage1FetchProductsFunction.Arn
+                  - !GetAtt Stage2FetchDetailsFunction.Arn
+                  - !GetAtt Stage3FlattenCsvFunction.Arn
+                  - !GetAtt Stage4UpsertFunction.Arn
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref AlertTopic
+        - PolicyName: CloudWatchLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:GetLogDelivery
+                  - logs:UpdateLogDelivery
+                  - logs:DeleteLogDelivery
+                  - logs:ListLogDeliveries
+                  - logs:PutResourcePolicy
+                  - logs:DescribeResourcePolicies
+                  - logs:DescribeLogGroups
+                Resource: "*"
+
+  SchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ratescan-scheduler-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StartExecution
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource: !GetAtt RatescanStateMachine.Arn
+
+Conditions:
+  HasAlertEmail: !Not [!Equals [!Ref AlertEmail, ""]]
+
+Outputs:
+  StateMachineArn:
+    Description: Step Functions state machine ARN
+    Value: !GetAtt RatescanStateMachine.Arn
+
+  AlertTopicArn:
+    Description: SNS topic ARN for pipeline failure alerts
+    Value: !Ref AlertTopic
+
+  ECRRepositoryUri:
+    Description: ECR repository URI for the pipeline container image
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ratescan-pipeline"

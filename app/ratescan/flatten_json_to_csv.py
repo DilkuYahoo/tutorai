@@ -1,18 +1,31 @@
-import json
-import csv
+import logging
+import sys
 import os
-import glob
+import io
+import csv
+import json
 import datetime
+import glob
+import boto3
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from botocore.exceptions import BotoCoreError, ClientError
 
-# Top-level fields to repeat in order
-top_fields = ['productId', 'name', 'brand', 'lastUpdated', 'description', 'applicationUri', 'productCategory']
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-def flatten_dict(d, prefix=''):
-    """
-    Recursively flatten a dictionary using dot notation for nested keys.
-    For lists, if the list contains dictionaries, flatten all with index.
-    Otherwise, convert to string.
-    """
+S3_BUCKET = os.environ.get("S3_BUCKET", "ratescan.com.au")
+S3_PREFIX = os.environ.get("S3_PREFIX", "products")
+CSV_PREFIX = os.environ.get("CSV_PREFIX", "")
+S3_READ_WORKERS = int(os.environ.get("S3_READ_WORKERS", "50"))
+
+top_fields = [
+    "productId", "name", "brand", "lastUpdated",
+    "description", "applicationUri", "productCategory",
+]
+
+
+def flatten_dict(d, prefix=""):
+    """Recursively flatten a dict using dot notation for nested keys."""
     items = []
     for k, v in d.items():
         new_key = f"{prefix}.{k}" if prefix else k
@@ -28,62 +41,151 @@ def flatten_dict(d, prefix=''):
             items.append((new_key, v))
     return dict(items)
 
-def process_json_file(json_file_path):
-    # Load JSON data
-    with open(json_file_path, 'r') as f:
-        data = json.load(f)
-    product_data = data['data']
-    lending_rates = product_data.get('lendingRates', [])
+
+def process_json_data(data):
+    """Extract lending rate rows from a single product detail JSON."""
+    product_data = data["data"]
+    lending_rates = product_data.get("lendingRates", [])
     rows = []
     for rate in lending_rates:
-        # Start with top-level fields
-        row = {field: product_data.get(field, '') for field in top_fields}
-        # Flatten the lending rate and add to row
-        flattened_rate = flatten_dict(rate)
-        row.update(flattened_rate)
+        row = {field: product_data.get(field, "") for field in top_fields}
+        row.update(flatten_dict(rate))
         rows.append(row)
     return rows
 
-def main():
-    # Find JSON files in the latest dated folder for each bank
-    products_dir = 'products'
-    json_files = []
-    if os.path.exists(products_dir):
-        banks = [d for d in os.listdir(products_dir) if os.path.isdir(os.path.join(products_dir, d))]
-        for bank in banks:
-            details_dir = os.path.join(products_dir, bank, 'details')
-            if os.path.exists(details_dir):
-                dates = [d for d in os.listdir(details_dir) if os.path.isdir(os.path.join(details_dir, d))]
-                if dates:
-                    latest_date = max(dates)  # Assuming dates are in sortable format like YYYY-MM-DD
-                    latest_dir = os.path.join(details_dir, latest_date)
-                    json_files.extend(glob.glob(os.path.join(latest_dir, '*.json')))
 
+def list_detail_keys(s3_client, bucket, prefix, date_str):
+    """List all s3 keys matching products/*/details/{date_str}/*.json."""
+    keys = []
+    paginator = s3_client.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=bucket, Prefix=f"{prefix}/"):
+        for obj in page.get("Contents", []):
+            key = obj["Key"]
+            if f"/details/{date_str}/" in key and key.endswith(".json"):
+                keys.append(key)
+    return keys
+
+
+def fetch_key(s3_client, bucket, key):
+    """Fetch and parse a single S3 JSON object. Returns (key, rows, error)."""
+    try:
+        resp = s3_client.get_object(Bucket=bucket, Key=key)
+        data = json.loads(resp["Body"].read())
+        return key, process_json_data(data), None
+    except Exception as e:
+        return key, [], str(e)
+
+
+def flatten_to_csv_buffer(all_rows):
+    """Convert list of row dicts to an in-memory CSV buffer."""
+    all_keys = set()
+    for row in all_rows:
+        all_keys.update(row.keys())
+    fieldnames = top_fields + sorted(all_keys - set(top_fields))
+
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(all_rows)
+    return buf.getvalue()
+
+
+def lambda_handler(event, context):
+    """
+    Lambda entry point.
+
+    Event schema (all fields optional):
+      {
+        "date": "2026-04-12"   // defaults to today (UTC)
+      }
+    """
+    date_str = (event or {}).get("date") or datetime.datetime.now(
+        datetime.UTC
+    ).strftime("%Y-%m-%d")
+
+    s3_client = boto3.client("s3")
+
+    logger.info(f"Listing detail files for date {date_str}")
+    keys = list_detail_keys(s3_client, S3_BUCKET, S3_PREFIX, date_str)
+    logger.info(f"Found {len(keys)} product detail files")
+
+    if not keys:
+        logger.warning("No detail files found — skipping CSV write")
+        return {"statusCode": 200, "body": {"message": "No files found", "csv_key": None}}
+
+    # Fetch all JSONs concurrently
     all_rows = []
-    for json_file in json_files:
-        try:
-            rows = process_json_file(json_file)
-            all_rows.extend(rows)
-        except Exception as e:
-            print(f"Error processing {json_file}: {e}")
+    errors = []
+    with ThreadPoolExecutor(max_workers=S3_READ_WORKERS) as pool:
+        futures = {pool.submit(fetch_key, s3_client, S3_BUCKET, k): k for k in keys}
+        for future in as_completed(futures):
+            key, rows, err = future.result()
+            if err:
+                logger.warning(f"Skipping {key}: {err}")
+                errors.append(f"{key}: {err}")
+            else:
+                all_rows.extend(rows)
 
-    # Output to CSV
-    if all_rows:
-        # Collect all unique fieldnames
-        all_keys = set()
-        for row in all_rows:
-            all_keys.update(row.keys())
-        fieldnames = top_fields + sorted(all_keys - set(top_fields))
+    if not all_rows:
+        logger.warning("No lending rate rows produced")
+        return {"statusCode": 200, "body": {"message": "No lending rates found", "csv_key": None}}
 
-        date_str = datetime.date.today().isoformat()
-        csv_file_path = f"product-master-{date_str}.csv"
-        with open(csv_file_path, 'w', newline='') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(all_rows)
-        print(f"CSV file created: {csv_file_path} with {len(all_rows)} rows")
-    else:
-        print("No lending rates found.")
+    csv_body = flatten_to_csv_buffer(all_rows)
+    csv_key = f"{CSV_PREFIX}product-master-{date_str}.csv".lstrip("/")
+
+    s3_client.put_object(
+        Bucket=S3_BUCKET,
+        Key=csv_key,
+        Body=csv_body.encode("utf-8"),
+        ContentType="text/csv",
+    )
+    logger.info(f"Wrote {len(all_rows)} rows to s3://{S3_BUCKET}/{csv_key}")
+
+    return {
+        "statusCode": 200 if not errors else 207,
+        "body": {
+            "message": "Flatten complete",
+            "csv_key": csv_key,
+            "rows": len(all_rows),
+            "errors": errors,
+        },
+    }
+
 
 if __name__ == "__main__":
-    main()
+    # Local run: reads from /tmp/products/, writes to /tmp/
+    # Usage:
+    #   python flatten_json_to_csv.py                  # uses today's date
+    #   python flatten_json_to_csv.py 2026-04-12
+    date_str = sys.argv[1] if len(sys.argv) > 1 else datetime.datetime.now(
+        datetime.UTC
+    ).strftime("%Y-%m-%d")
+
+    products_dir = "/tmp/products"
+    json_files = []
+    if os.path.exists(products_dir):
+        for bank in os.listdir(products_dir):
+            details_dir = os.path.join(products_dir, bank, "details")
+            if os.path.isdir(details_dir):
+                dated_dir = os.path.join(details_dir, date_str)
+                if os.path.isdir(dated_dir):
+                    json_files.extend(glob.glob(os.path.join(dated_dir, "*.json")))
+
+    all_rows = []
+    for path in json_files:
+        try:
+            with open(path) as f:
+                data = json.load(f)
+            all_rows.extend(process_json_data(data))
+        except Exception as e:
+            print(f"Skipping {path}: {e}")
+
+    if not all_rows:
+        print("No lending rate rows found.")
+        sys.exit(0)
+
+    csv_body = flatten_to_csv_buffer(all_rows)
+    out_path = f"/tmp/product-master-{date_str}.csv"
+    with open(out_path, "w") as f:
+        f.write(csv_body)
+    print(f"Written {len(all_rows)} rows to {out_path}")

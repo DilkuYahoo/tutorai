@@ -1,0 +1,176 @@
+{
+  "Comment": "Ratescan daily Open Banking data pipeline — Step Functions Standard Workflow",
+  "StartAt": "GenerateBankList",
+  "States": {
+    "GenerateBankList": {
+      "Type": "Task",
+      "Resource": "${GenerateBankListArn}",
+      "Comment": "Reads config.json from S3 and returns {\"banks\": [...124 names...]}. Replaces the entire execution input.",
+      "ResultPath": "$",
+      "Next": "Stage1_FetchProductLists",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.TooManyRequestsException", "Lambda.SdkClientException"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyOnFailure"
+        }
+      ]
+    },
+
+    "Stage1_FetchProductLists": {
+      "Type": "Map",
+      "Comment": "Fan-out: invoke one Lambda per bank to fetch product lists. ToleratedFailurePercentage allows up to 20% of banks to fail without aborting the pipeline.",
+      "ItemsPath": "$.banks",
+      "ItemSelector": {
+        "bank.$": "$$.Map.Item.Value"
+      },
+      "MaxConcurrency": 10,
+      "ToleratedFailurePercentage": 20,
+      "Iterator": {
+        "StartAt": "FetchProductList",
+        "States": {
+          "FetchProductList": {
+            "Type": "Task",
+            "Resource": "${Stage1Arn}",
+            "TimeoutSeconds": 300,
+            "Retry": [
+              {
+                "ErrorEquals": ["Lambda.ServiceException", "Lambda.TooManyRequestsException", "Lambda.SdkClientException"],
+                "IntervalSeconds": 5,
+                "MaxAttempts": 3,
+                "BackoffRate": 2
+              },
+              {
+                "ErrorEquals": ["States.TaskFailed"],
+                "IntervalSeconds": 30,
+                "MaxAttempts": 2,
+                "BackoffRate": 1.5
+              }
+            ],
+            "End": true
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "Stage2_FetchProductDetails"
+    },
+
+    "Stage2_FetchProductDetails": {
+      "Type": "Map",
+      "Comment": "Fan-out: invoke one Lambda per bank to fetch per-product details. Lower concurrency (5) to avoid rate-limiting bank APIs.",
+      "ItemsPath": "$.banks",
+      "ItemSelector": {
+        "bank.$": "$$.Map.Item.Value"
+      },
+      "MaxConcurrency": 5,
+      "ToleratedFailurePercentage": 20,
+      "Iterator": {
+        "StartAt": "FetchProductDetails",
+        "States": {
+          "FetchProductDetails": {
+            "Type": "Task",
+            "Resource": "${Stage2Arn}",
+            "TimeoutSeconds": 840,
+            "Retry": [
+              {
+                "ErrorEquals": ["Lambda.ServiceException", "Lambda.TooManyRequestsException"],
+                "IntervalSeconds": 10,
+                "MaxAttempts": 2,
+                "BackoffRate": 2
+              },
+              {
+                "ErrorEquals": ["States.TaskFailed"],
+                "IntervalSeconds": 60,
+                "MaxAttempts": 2,
+                "BackoffRate": 2
+              }
+            ],
+            "End": true
+          }
+        }
+      },
+      "ResultPath": null,
+      "Next": "Stage3_FlattenToCSV"
+    },
+
+    "Stage3_FlattenToCSV": {
+      "Type": "Task",
+      "Comment": "Flatten all product detail JSONs from S3 into a single CSV and upload to S3.",
+      "Resource": "${Stage3Arn}",
+      "TimeoutSeconds": 600,
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyOnFailure"
+        }
+      ],
+      "ResultPath": "$.stage3",
+      "Next": "Stage4_UpsertIceberg"
+    },
+
+    "Stage4_UpsertIceberg": {
+      "Type": "Task",
+      "Comment": "Read the CSV from S3 and upsert into the Iceberg table via AWS Glue catalog.",
+      "Resource": "${Stage4Arn}",
+      "Parameters": {
+        "csv_key.$": "$.stage3.body.csv_key"
+      },
+      "TimeoutSeconds": 600,
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyOnFailure"
+        }
+      ],
+      "Next": "PipelineComplete"
+    },
+
+    "PipelineComplete": {
+      "Type": "Succeed"
+    },
+
+    "NotifyOnFailure": {
+      "Type": "Task",
+      "Comment": "Publish failure notification to SNS (email / Slack webhook).",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Subject": "Ratescan pipeline failed",
+        "Message.$": "States.Format('Ratescan pipeline failed. Error: {}', States.JsonToString($.error))"
+      },
+      "Next": "PipelineFailed"
+    },
+
+    "PipelineFailed": {
+      "Type": "Fail",
+      "Error": "PipelineFailed",
+      "Cause": "One or more pipeline stages failed after retries"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+# SAM build artefacts
+.aws-sam/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Local Iceberg test data
+/tmp/iceberg/
+
+# Environment / secrets
+.env
+*.env
