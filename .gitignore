@@ -6,3 +6,8 @@ advicegenie.log
 arch\
 app/auth-login/frontend/node_modules
 app/photo-gallery/frontend/node_modules
+app/ratescan/frontend/node_modules
+app/ratescan/frontend/dist
+app/ratescan/.aws-sam
+app/ratescan/data-pipeline/.aws-sam
+app/ratescan/iac/.aws-sam

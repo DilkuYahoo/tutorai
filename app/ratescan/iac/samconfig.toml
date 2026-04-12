@@ -1,0 +1,17 @@
+version = 0.1
+
+[default.global.parameters]
+stack_name = "ratescan-frontend"
+region     = "ap-southeast-2"
+
+[default.build.parameters]
+cached   = true
+parallel = true
+
+[default.deploy.parameters]
+region              = "ap-southeast-2"
+confirm_changeset   = false
+resolve_s3          = true
+capabilities        = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides = "DataBucketName=\"ratescan.com.au\" StageName=\"prod\""
+s3_prefix           = "ratescan-frontend"

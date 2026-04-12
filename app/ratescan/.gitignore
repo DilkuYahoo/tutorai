@@ -1,0 +1,56 @@
+# ─── Frontend ─────────────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+frontend/*.local
+
+# ─── Python (Lambda / data-pipeline) ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+*.egg
+.Python
+
+# ─── AWS SAM build artefacts ──────────────────────────────────────────────────
+.aws-sam/
+data-pipeline/.aws-sam/
+iac/.aws-sam/
+
+# ─── SAM packaged templates ───────────────────────────────────────────────────
+packaged*.yaml
+packaged*.template
+
+# ─── Local Iceberg / temp data ────────────────────────────────────────────────
+/tmp/
+data-pipeline/tmp/
+
+# ─── Environment / secrets ────────────────────────────────────────────────────
+.env
+*.env
+.env.*
+!.env.example
+
+# ─── AWS credentials / config ─────────────────────────────────────────────────
+.aws/
+aws-exports.js
+
+# ─── OS artefacts ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Editor / IDE ─────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

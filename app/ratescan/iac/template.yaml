@@ -1,0 +1,89 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: RateScan application submission API
+
+Parameters:
+  DataBucketName:
+    Type: String
+    Default: ratescan.com.au
+  StageName:
+    Type: String
+    Default: prod
+
+Globals:
+  Function:
+    Runtime: python3.13
+    MemorySize: 256
+    Timeout: 10
+    Environment:
+      Variables:
+        S3_BUCKET: !Ref DataBucketName
+  Api:
+    Cors:
+      AllowMethods: "'POST,OPTIONS'"
+      AllowHeaders: "'Content-Type'"
+      AllowOrigin: "'*'"
+
+Resources:
+
+  # ── API Gateway ─────────────────────────────────────────────────────────────
+  RatescanApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: ratescan-api
+      StageName: !Ref StageName
+      Description: RateScan mortgage application submission API
+
+  # ── Lambda: Submit Application ──────────────────────────────────────────────
+  SubmitApplicationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ratescan-submit-application
+      Handler: submit_application.lambda_handler
+      CodeUri: ../lambda/
+      Role: !GetAtt SubmitApplicationRole.Arn
+      Events:
+        PostApplication:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RatescanApi
+            Path: /application
+            Method: POST
+        OptionsApplication:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RatescanApi
+            Path: /application
+            Method: OPTIONS
+
+  # ── IAM Role ────────────────────────────────────────────────────────────────
+  SubmitApplicationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ratescan-submit-application-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: WriteApplications
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/applications/*"
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL — set as VITE_API_URL for the frontend build
+    Value: !Sub "https://${RatescanApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+
+  SubmitFunctionArn:
+    Description: Submit application Lambda ARN
+    Value: !GetAtt SubmitApplicationFunction.Arn
