@@ -7,6 +7,7 @@ import Step3_Employment from './steps/Step3_Employment'
 import Step4_Financial from './steps/Step4_Financial'
 import Step5_Lifestyle from './steps/Step5_Lifestyle'
 import Step6_Review from './steps/Step6_Review'
+import Dashboard from './pages/Dashboard'
 
 const TOTAL_STEPS = 6
 
@@ -61,6 +62,7 @@ export default function App() {
   const { currentStep, direction, submitting, submitted, applicationId, formData } = state
 
   const [isDark, setIsDark] = useState(true)
+  const [page, setPage]     = useState('dashboard') // 'dashboard' | 'apply'
 
   useEffect(() => {
     const root = document.documentElement
@@ -95,6 +97,16 @@ export default function App() {
 
   const CurrentStep = STEPS[currentStep - 1]
 
+  if (page === 'dashboard') {
+    return (
+      <Dashboard
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onApply={() => { dispatch({ type: 'RESET' }); setPage('apply') }}
+      />
+    )
+  }
+
   if (submitted) {
     return (
       <div className={`min-h-screen flex items-center justify-center px-4 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} transition-colors duration-200`}>
@@ -109,12 +121,21 @@ export default function App() {
           {applicationId && (
             <p className="text-xs text-slate-400 dark:text-slate-600 font-mono mb-8">ID: {applicationId}</p>
           )}
-          <button
-            onClick={() => dispatch({ type: 'RESET' })}
-            className="text-indigo-500 dark:text-indigo-400 hover:text-indigo-400 dark:hover:text-indigo-300 text-sm transition-colors"
-          >
-            Start a new application
-          </button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={() => dispatch({ type: 'RESET' })}
+              className="text-indigo-500 dark:text-indigo-400 hover:text-indigo-400 dark:hover:text-indigo-300 text-sm transition-colors"
+            >
+              Start a new application
+            </button>
+            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
+            <button
+              onClick={() => { dispatch({ type: 'RESET' }); setPage('dashboard') }}
+              className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-sm transition-colors"
+            >
+              ← View rates
+            </button>
+          </div>
         </div>
       </div>
     )

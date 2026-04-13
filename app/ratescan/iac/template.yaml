@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: RateScan application submission API
+Description: RateScan API — application submission + Athena rate queries
 
 Parameters:
   DataBucketName:
@@ -9,6 +9,22 @@ Parameters:
   StageName:
     Type: String
     Default: prod
+  AthenaResultsBucket:
+    Type: String
+    Default: ratescan.com.au
+    Description: S3 bucket where Athena writes query result files
+  AthenaResultsPrefix:
+    Type: String
+    Default: athena-results
+    Description: S3 key prefix for Athena result files
+  AthenaWorkgroup:
+    Type: String
+    Default: primary
+    Description: Athena workgroup to use for query execution
+  AthenaDatabase:
+    Type: String
+    Default: obdb
+    Description: Glue/Athena database that contains the daily_rates table
 
 Globals:
   Function:
@@ -17,24 +33,28 @@ Globals:
     Timeout: 10
     Environment:
       Variables:
-        S3_BUCKET: !Ref DataBucketName
+        S3_BUCKET:             !Ref DataBucketName
+        ATHENA_RESULTS_BUCKET: !Ref AthenaResultsBucket
+        ATHENA_RESULTS_PREFIX: !Ref AthenaResultsPrefix
+        ATHENA_WORKGROUP:      !Ref AthenaWorkgroup
+        ATHENA_DATABASE:       !Ref AthenaDatabase
   Api:
     Cors:
-      AllowMethods: "'POST,OPTIONS'"
+      AllowMethods: "'GET,POST,OPTIONS'"
       AllowHeaders: "'Content-Type'"
-      AllowOrigin: "'*'"
+      AllowOrigin:  "'*'"
 
 Resources:
 
-  # ── API Gateway ─────────────────────────────────────────────────────────────
+  # ── API Gateway ──────────────────────────────────────────────────────────────
   RatescanApi:
     Type: AWS::Serverless::Api
     Properties:
       Name: ratescan-api
       StageName: !Ref StageName
-      Description: RateScan mortgage application submission API
+      Description: RateScan REST API — application submission and rate queries
 
-  # ── Lambda: Submit Application ──────────────────────────────────────────────
+  # ── Lambda: Submit Application ───────────────────────────────────────────────
   SubmitApplicationFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -56,7 +76,55 @@ Resources:
             Path: /application
             Method: OPTIONS
 
-  # ── IAM Role ────────────────────────────────────────────────────────────────
+  # ── Lambda: GET /rates/summary ───────────────────────────────────────────────
+  QueryRatesSummaryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ratescan-query-rates-summary
+      Handler: get_rates_summary.lambda_handler
+      CodeUri: ../lambda/
+      Timeout: 60          # Athena queries can take 5–15 s
+      MemorySize: 256
+      Role: !GetAtt AthenaQueryRole.Arn
+      Events:
+        GetSummary:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RatescanApi
+            Path: /rates/summary
+            Method: GET
+        OptionsSummary:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RatescanApi
+            Path: /rates/summary
+            Method: OPTIONS
+
+  # ── Lambda: GET /rates/recent-changes ───────────────────────────────────────
+  QueryRecentChangesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ratescan-query-recent-changes
+      Handler: get_recent_changes.lambda_handler
+      CodeUri: ../lambda/
+      Timeout: 60
+      MemorySize: 256
+      Role: !GetAtt AthenaQueryRole.Arn
+      Events:
+        GetRecentChanges:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RatescanApi
+            Path: /rates/recent-changes
+            Method: GET
+        OptionsRecentChanges:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RatescanApi
+            Path: /rates/recent-changes
+            Method: OPTIONS
+
+  # ── IAM: Submit Application ──────────────────────────────────────────────────
   SubmitApplicationRole:
     Type: AWS::IAM::Role
     Properties:
@@ -79,11 +147,97 @@ Resources:
                 Action: s3:PutObject
                 Resource: !Sub "arn:aws:s3:::${DataBucketName}/applications/*"
 
+  # ── IAM: Athena Query (shared by both read Lambdas) ─────────────────────────
+  AthenaQueryRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ratescan-athena-query-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: AthenaQueryExecution
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Athena — submit and read queries
+              - Effect: Allow
+                Action:
+                  - athena:StartQueryExecution
+                  - athena:GetQueryExecution
+                  - athena:GetQueryResults
+                  - athena:StopQueryExecution
+                  - athena:GetWorkGroup
+                Resource:
+                  - !Sub "arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroup}"
+
+              # S3 — write and read Athena result files
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:AbortMultipartUpload
+                Resource:
+                  - !Sub "arn:aws:s3:::${AthenaResultsBucket}/${AthenaResultsPrefix}/*"
+
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${AthenaResultsBucket}"
+
+              # S3 — read Iceberg data files from the data bucket
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${DataBucketName}"
+                  - !Sub "arn:aws:s3:::${DataBucketName}/*"
+
+              # Glue — Athena needs catalog access to resolve the Iceberg table
+              - Effect: Allow
+                Action:
+                  - glue:GetDatabase
+                  - glue:GetDatabases
+                  - glue:GetTable
+                  - glue:GetTables
+                  - glue:GetPartition
+                  - glue:GetPartitions
+                  - glue:BatchGetPartition
+                Resource:
+                  - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog"
+                  - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${AthenaDatabase}"
+                  - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${AthenaDatabase}/*"
+
 Outputs:
   ApiEndpoint:
-    Description: API Gateway endpoint URL — set as VITE_API_URL for the frontend build
+    Description: Base API Gateway URL — set as VITE_API_URL for the frontend build
     Value: !Sub "https://${RatescanApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
+
+  RatesSummaryEndpoint:
+    Description: GET /rates/summary — variable + fixed rate averages
+    Value: !Sub "https://${RatescanApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/rates/summary"
+
+  RecentChangesEndpoint:
+    Description: GET /rates/recent-changes — top 10 lenders by most recent update
+    Value: !Sub "https://${RatescanApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/rates/recent-changes"
 
   SubmitFunctionArn:
     Description: Submit application Lambda ARN
     Value: !GetAtt SubmitApplicationFunction.Arn
+
+  QueryRatesSummaryFunctionArn:
+    Description: Rates summary query Lambda ARN
+    Value: !GetAtt QueryRatesSummaryFunction.Arn
+
+  QueryRecentChangesFunctionArn:
+    Description: Recent changes query Lambda ARN
+    Value: !GetAtt QueryRecentChangesFunction.Arn
