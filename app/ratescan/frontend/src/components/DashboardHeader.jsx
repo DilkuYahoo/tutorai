@@ -7,10 +7,11 @@ export default function DashboardHeader({ isDark, onToggleTheme, onApply }) {
       transition-colors duration-200">
 
       {/* Logo */}
-      <div className="flex items-center gap-2 flex-1">
+      <div className="flex items-center gap-2.5 flex-1">
         <span className="text-indigo-500 font-bold text-lg tracking-tight">RateScan</span>
-        <span className="hidden sm:inline text-xs text-slate-400 dark:text-slate-500 font-medium uppercase tracking-widest mt-0.5">
-          Rates
+        <span className="hidden sm:inline text-slate-200 dark:text-slate-700 select-none">|</span>
+        <span className="hidden sm:inline text-xs text-slate-500 dark:text-slate-400">
+          Australian Interest Rates
         </span>
       </div>
 
@@ -22,8 +23,7 @@ export default function DashboardHeader({ isDark, onToggleTheme, onApply }) {
           onClick={onApply}
           className="px-4 py-2 rounded-full bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-medium transition-colors duration-150"
         >
-          Get My Rate
-          <span className="ml-1 opacity-75">→</span>
+          Get My Rate →
         </button>
       </div>
     </header>

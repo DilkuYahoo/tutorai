@@ -3,7 +3,7 @@ import ReactECharts from 'echarts-for-react'
 /** Shared theme tokens derived from isDark flag */
 function themeTokens(isDark) {
   return {
-    textColor:    isDark ? '#94a3b8' : '#64748b',   // slate-400 / slate-500
+    textColor:    isDark ? '#94a3b8' : '#475569',   // slate-400 / slate-600
     gridLine:     isDark ? '#1e293b' : '#e2e8f0',   // slate-800 / slate-200
     axisLine:     isDark ? '#334155' : '#cbd5e1',   // slate-700 / slate-300
     tooltipBg:    isDark ? '#0f172a' : '#ffffff',   // slate-950 / white

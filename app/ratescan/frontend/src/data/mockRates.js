@@ -9,7 +9,9 @@ export const RATE_SUMMARY = {
   asOf: '2026-04-13',
   lenderCount: 124,
   variable:   { avg: 6.24, min: 5.69, max: 7.15, count: 312 },
-  variableIO: { avg: 7.05, min: 6.34, max: 8.45, count: 198 },
+  variableIO:   { avg: 7.05, min: 6.34, max: 8.45, count: 198 },
+  investmentPI: { avg: 6.54, min: 5.49, max: 7.99, count: 210 },
+  investmentIO: { avg: 7.09, min: 5.79, max: 8.84, count: 185 },
   fixed: {
     1: { avg: 5.89, min: 5.35, max: 6.55, count: 187 },
     2: { avg: 5.74, min: 5.20, max: 6.40, count: 165 },

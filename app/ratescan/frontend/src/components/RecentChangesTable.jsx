@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 
 function relativeDate(dateStr) {
-  const diff = Math.floor((new Date('2026-04-13') - new Date(dateStr)) / 86400000)
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 86400000)
   if (diff === 0) return 'Today'
   if (diff === 1) return 'Yesterday'
   return `${diff} days ago`
@@ -41,7 +41,7 @@ export default function RecentChangesTable({ data }) {
       return next
     })
 
-  const thCls = 'px-4 py-3 text-left text-xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500'
+  const thCls = 'px-4 py-3 text-left text-xs font-medium uppercase tracking-widest text-slate-500 dark:text-slate-400'
   const tdCls = 'px-4 py-3.5 text-sm'
 
   return (
@@ -75,7 +75,7 @@ export default function RecentChangesTable({ data }) {
                   {/* Expand chevron */}
                   <td className={`${tdCls} pl-4 pr-0`}>
                     <svg
-                      className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
+                      className={`w-4 h-4 text-slate-500 dark:text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
                       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -91,7 +91,7 @@ export default function RecentChangesTable({ data }) {
                   </td>
 
                   {/* Changed date */}
-                  <td className={`${tdCls} hidden sm:table-cell text-slate-500 dark:text-slate-400`}>
+                  <td className={`${tdCls} hidden sm:table-cell text-slate-600 dark:text-slate-400`}>
                     {relativeDate(row.changedAt)}
                   </td>
 
@@ -104,7 +104,7 @@ export default function RecentChangesTable({ data }) {
 
                   {/* Avg change */}
                   <td className={`${tdCls} text-right`}>
-                    {avgChange != null ? <Delta value={avgChange} /> : <span className="text-slate-400 dark:text-slate-600 text-xs">—</span>}
+                    {avgChange != null ? <Delta value={avgChange} /> : <span className="text-slate-500 dark:text-slate-500 text-xs">—</span>}
                   </td>
                 </tr>
 
@@ -132,13 +132,13 @@ export default function RecentChangesTable({ data }) {
                               <tr key={i} className="transition-colors">
                                 <td className={`${tdCls} pl-14 text-slate-700 dark:text-slate-300`}>{p.name}</td>
                                 <td className={`${tdCls} hidden sm:table-cell`}>
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
                                     {p.type}
                                   </span>
                                 </td>
                                 {p.prevRate != null && (
                                   <>
-                                    <td className={`${tdCls} text-right text-slate-400 dark:text-slate-500 tabular-nums`}>
+                                    <td className={`${tdCls} text-right text-slate-500 dark:text-slate-400 tabular-nums`}>
                                       {p.prevRate.toFixed(2)}%
                                     </td>
                                     <td className={`${tdCls} text-right`}>

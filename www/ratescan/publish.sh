@@ -1,15 +1,12 @@
 #!/bin/bash
 
 # Variables
-BUCKET_NAME="www.advicegenie.com.au"
+BUCKET_NAME="ratescan.com.au"
 REGION="ap-southeast-2" # Replace with your preferred AWS region
 INDEX_FILE="index.html"
 ERROR_FILE="index.html" # Set to a proper error file if needed
-FOLDER_PATH="./" # Path to your website files (use . if files are in the current directory)
-YOUR_DISTRIBUTION_ID="E1C5YSQD0KFMCM"
-BA_PORTAL_DIST_PATH="../../app/ba-portal/dashboard-frontend/dist" # Path to ba-portal dist folder
-BA_PREFIX="ba/" # Prefix for ba-portal content in S3
-
+FOLDER_PATH="../../app/ratescan/frontend/dist" # Path to your website files (use . if files are in the current directory)
+YOUR_DISTRIBUTION_ID="E1J06U2P33MLHN"
 
 # Check if AWS CLI is installed
 if ! [ -x "$(command -v aws)" ]; then
@@ -27,9 +24,9 @@ fi
 
 echo "Bucket $BUCKET_NAME exists"
 
-# Sync local folder with S3 bucket (root level)
+# Sync local folder with S3 bucket (www prefix)
 echo "Uploading website files to S3 bucket"
-aws s3 sync "$FOLDER_PATH" s3://"$BUCKET_NAME"/
+aws s3 sync "$FOLDER_PATH" s3://"$BUCKET_NAME"/www/
 
 # Check if ba-portal dist folder exists
 if [ -d "$BA_PORTAL_DIST_PATH" ]; then
@@ -52,7 +49,7 @@ fi
 
 # Output the website URL
 echo "Website deployed successfully!"
-echo "You can access the main website at: http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+echo "You can access the main website at: http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com/www/"
 echo "You can access the ba-portal at: http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com/$BA_PREFIX"
 
 echo "Creating CloudFront invalidation for distribution: $YOUR_DISTRIBUTION_ID"

@@ -77,6 +77,40 @@ variable_io AS (
     AND UPPER(repaymenttype)  = 'INTEREST_ONLY'
 ),
 
+investment_pi AS (
+  SELECT
+    'investment_pi'               AS category,
+    NULL                          AS term_years,
+    ROUND(AVG(rate_pct), 2)       AS avg_rate,
+    ROUND(MIN(rate_pct), 2)       AS min_rate,
+    ROUND(MAX(rate_pct), 2)       AS max_rate,
+    CAST(COUNT(*) AS VARCHAR)     AS product_count,
+    CAST(COUNT(DISTINCT brand) AS VARCHAR) AS lender_count
+  FROM normalised
+  WHERE productcategory = 'RESIDENTIAL_MORTGAGES'
+    AND lendingratetype = 'VARIABLE'
+    AND rate_pct BETWEEN 5.0 AND 8.0
+    AND loanpurpose   = 'INVESTMENT'
+    AND repaymenttype = 'PRINCIPAL_AND_INTEREST'
+),
+
+investment_io AS (
+  SELECT
+    'investment_io'               AS category,
+    NULL                          AS term_years,
+    ROUND(AVG(rate_pct), 2)       AS avg_rate,
+    ROUND(MIN(rate_pct), 2)       AS min_rate,
+    ROUND(MAX(rate_pct), 2)       AS max_rate,
+    CAST(COUNT(*) AS VARCHAR)     AS product_count,
+    CAST(COUNT(DISTINCT brand) AS VARCHAR) AS lender_count
+  FROM normalised
+  WHERE productcategory = 'RESIDENTIAL_MORTGAGES'
+    AND lendingratetype = 'VARIABLE'
+    AND rate_pct BETWEEN 5.0 AND 9.0
+    AND loanpurpose   = 'INVESTMENT'
+    AND repaymenttype = 'INTEREST_ONLY'
+),
+
 fixed AS (
   SELECT
     'fixed' AS category,
@@ -161,6 +195,10 @@ SELECT * FROM variable
 UNION ALL
 SELECT * FROM variable_io
 UNION ALL
+SELECT * FROM investment_pi
+UNION ALL
+SELECT * FROM investment_io
+UNION ALL
 SELECT * FROM fixed
 UNION ALL
 SELECT * FROM personal_loan
@@ -191,6 +229,8 @@ def _build_response(rows: list) -> dict:
         "lenderCount": 0,
         "variable": {},
         "variableIO": {},
+        "investmentPI": {},
+        "investmentIO": {},
         "fixed": {},
         "personalLoan": {},
         "businessLoan": {},
@@ -215,6 +255,10 @@ def _build_response(rows: list) -> dict:
             result["lenderCount"] = lc
         elif category == "variable_io":
             result["variableIO"] = entry
+        elif category == "investment_pi":
+            result["investmentPI"] = entry
+        elif category == "investment_io":
+            result["investmentIO"] = entry
         elif category == "fixed":
             term = row.get("term_years")
             if term:
