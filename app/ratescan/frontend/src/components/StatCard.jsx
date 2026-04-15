@@ -1,5 +1,26 @@
 import { useState } from 'react'
 
+function TrendIndicator({ trend, change }) {
+  if (!trend || trend === 'stable') {
+    return (
+      <span className="text-slate-400 dark:text-slate-600 text-sm font-medium ml-1.5" aria-label="Rate stable">
+        →
+      </span>
+    )
+  }
+  const isDown = trend === 'down'
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 text-sm font-medium ml-1.5 tabular-nums
+        ${isDown ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}
+      aria-label={`Rate ${trend} ${Math.abs(change).toFixed(2)}%`}
+    >
+      {isDown ? '↓' : '↑'}
+      <span className="text-xs">{Math.abs(change).toFixed(2)}%</span>
+    </span>
+  )
+}
+
 function InfoIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
@@ -15,7 +36,7 @@ function InfoIcon() {
  * `highlight` variant uses an indigo accent for the hero variable rate card.
  * `tooltip` text appears on hover/focus of the ⓘ icon.
  */
-export default function StatCard({ label, median, p25, p75, count, highlight = false, tooltip }) {
+export default function StatCard({ label, median, p25, p75, count, highlight = false, tooltip, trend = null, change = null, dataStale = false }) {
   const [tipVisible, setTipVisible] = useState(false)
 
   const fmt = (v) => (v != null ? Number(v).toFixed(2) : '—')
@@ -68,13 +89,21 @@ export default function StatCard({ label, median, p25, p75, count, highlight = f
       {/* Median rate — hero number */}
       {hasData ? (
         <div>
-          <p className={`text-4xl font-semibold tabular-nums tracking-tight leading-none ${
-            highlight ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-900 dark:text-white'
-          }`}>
-            {fmt(median)}
-            <span className="text-xl font-normal ml-0.5 text-slate-500 dark:text-slate-500">%</span>
+          <div className="flex items-baseline">
+            <p className={`text-4xl font-semibold tabular-nums tracking-tight leading-none ${
+              highlight ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-900 dark:text-white'
+            }`}>
+              {fmt(median)}
+              <span className="text-xl font-normal ml-0.5 text-slate-500 dark:text-slate-500">%</span>
+            </p>
+            {!dataStale && trend && <TrendIndicator trend={trend} change={change} />}
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+            median rate
+            {dataStale && (
+              <span className="ml-1 text-amber-500 dark:text-amber-400">(as of yesterday)</span>
+            )}
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">median rate</p>
         </div>
       ) : (
         <p className="text-2xl font-semibold text-slate-300 dark:text-slate-700">—</p>

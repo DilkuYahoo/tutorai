@@ -14,7 +14,7 @@ confirm_changeset     = false
 resolve_s3            = true
 resolve_image_repos   = true
 capabilities          = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
-parameter_overrides   = "DataBucketName=\"ratescan.com.au\" IcebergWarehouse=\"s3://ratescan.com.au/iceberg/\" IcebergCatalog=\"OpenBanking\" IcebergDb=\"obdb\" IcebergTable=\"daily_rates\" AlertEmail=\"info@ratescan.com.au\""
+parameter_overrides   = "DataBucketName=\"ratescan.com.au\" IcebergWarehouse=\"s3://ratescan.com.au/iceberg/\" IcebergCatalog=\"OpenBanking\" IcebergDb=\"obdb\" IcebergTable=\"daily_rates\" AthenaWorkgroup=\"primary\" AthenaDatabase=\"obdb\" AlertEmail=\"info@ratescan.com.au\""
 
 # To add a failure alert email, set AlertEmail:
 # parameter_overrides = [..., "AlertEmail=you@example.com"]

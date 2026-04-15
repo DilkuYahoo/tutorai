@@ -19,6 +19,14 @@ Parameters:
     Type: String
     Default: OpenBanking
     Description: PyIceberg catalog name (client-side identifier for the AWS Glue catalog)
+  AthenaWorkgroup:
+    Type: String
+    Default: primary
+    Description: Athena workgroup for Stage 5 summary query
+  AthenaDatabase:
+    Type: String
+    Default: obdb
+    Description: Glue/Athena database containing the daily_rates table
   AlertEmail:
     Type: String
     Description: Email address to notify on pipeline failure
@@ -141,6 +149,26 @@ Resources:
       DockerContext: ./
       Dockerfile: Dockerfile
 
+  # ── Lambda: Stage 5 — Compute Summary (zip — no heavy deps) ──────────────
+  Stage5ComputeSummaryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ratescan-stage5-compute-summary
+      Handler: compute_summary.lambda_handler
+      Runtime: python3.13
+      CodeUri: functions/compute_summary/
+      Timeout: 90
+      MemorySize: 256
+      Role: !GetAtt Stage5Role.Arn
+      Environment:
+        Variables:
+          S3_BUCKET:             !Ref DataBucketName
+          ATHENA_RESULTS_BUCKET: !Ref DataBucketName
+          ATHENA_RESULTS_PREFIX: athena-results
+          ATHENA_WORKGROUP:      !Ref AthenaWorkgroup
+          ATHENA_DATABASE:       !Ref AthenaDatabase
+          SUMMARIES_PREFIX:      summaries
+
   # ── Step Functions State Machine ───────────────────────────────────────────
   RatescanStateMachine:
     Type: AWS::Serverless::StateMachine
@@ -154,6 +182,7 @@ Resources:
         Stage2Arn: !GetAtt Stage2FetchDetailsFunction.Arn
         Stage3Arn: !GetAtt Stage3FlattenCsvFunction.Arn
         Stage4Arn: !GetAtt Stage4UpsertFunction.Arn
+        Stage5Arn: !GetAtt Stage5ComputeSummaryFunction.Arn
         AlertTopicArn: !Ref AlertTopic
       Role: !GetAtt StateMachineRole.Arn
       Logging:
@@ -336,6 +365,67 @@ Resources:
                   - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${IcebergDb}"
                   - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${IcebergDb}/${IcebergTable}"
 
+  Stage5Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ratescan-stage5-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: Stage5Athena
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - athena:StartQueryExecution
+                  - athena:GetQueryExecution
+                  - athena:GetQueryResults
+                  - athena:StopQueryExecution
+                  - athena:GetWorkGroup
+                Resource:
+                  - !Sub "arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/${AthenaWorkgroup}"
+        - PolicyName: Stage5S3
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [s3:PutObject, s3:GetObject, s3:AbortMultipartUpload]
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/athena-results/*"
+              - Effect: Allow
+                Action: [s3:GetBucketLocation, s3:ListBucket]
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}"
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/iceberg/*"
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject]
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/summaries/*"
+        - PolicyName: Stage5Glue
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - glue:GetDatabase
+                  - glue:GetDatabases
+                  - glue:GetTable
+                  - glue:GetTables
+                  - glue:GetPartition
+                  - glue:GetPartitions
+                  - glue:BatchGetPartition
+                Resource:
+                  - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog"
+                  - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${AthenaDatabase}"
+                  - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${AthenaDatabase}/${IcebergTable}"
+
   StateMachineRole:
     Type: AWS::IAM::Role
     Properties:
@@ -360,6 +450,7 @@ Resources:
                   - !GetAtt Stage2FetchDetailsFunction.Arn
                   - !GetAtt Stage3FlattenCsvFunction.Arn
                   - !GetAtt Stage4UpsertFunction.Arn
+                  - !GetAtt Stage5ComputeSummaryFunction.Arn
               - Effect: Allow
                 Action: sns:Publish
                 Resource: !Ref AlertTopic

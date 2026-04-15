@@ -6,12 +6,13 @@
  */
 
 export const RATE_SUMMARY = {
-  asOf: '2026-04-13',
-  lenderCount: 124,
-  variable:     { median: 6.19, p25: 5.89, p75: 6.54, count: 312 },
-  variableIO:   { median: 6.99, p25: 6.54, p75: 7.45, count: 198 },
-  investmentPI: { median: 6.49, p25: 5.99, p75: 6.89, count: 210 },
-  investmentIO: { median: 7.04, p25: 6.29, p75: 7.49, count: 185 },
+  asOf: '2026-04-15',
+  lenderCount: 91,
+  dataStale: false,
+  variable:     { median: 6.19, p25: 5.89, p75: 6.54, count: 312, trend: 'down',   change: -0.05 },
+  variableIO:   { median: 6.99, p25: 6.54, p75: 7.45, count: 198, trend: 'stable', change:  0.00 },
+  investmentPI: { median: 6.49, p25: 5.99, p75: 6.89, count: 210, trend: 'stable', change:  0.01 },
+  investmentIO: { median: 7.04, p25: 6.29, p75: 7.49, count: 185, trend: 'down',   change: -0.05 },
   fixed: {
     1: { median: 5.84, p25: 5.45, p75: 6.25, count: 187 },
     2: { median: 5.69, p25: 5.30, p75: 6.10, count: 165 },
@@ -19,6 +20,9 @@ export const RATE_SUMMARY = {
     4: { median: 5.67, p25: 5.30, p75: 6.05, count: 98  },
     5: { median: 5.76, p25: 5.40, p75: 6.15, count: 87  },
   },
+  personalLoan: { median: 11.50, p25: 9.00,  p75: 14.00, count: 89, trend: 'up',     change:  0.15 },
+  businessLoan: { median: 8.75,  p25: 7.00,  p75: 10.50, count: 62, trend: 'stable', change: -0.02 },
+  creditCard:   { median: 19.99, p25: 17.99, p75: 21.99, count: 45, trend: 'stable', change:  0.00 },
 }
 
 /**

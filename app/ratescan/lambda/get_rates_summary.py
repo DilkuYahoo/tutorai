@@ -24,11 +24,22 @@ Fixed term normalisation:
 
 import json
 import os
-from datetime import date, timezone, datetime
+from datetime import date, timedelta, datetime
+from zoneinfo import ZoneInfo
+
+import boto3
+from botocore.exceptions import ClientError
 
 from athena_helper import run_query
 
-DATABASE = os.environ.get("ATHENA_DATABASE", "obdb")
+DATABASE         = os.environ.get("ATHENA_DATABASE", "obdb")
+S3_BUCKET        = os.environ.get("S3_BUCKET", "ratescan.com.au")
+SUMMARIES_PREFIX = os.environ.get("SUMMARIES_PREFIX", "summaries")
+
+_TREND_CATEGORIES = (
+    "variable", "variableIO", "investmentPI", "investmentIO",
+    "personalLoan", "businessLoan", "creditCard",
+)
 
 _SQL = f"""
 WITH normalised AS (
@@ -222,8 +233,9 @@ def lambda_handler(event, context):
         return _cors(204, "")
 
     try:
-        rows = run_query(_SQL)
+        rows    = run_query(_SQL)
         payload = _build_response(rows)
+        _attach_trends(payload)
         return _cors(200, json.dumps(payload))
     except Exception as exc:
         print(f"ERROR: {exc}")
@@ -232,7 +244,7 @@ def lambda_handler(event, context):
 
 def _build_response(rows: list) -> dict:
     result = {
-        "asOf": date.today().isoformat(),
+        "asOf": datetime.now(ZoneInfo("Australia/Sydney")).date().isoformat(),
         "lenderCount": 0,
         "variable": {},
         "variableIO": {},
@@ -282,6 +294,57 @@ def _build_response(rows: list) -> dict:
         result["lenderCount"] = max(total_lenders)
 
     return result
+
+
+def _attach_trends(payload: dict) -> None:
+    """
+    Load summaries/latest.json from S3 and attach trend/change to each
+    stat-card category in-place.  Also corrects asOf to reflect when the
+    pipeline actually ran rather than when this Lambda executed.
+
+    Behaviour by staleness:
+      latest.json.asOf == today   → trends attached, no dataStale flag
+      latest.json.asOf == yesterday → trends attached, dataStale=True set
+      older or missing            → no trends, dataStale=True if file exists
+    """
+    s3 = boto3.client("s3")
+    try:
+        resp    = s3.get_object(Bucket=S3_BUCKET, Key=f"{SUMMARIES_PREFIX}/latest.json")
+        latest  = json.loads(resp["Body"].read())
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchKey":
+            print("INFO: no summary file found — trends unavailable on first run")
+        else:
+            print(f"WARNING: could not load summary file: {e}")
+        return   # degrade gracefully — payload already has correct Athena stats
+    except Exception as e:
+        print(f"WARNING: unexpected error loading summary: {e}")
+        return
+
+    summary_as_of = latest.get("asOf", "")
+    today         = datetime.now(ZoneInfo("Australia/Sydney")).date()
+    yesterday     = (today - timedelta(days=1)).isoformat()
+    today_str     = today.isoformat()
+
+    # Fix asOf to reflect when the data was actually ingested, not Lambda run time
+    payload["asOf"] = summary_as_of
+
+    if summary_as_of == today_str:
+        # Pipeline has already run today — full trend data available
+        pass
+    elif summary_as_of == yesterday:
+        # Before today's 7am pipeline run — data is yesterday's
+        payload["dataStale"] = True
+    else:
+        # Summary is more than 1 day old (pipeline skipped or first run with null trends)
+        payload["dataStale"] = True
+        return   # don't attach stale trend arrows
+
+    # Attach trend + change per stat-card category
+    for key in _TREND_CATEGORIES:
+        if key in payload and key in latest:
+            payload[key]["trend"]  = latest[key].get("trend")
+            payload[key]["change"] = latest[key].get("change")
 
 
 def _f(v) -> float:

@@ -195,36 +195,38 @@ export default function Dashboard({ isDark, onToggleTheme, onApply }) {
     'Rates outside 5%–8% (P&I) or 5%–9% (IO) are excluded to remove outliers. ' +
     'Median, P25 and P75 calculated across all qualifying products from participating lenders.'
 
+  const dataStale = s.dataStale ?? false
+
   const mortgageCards = summary ? [
     {
-      label: 'Variable P&I', highlight: false, ...s.variable,
+      label: 'Variable P&I', highlight: false, ...s.variable, dataStale,
       tooltip: 'Floating rate, principal & interest repayments. ' + M,
     },
     {
-      label: 'Variable IO', highlight: false, ...(s.variableIO || {}),
+      label: 'Variable IO', highlight: false, ...(s.variableIO || {}), dataStale,
       tooltip: 'Floating rate, interest-only repayments. Typically 0.5%–0.8% higher than P&I. ' + M_IO,
     },
     {
-      label: 'Investment P&I', highlight: false, ...(s.investmentPI || {}),
+      label: 'Investment P&I', highlight: false, ...(s.investmentPI || {}), dataStale,
       tooltip: 'Variable rate, investment property, principal & interest. Typically 0.2%–0.5% above owner-occupied P&I. ' + M_INV,
     },
     {
-      label: 'Investment IO', highlight: false, ...(s.investmentIO || {}),
+      label: 'Investment IO', highlight: false, ...(s.investmentIO || {}), dataStale,
       tooltip: 'Variable rate, investment property, interest-only. Highest-cost category — used by investors managing cash flow. ' + M_INV,
     },
   ] : null
 
   const otherCards = summary ? [
     {
-      label: 'Personal Loan', highlight: false, ...(s.personalLoan || {}),
-      tooltip: 'Fixed and variable unsecured personal loans. Rates outside 5%–20% excluded. Average across all loan purposes and terms.',
+      label: 'Personal Loan', highlight: false, ...(s.personalLoan || {}), dataStale,
+      tooltip: 'Fixed and variable unsecured personal loans. Rates outside 5%–20% excluded. Median across all loan purposes and terms.',
     },
     {
-      label: 'Business Loan', highlight: false, ...(s.businessLoan || {}),
+      label: 'Business Loan', highlight: false, ...(s.businessLoan || {}), dataStale,
       tooltip: 'Fixed and variable business loans. Rates outside 5%–15% excluded to remove outliers.',
     },
     {
-      label: 'Credit Card', highlight: false, ...(s.creditCard || {}),
+      label: 'Credit Card', highlight: false, ...(s.creditCard || {}), dataStale,
       tooltip: 'Standard purchase rates on credit cards. Excludes introductory, cash advance and balance transfer rates. Range 8%–25%.',
     },
   ] : null
@@ -247,7 +249,12 @@ export default function Dashboard({ isDark, onToggleTheme, onApply }) {
             {loadingSummary
               ? <Skeleton className="h-4 w-52" />
               : <>
-                  <span>As of {s.asOf}</span>
+                  <span>
+                    As of {s.asOf}
+                    {s.dataStale && (
+                      <span className="ml-1 text-amber-500 dark:text-amber-400 text-xs">(yesterday's data)</span>
+                    )}
+                  </span>
                   <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
                   <span>{s.lenderCount} lenders</span>
                   <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />

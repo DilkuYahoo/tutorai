@@ -7,15 +7,19 @@ Australian mortgage/loan rate comparison platform. Ingests live rate data from 1
 ```
 app/ratescan/
 ├── lambda/               # Lambda function source (Python)
-│   ├── get_rates_summary.py      # GET /rates/summary
+│   ├── get_rates_summary.py      # GET /rates/summary (loads summaries/latest.json for trends)
 │   ├── get_recent_changes.py     # GET /rates/recent-changes
 │   ├── submit_application.py     # POST /application
 │   └── athena_helper.py          # Shared Athena query utility
-├── data-pipeline/        # 4-stage ingestion pipeline
+├── data-pipeline/        # 5-stage ingestion pipeline
 │   ├── main.py                   # Stage 1: fetch product lists
 │   ├── main_prod_details.py      # Stage 2: fetch product details
 │   ├── flatten_json_to_csv.py    # Stage 3: flatten nested JSON → CSV
 │   ├── upsert_dataset.py         # Stage 4: load CSV → Iceberg table
+│   ├── functions/
+│   │   └── compute_summary/      # Stage 5: compute daily summary + trends
+│   │       ├── compute_summary.py
+│   │       └── athena_helper.py  # Keep in sync with lambda/athena_helper.py
 │   └── statemachine/             # Step Functions ASL definition
 ├── iac/                  # SAM template + samconfig for API stack
 │   ├── template.yaml
@@ -23,9 +27,9 @@ app/ratescan/
 └── frontend/             # React + Vite frontend
     └── src/
         ├── pages/Dashboard.jsx
-        ├── components/StatCard.jsx
+        ├── components/StatCard.jsx   # TrendIndicator: ↑↓→, dataStale amber hint
         ├── components/RateChart.jsx
-        └── data/mockRates.js     # Fallback data when API is unreachable
+        └── data/mockRates.js         # Fallback data when API is unreachable
 ```
 
 ## AWS infrastructure
@@ -41,8 +45,19 @@ app/ratescan/
 # API Lambdas
 cd app/ratescan/iac && sam build && sam deploy
 
-# Data pipeline
-cd app/ratescan/data-pipeline && sam build && sam deploy
+# Data pipeline (Stages 1–4 are container images; use --skip-pull-image to avoid re-pulling)
+cd app/ratescan/data-pipeline && sam build --skip-pull-image && sam deploy
+
+# Manually trigger pipeline (e.g. to test Stage 5 or force a same-day run)
+aws stepfunctions start-execution \
+  --state-machine-arn arn:aws:states:ap-southeast-2:724772096157:stateMachine:RatescanPipeline \
+  --input '{}'
+
+# Smoke-test Stage 5 in isolation
+aws lambda invoke \
+  --function-name ratescan-stage5-compute-summary \
+  --payload '{}' --cli-binary-format raw-in-base64-out /tmp/stage5-out.json \
+  && cat /tmp/stage5-out.json
 ```
 
 ## Live API base URL
@@ -67,6 +82,23 @@ The IO premium exceeds the investment surcharge (~30bp). This is correct market 
 ### Iceberg full overwrite
 `upsert_dataset.py` does a full `table.overwrite()` each pipeline run — not incremental.
 daily_rates is a point-in-time snapshot, not a history table.
+
+### Stage 5 daily summary + trend indicators
+After each Iceberg upsert, Stage 5 (`compute_summary.py`) runs an Athena query across the 7
+stat-card categories, diffs median rates against the previous `summaries/latest.json`, and writes:
+- `s3://ratescan.com.au/summaries/YYYY-MM-DD.json` — dated archive
+- `s3://ratescan.com.au/summaries/latest.json` — always the most recent
+
+`get_rates_summary.py` reads `latest.json` to attach `trend` ("up"/"down"/"stable") and `change`
+(basis-point delta) to each category, and to fix `asOf` to Sydney time.
+
+Staleness logic:
+- `latest.json.asOf == today` → trends shown, no warning
+- `latest.json.asOf == yesterday` → `dataStale: true`, `asOf` shows yesterday, trend arrows suppressed
+- Stage 5 failure → catch-continue to PipelineComplete (non-critical; no SNS alert)
+
+Trend threshold: 5bp (0.05%) to absorb `approx_percentile` approximation noise.
+First run writes `trend: null` (no previous to diff against) — cards show no arrow.
 
 ## Rate category SQL filters (Athena)
 | Category | productCategory | lendingRateType | loanPurpose | repaymentType | rate_pct range |

@@ -133,6 +133,7 @@
         "csv_key.$": "$.stage3.body.csv_key"
       },
       "TimeoutSeconds": 600,
+      "ResultPath": "$.stage4",
       "Retry": [
         {
           "ErrorEquals": ["States.ALL"],
@@ -146,6 +147,34 @@
           "ErrorEquals": ["States.ALL"],
           "ResultPath": "$.error",
           "Next": "NotifyOnFailure"
+        }
+      ],
+      "Next": "Stage5_ComputeSummary"
+    },
+
+    "Stage5_ComputeSummary": {
+      "Type": "Task",
+      "Comment": "Run Athena summary query, diff vs previous day, write summaries/latest.json to S3. Non-critical — failure routes to PipelineComplete without an alert.",
+      "Resource": "${Stage5Arn}",
+      "TimeoutSeconds": 120,
+      "ResultPath": "$.stage5",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.TooManyRequestsException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 15,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.stage5Error",
+          "Next": "PipelineComplete"
         }
       ],
       "Next": "PipelineComplete"
