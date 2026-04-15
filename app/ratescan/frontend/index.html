@@ -1,13 +1,62 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-AU">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RateScan — Find Your Best Rate</title>
+    <title>RateScan — Today's Australian Interest Rates</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- SEO core -->
+    <meta name="description" content="Compare today's Australian home loan and mortgage interest rates. Live data from 91 lenders via Open Banking. Variable, fixed, investment, refinance, personal loan and credit card rates — updated daily." />
+    <meta name="keywords" content="Australian mortgage rates, home loan comparison, compare home loan rates, best mortgage rate Australia, variable rate home loan, fixed rate home loan, investment loan rates, refinance rates Australia, interest rate today Australia, personal loan rates Australia, credit card interest rates, RBA cash rate, home loan interest rate, mortgage comparison Australia, Open Banking rates" />
+    <link rel="canonical" href="https://ratescan.com.au/" />
+    <meta name="theme-color" content="#0f172a" />
+
+    <!-- Open Graph -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:url"         content="https://ratescan.com.au/" />
+    <meta property="og:title"       content="RateScan — Today's Australian Interest Rates" />
+    <meta property="og:description" content="Compare today's home loan, mortgage, personal loan and credit card rates from 91 Australian lenders. Variable, fixed, investment and refinance rates updated daily via Open Banking." />
+    <meta property="og:image"       content="https://ratescan.com.au/og-image.svg" />
+    <meta property="og:site_name"   content="RateScan" />
+    <meta property="og:locale"      content="en_AU" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:title"       content="RateScan — Today's Australian Interest Rates" />
+    <meta name="twitter:description" content="Compare today's home loan, mortgage, personal loan and credit card rates from 91 Australian lenders. Updated daily." />
+    <meta name="twitter:image"       content="https://ratescan.com.au/og-image.svg" />
+
+    <!-- JSON-LD: WebSite + FinancialService -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://ratescan.com.au/#website",
+          "url": "https://ratescan.com.au/",
+          "name": "RateScan",
+          "description": "Australian mortgage and loan rate comparison"
+        },
+        {
+          "@type": "FinancialService",
+          "@id": "https://ratescan.com.au/#service",
+          "name": "RateScan",
+          "url": "https://ratescan.com.au/",
+          "description": "Compare live Australian mortgage and loan interest rates from 91 lenders via Open Banking.",
+          "areaServed": { "@type": "Country", "name": "Australia" },
+          "serviceType": "Mortgage Rate Comparison"
+        }
+      ]
+    }
+    </script>
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
     <!-- Apply dark class synchronously before first paint to avoid flash -->
     <script>document.documentElement.classList.add('dark')</script>
   </head>

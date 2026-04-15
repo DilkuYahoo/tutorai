@@ -1,5 +1,20 @@
 import { useState } from 'react'
 
+function RangeBar({ p25, median, p75 }) {
+  const range = p75 - p25
+  if (!range) return null
+  const pct = Math.min(100, Math.max(0, ((median - p25) / range) * 100))
+  return (
+    <div className="relative h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 mt-3">
+      <div className="absolute inset-y-0 left-0 right-0 rounded-full bg-indigo-100 dark:bg-indigo-500/20" />
+      <div
+        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-indigo-500 dark:bg-indigo-400 border-2 border-white dark:border-slate-900 shadow-sm"
+        style={{ left: `calc(${pct}% - 6px)` }}
+      />
+    </div>
+  )
+}
+
 function TrendIndicator({ trend, change }) {
   if (!trend || trend === 'stable') {
     return (
@@ -36,7 +51,7 @@ function InfoIcon() {
  * `highlight` variant uses an indigo accent for the hero variable rate card.
  * `tooltip` text appears on hover/focus of the ⓘ icon.
  */
-export default function StatCard({ label, median, p25, p75, count, highlight = false, tooltip, trend = null, change = null, dataStale = false }) {
+export default function StatCard({ label, median, p25, p75, count, highlight = false, tooltip, trend = null, change = null, dataStale = false, tipSide = 'right' }) {
   const [tipVisible, setTipVisible] = useState(false)
 
   const fmt = (v) => (v != null ? Number(v).toFixed(2) : '—')
@@ -75,11 +90,15 @@ export default function StatCard({ label, median, p25, p75, count, highlight = f
               <InfoIcon />
             </button>
             {tipVisible && (
-              <div className="absolute bottom-full right-0 mb-2 z-20 w-60 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl px-3.5 py-3">
+              <div className={`absolute bottom-full mb-2 z-20 w-60 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl px-3.5 py-3 ${
+                tipSide === 'left' ? 'left-0' : 'right-0'
+              }`}>
                 <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
                   {tooltip}
                 </p>
-                <div className="absolute -bottom-1.5 right-2 w-3 h-3 rotate-45 border-r border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800" />
+                <div className={`absolute -bottom-1.5 w-3 h-3 rotate-45 border-r border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 ${
+                  tipSide === 'left' ? 'left-2' : 'right-2'
+                }`} />
               </div>
             )}
           </div>
@@ -111,20 +130,22 @@ export default function StatCard({ label, median, p25, p75, count, highlight = f
 
       {/* P25 / P75 spread band */}
       {hasData && (
-        <div className="flex items-center gap-2 text-xs">
-          <span className="flex items-center gap-1.5">
+        <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+          <span className="flex items-center gap-1.5 min-w-0">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
             <span className="text-slate-600 dark:text-slate-400">P25</span>
-            <span className="tabular-nums font-medium text-slate-700 dark:text-slate-300">{fmt(p25)}%</span>
+            <span className="tabular-nums font-medium text-slate-700 dark:text-slate-300 truncate">{fmt(p25)}%</span>
           </span>
-          <span className="text-slate-300 dark:text-slate-700">·</span>
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-1.5 min-w-0">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
             <span className="text-slate-600 dark:text-slate-400">P75</span>
-            <span className="tabular-nums font-medium text-slate-700 dark:text-slate-300">{fmt(p75)}%</span>
+            <span className="tabular-nums font-medium text-slate-700 dark:text-slate-300 truncate">{fmt(p75)}%</span>
           </span>
         </div>
       )}
+
+      {/* P25/P75 range bar */}
+      {hasData && <RangeBar p25={p25} median={median} p75={p75} />}
 
       {/* Product count */}
       {hasData && (

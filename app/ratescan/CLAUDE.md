@@ -1,7 +1,7 @@
 # RateScan — Claude Context
 
 ## What this project is
-Australian mortgage/loan rate comparison platform. Ingests live rate data from 124 banks via the CDR Open Banking API v5, stores it in an Iceberg table on S3/Glue, and serves it via Lambda + API Gateway to a React frontend.
+Australian mortgage/loan rate comparison platform. Ingests live rate data from 124 banks via the CDR Open Banking API v5, stores it in an Iceberg table on S3/Glue, and serves it via Lambda + API Gateway to a React frontend. Built and maintained by CognifyLabs.ai.
 
 ## Repo structure
 ```
@@ -25,10 +25,18 @@ app/ratescan/
 │   ├── template.yaml
 │   └── samconfig.toml
 └── frontend/             # React + Vite frontend
+    ├── public/
+    │   ├── robots.txt                # Crawl rules + sitemap reference
+    │   ├── sitemap.xml               # Single URL entry, changefreq: daily
+    │   └── og-image.svg             # 1200×630 branded Open Graph image
     └── src/
-        ├── pages/Dashboard.jsx
-        ├── components/StatCard.jsx   # TrendIndicator: ↑↓→, dataStale amber hint
-        ├── components/RateChart.jsx
+        ├── pages/Dashboard.jsx       # Full dashboard — gradient hero, rate cards, chart, table
+        ├── components/
+        │   ├── DashboardHeader.jsx   # Diamond logo mark, two-tone wordmark
+        │   ├── StatCard.jsx          # TrendIndicator ↑↓→, RangeBar, tipSide prop (mobile tooltip)
+        │   ├── RateChart.jsx         # ECharts wrapper; buildTermTrendOption for Market Rate Outlook
+        │   ├── RecentChangesTable.jsx
+        │   └── SiteFooter.jsx        # 3-column footer: brand, rate links, legal; CognifyLabs.ai credit
         └── data/mockRates.js         # Fallback data when API is unreachable
 ```
 
@@ -39,6 +47,14 @@ app/ratescan/
 - Glue catalog: OpenBanking / database: obdb / table: daily_rates
 - Athena workgroup: primary
 - SAM stack name: `ratescan-frontend`
+- Route 53 hosted zone: Z068691937SVYUSPTFYV (ratescan.com.au)
+
+## DNS records (Route 53)
+| Type  | Name                                          | Value                                                     | Purpose                        |
+|-------|-----------------------------------------------|-----------------------------------------------------------|--------------------------------|
+| TXT   | ratescan.com.au                               | `v=spf1 include:amazonses.com -all`                       | SES email sending              |
+| TXT   | ratescan.com.au                               | `google-site-verification=CZarWT6U9rrMlG...`              | Google Search Console          |
+| CNAME | a21d649a94f3445988e827b1e8624f41.ratescan.com.au | verify.bing.com                                        | Bing Webmaster Tools           |
 
 ## Deploy commands
 ```bash
@@ -63,6 +79,15 @@ aws lambda invoke \
 ## Live API base URL
 https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod
 
+## Frontend build & deploy
+```bash
+cd app/ratescan/frontend
+npm run build        # outputs to dist/
+# deploy to S3 + invalidate CloudFront
+aws s3 sync dist/ s3://ratescan.com.au/ --delete
+aws cloudfront create-invalidation --distribution-id <ID> --paths "/*"
+```
+
 ## Key decisions — do not reverse without discussion
 
 ### Median + P25/P75 (not avg/min/max)
@@ -82,6 +107,24 @@ The IO premium exceeds the investment surcharge (~30bp). This is correct market 
 ### Iceberg full overwrite
 `upsert_dataset.py` does a full `table.overwrite()` each pipeline run — not incremental.
 daily_rates is a point-in-time snapshot, not a history table.
+
+### Frontend design system
+- Tailwind CSS v3, dark mode via `class` strategy (default: dark)
+- Font: Inter 300–700 via Google Fonts CDN
+- Palette: indigo-500 primary, slate neutrals, emerald (rate down), red (rate up), amber (stale data)
+- Hero: `bg-hero-gradient` (tailwind custom: indigo-950 → slate-950 → indigo-950)
+- StatCard tooltip: `tipSide` prop — pass `'left'` to left-column cards in 2-col mobile grid to prevent overflow
+- P25/P75 row: `grid grid-cols-2` (not flex) to prevent overflow on narrow mobile cards
+- "Market Rate Outlook" chart uses real API data (`summary.fixed` term structure) — do NOT replace with mock historical data
+- 12-month trend chart was intentionally removed — no real historical data source exists yet
+
+### SEO implementation
+- `index.html`: meta description, keywords, canonical, OG tags, Twitter Card, JSON-LD (WebSite + FinancialService)
+- `public/robots.txt` + `public/sitemap.xml` (changefreq: daily)
+- `public/og-image.svg`: 1200×630 branded dark-theme social preview image
+- Google Search Console verified via DNS TXT record (Route 53)
+- Bing Webmaster Tools verified via CNAME record (Route 53)
+- Prerendering (vite-plugin-prerender) was evaluated but dropped — incompatible with Vite 5 ESM; Google's JS crawler handles the SPA correctly
 
 ### Stage 5 daily summary + trend indicators
 After each Iceberg upsert, Stage 5 (`compute_summary.py`) runs an Athena query across the 7

@@ -3,6 +3,7 @@ import DashboardHeader from '../components/DashboardHeader'
 import StatCard from '../components/StatCard'
 import RateChart, { buildTermTrendOption } from '../components/RateChart'
 import RecentChangesTable from '../components/RecentChangesTable'
+import SiteFooter from '../components/SiteFooter'
 import { RATE_SUMMARY as MOCK_SUMMARY, RECENT_CHANGES as MOCK_CHANGES } from '../data/mockRates'
 
 const API = import.meta.env.VITE_API_URL || ''
@@ -28,6 +29,7 @@ function CardsSkeleton() {
               <Skeleton className="h-3 w-16" />
             </div>
             <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-1.5 w-full rounded-full" />
             <Skeleton className="h-3 w-12" />
           </div>
         ))}
@@ -52,6 +54,7 @@ function PanelSkeleton({ rows = 3 }) {
               <Skeleton className="h-3 w-16" />
             </div>
             <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-1.5 w-full rounded-full" />
             <Skeleton className="h-3 w-12" />
           </div>
         ))}
@@ -60,17 +63,6 @@ function PanelSkeleton({ rows = 3 }) {
   )
 }
 
-function ChartSkeleton() {
-  return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6">
-      <div className="mb-5 space-y-1.5">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-3 w-72" />
-      </div>
-      <Skeleton className="h-[300px] w-full" />
-    </div>
-  )
-}
 
 function TableSkeleton() {
   return (
@@ -199,7 +191,7 @@ export default function Dashboard({ isDark, onToggleTheme, onApply }) {
 
   const mortgageCards = summary ? [
     {
-      label: 'Variable P&I', highlight: false, ...s.variable, dataStale,
+      label: 'Variable P&I', highlight: false, ...s.variable, dataStale, tipSide: 'left',
       tooltip: 'Floating rate, principal & interest repayments. ' + M,
     },
     {
@@ -207,7 +199,7 @@ export default function Dashboard({ isDark, onToggleTheme, onApply }) {
       tooltip: 'Floating rate, interest-only repayments. Typically 0.5%–0.8% higher than P&I. ' + M_IO,
     },
     {
-      label: 'Investment P&I', highlight: false, ...(s.investmentPI || {}), dataStale,
+      label: 'Investment P&I', highlight: false, ...(s.investmentPI || {}), dataStale, tipSide: 'left',
       tooltip: 'Variable rate, investment property, principal & interest. Typically 0.2%–0.5% above owner-occupied P&I. ' + M_INV,
     },
     {
@@ -235,32 +227,55 @@ export default function Dashboard({ isDark, onToggleTheme, onApply }) {
     <div className={`min-h-screen transition-colors duration-200 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
       <DashboardHeader isDark={isDark} onToggleTheme={onToggleTheme} onApply={onApply} />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-24 pb-16 space-y-10">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-0 space-y-10">
 
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
-        <section>
-          <p className="text-xs font-medium uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-2">
-            Live Market Data
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 dark:text-white mb-3">
-            Today's Interest Rates
-          </h1>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
-            {loadingSummary
-              ? <Skeleton className="h-4 w-52" />
-              : <>
+        <section className="relative overflow-hidden bg-hero-gradient pt-24 pb-14 sm:pt-28 sm:pb-16 -mx-4 sm:-mx-6 px-4 sm:px-6">
+          {/* Radial glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(99,102,241,0.2),transparent_65%)] pointer-events-none" />
+          {/* Grid texture */}
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style={{ backgroundImage: 'repeating-linear-gradient(0deg,#fff 0,#fff 1px,transparent 1px,transparent 40px),repeating-linear-gradient(90deg,#fff 0,#fff 1px,transparent 1px,transparent 40px)' }}
+          />
+
+          <div className="relative max-w-3xl animate-fade-up">
+            {/* Live badge */}
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-5">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+              Live Market Data
+            </span>
+
+            {/* Headline */}
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white leading-tight mb-4">
+              Compare Today's<br />
+              <span className="text-indigo-400">Australian Rates</span>
+            </h1>
+
+            {/* Sub-headline */}
+            <p className="text-base sm:text-lg text-slate-400 mb-6 max-w-xl">
+              Real-time mortgage, personal loan and credit card rates from{' '}
+              {loadingSummary ? '…' : s.lenderCount} lenders via Open Banking Consumer Data Standards.
+            </p>
+
+            {/* Meta row */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500">
+              {loadingSummary ? (
+                <Skeleton className="h-4 w-52" />
+              ) : (
+                <>
                   <span>
                     As of {s.asOf}
-                    {s.dataStale && (
-                      <span className="ml-1 text-amber-500 dark:text-amber-400 text-xs">(yesterday's data)</span>
+                    {dataStale && (
+                      <span className="ml-1 text-amber-400 text-xs">(yesterday's data)</span>
                     )}
                   </span>
-                  <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                  <span className="w-1 h-1 rounded-full bg-slate-700" />
                   <span>{s.lenderCount} lenders</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                  <span>Australian Open Banking (CDS)</span>
+                  <span className="w-1 h-1 rounded-full bg-slate-700" />
+                  <span>CDS API v5</span>
                 </>
-            }
+              )}
+            </div>
           </div>
         </section>
 
@@ -268,7 +283,7 @@ export default function Dashboard({ isDark, onToggleTheme, onApply }) {
         {loadingSummary
           ? <CardsSkeleton />
           : (
-            <section>
+            <section id="mortgage-rates">
               {errorSummary && <ErrorBanner message={errorSummary} onRetry={fetchSummary} />}
               <SectionHeading
                 title="Mortgage Rates"
@@ -285,7 +300,10 @@ export default function Dashboard({ isDark, onToggleTheme, onApply }) {
         {loadingSummary
           ? <PanelSkeleton rows={3} />
           : otherCards && (
-            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 transition-colors duration-200">
+            <section
+              id="other-rates"
+              className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 transition-colors duration-200"
+            >
               <SectionHeading
                 title="Other Rates"
                 subtitle="Indicative averages across participating lenders · personal loans, business lending and credit cards"
@@ -297,14 +315,25 @@ export default function Dashboard({ isDark, onToggleTheme, onApply }) {
           )
         }
 
-        {/* ── Term Trend Chart ──────────────────────────────────────────────── */}
+        {/* ── Market Rate Outlook Chart ─────────────────────────────────── */}
         {loadingSummary
-          ? <ChartSkeleton />
+          ? (
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6">
+              <div className="mb-5 space-y-1.5">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-80" />
+              </div>
+              <Skeleton className="h-[300px] w-full" />
+            </div>
+          )
           : (
-            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 transition-colors duration-200">
+            <section
+              id="rate-charts"
+              className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 transition-colors duration-200"
+            >
               <SectionHeading
-                title="Rate by Fixed Term"
-                subtitle="Owner-occupied P&I median across lenders — variable through to 5-year fixed · shaded band shows P25–P75 range"
+                title="Market Rate Outlook"
+                subtitle="Fixed rate term structure implies market expectations — a rising curve signals rates are expected to stay elevated; a falling curve prices in cuts · P25–P75 band shows spread across lenders"
               />
               {termTrendOptionFactory && (
                 <RateChart buildOption={termTrendOptionFactory} isDark={isDark} height="300px" />
@@ -317,7 +346,7 @@ export default function Dashboard({ isDark, onToggleTheme, onApply }) {
         {loadingChanges
           ? <TableSkeleton />
           : (
-            <section>
+            <section id="recent-changes">
               {errorChanges && <ErrorBanner message={errorChanges} onRetry={fetchChanges} />}
               <SectionHeading
                 title="Recent Rate Changes"
@@ -329,32 +358,31 @@ export default function Dashboard({ isDark, onToggleTheme, onApply }) {
         }
 
         {/* ── CTA Strip ─────────────────────────────────────────────────────── */}
-        <section className="rounded-2xl border border-indigo-400/30 dark:border-indigo-500/20 bg-indigo-500/5 dark:bg-indigo-500/10 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <p className="text-base font-semibold text-slate-900 dark:text-white">
+        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_rgba(255,255,255,0.12),transparent_60%)] pointer-events-none" />
+          <div className="relative">
+            <p className="text-lg font-semibold text-white">
               Ready to find your best rate?
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-sm text-indigo-200 mt-1">
               Answer a few quick questions and we'll match you with the most competitive offers.
             </p>
           </div>
           <button
             type="button"
             onClick={onApply}
-            className="shrink-0 px-6 py-3 rounded-full bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-600 text-white text-sm font-semibold transition-colors duration-150"
+            className="relative shrink-0 px-6 py-3 rounded-full bg-white hover:bg-indigo-50 active:bg-indigo-100 text-indigo-600 text-sm font-semibold transition-colors duration-150 shadow-lg"
           >
             Get My Rate →
           </button>
         </section>
 
-        {/* ── Footer ────────────────────────────────────────────────────────── */}
-        <footer className="text-center text-xs text-slate-500 dark:text-slate-500 leading-relaxed pb-4">
-          Data sourced daily from the Australian Open Banking Consumer Data Standards (CDS) API.
-          Rates are indicative averages across participating lenders and may not reflect your
-          individual eligibility. Always seek independent financial advice.
-        </footer>
-
       </main>
+
+      {/* ── Footer ──────────────────────────────────────────────────────────── */}
+      <div className="mt-10">
+        <SiteFooter />
+      </div>
     </div>
   )
 }
