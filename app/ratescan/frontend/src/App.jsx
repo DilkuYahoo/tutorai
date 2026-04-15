@@ -130,14 +130,14 @@ export default function App() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={() => dispatch({ type: 'RESET' })}
-              className="text-indigo-500 dark:text-indigo-400 hover:text-indigo-400 dark:hover:text-indigo-300 text-sm transition-colors"
+              className="text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 underline underline-offset-2 text-sm transition-colors"
             >
               Start a new application
             </button>
             <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
             <button
               onClick={() => { dispatch({ type: 'RESET' }); setPage('dashboard') }}
-              className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-sm transition-colors"
+              className="text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white underline underline-offset-2 text-sm transition-colors"
             >
               ← View rates
             </button>

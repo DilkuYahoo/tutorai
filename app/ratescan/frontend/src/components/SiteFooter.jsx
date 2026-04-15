@@ -35,7 +35,7 @@ export default function SiteFooter({ onTerms }) {
             <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
               Australia's daily mortgage and loan rate tracker, powered by Open Banking Consumer Data Standards.
             </p>
-            <p className="text-xs text-slate-400 dark:text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-400 dark:text-slate-400 leading-relaxed">
               Data sourced daily from the Australian Open Banking CDS API (v5) across 91+ participating lenders.
             </p>
           </div>
@@ -50,7 +50,7 @@ export default function SiteFooter({ onTerms }) {
                 <li key={label}>
                   <a
                     href={href}
-                    className="text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                    className="text-sm text-slate-600 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 underline underline-offset-2 decoration-slate-300 dark:decoration-slate-600 transition-colors"
                   >
                     {label}
                   </a>
@@ -74,7 +74,7 @@ export default function SiteFooter({ onTerms }) {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-slate-100 dark:border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 dark:text-slate-600">
+        <div className="border-t border-slate-100 dark:border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 dark:text-slate-400">
           <span>
             © {new Date().getFullYear()} RateScan · Australian Open Banking ·{' '}
             {onTerms ? (
@@ -94,7 +94,7 @@ export default function SiteFooter({ onTerms }) {
               href="https://cognifylabs.ai"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-indigo-400 dark:text-indigo-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+              className="text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 underline underline-offset-2 transition-colors"
             >
               CognifyLabs.ai
             </a>

@@ -18,7 +18,7 @@ function RangeBar({ p25, median, p75 }) {
 function TrendIndicator({ trend, change }) {
   if (!trend || trend === 'stable') {
     return (
-      <span className="text-slate-400 dark:text-slate-600 text-sm font-medium ml-1.5" aria-label="Rate stable">
+      <span className="text-slate-400 dark:text-slate-400 text-sm font-medium ml-1.5" aria-label="Rate stable">
         →
       </span>
     )
@@ -83,8 +83,8 @@ export default function StatCard({ label, median, p25, p75, count, highlight = f
               aria-label="More information"
               className={`flex items-center justify-center transition-colors ${
                 highlight
-                  ? 'text-indigo-300 dark:text-indigo-600 hover:text-indigo-500 dark:hover:text-indigo-400'
-                  : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
+                  ? 'text-indigo-300 dark:text-indigo-500 hover:text-indigo-500 dark:hover:text-indigo-400'
+                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400'
               }`}
             >
               <InfoIcon />
@@ -113,11 +113,11 @@ export default function StatCard({ label, median, p25, p75, count, highlight = f
               highlight ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-900 dark:text-white'
             }`}>
               {fmt(median)}
-              <span className="text-xl font-normal ml-0.5 text-slate-500 dark:text-slate-500">%</span>
+              <span className="text-xl font-normal ml-0.5 text-slate-500 dark:text-slate-400">%</span>
             </p>
             {!dataStale && trend && <TrendIndicator trend={trend} change={change} />}
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             median rate
             {dataStale && (
               <span className="ml-1 text-amber-500 dark:text-amber-400">(as of yesterday)</span>

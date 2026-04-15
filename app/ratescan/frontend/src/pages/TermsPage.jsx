@@ -6,7 +6,7 @@ export default function TermsPage({ onBack }) {
         {/* Back nav */}
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors mb-10"
+          className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 underline underline-offset-2 decoration-slate-400 dark:decoration-slate-500 transition-colors mb-10"
         >
           <svg viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4">
             <path fillRule="evenodd" d="M9.78 4.22a.75.75 0 0 1 0 1.06L7.06 8l2.72 2.72a.75.75 0 1 1-1.06 1.06L5.47 8.53a.75.75 0 0 1 0-1.06l3.25-3.25a.75.75 0 0 1 1.06 0Z" />
@@ -224,7 +224,7 @@ export default function TermsPage({ onBack }) {
                 href="https://cognifylabs.ai"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-indigo-500 hover:text-indigo-400 transition-colors"
+                className="text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 underline underline-offset-2 transition-colors"
               >
                 cognifylabs.ai
               </a>.
@@ -237,7 +237,7 @@ export default function TermsPage({ onBack }) {
         <div className="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800">
           <button
             onClick={onBack}
-            className="text-sm text-indigo-500 hover:text-indigo-400 transition-colors"
+            className="text-sm text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 underline underline-offset-2 transition-colors"
           >
             ← Back to RateScan
           </button>

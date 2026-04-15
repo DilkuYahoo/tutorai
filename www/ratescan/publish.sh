@@ -1,65 +1,79 @@
 #!/bin/bash
-
-# Variables
-BUCKET_NAME="ratescan.com.au"
-REGION="ap-southeast-2" # Replace with your preferred AWS region
-INDEX_FILE="index.html"
-ERROR_FILE="index.html" # Set to a proper error file if needed
-FOLDER_PATH="../../app/ratescan/frontend/dist" # Path to your website files (use . if files are in the current directory)
-YOUR_DISTRIBUTION_ID="E1J06U2P33MLHN"
-
-# Check if AWS CLI is installed
-if ! [ -x "$(command -v aws)" ]; then
-  echo "Error: AWS CLI is not installed. Install it from https://aws.amazon.com/cli/"
-  exit 1
-fi
+# publish.sh — Build and deploy RateScan frontend to S3 + CloudFront
+#
+# Usage:
+#   cd www/ratescan && ./publish.sh
+#
+# What this does:
+#   1. Builds the Vite frontend (app/ratescan/frontend)
+#   2. Uploads hashed JS/CSS assets with a 1-year immutable cache
+#   3. Uploads root files (index.html, etc.) with no-cache
+#   4. Invalidates only the root files in CloudFront (assets are versioned)
+#
+# ⚠️  IMPORTANT: The S3 bucket ratescan.com.au is SHARED with the data pipeline.
+#     Website files live under the www/ prefix. Do NOT sync to the bucket root
+#     with --delete — it will wipe iceberg/, summaries/, cache/, config.json.
 
 set -e
 
-# Check if bucket exists
+BUCKET_NAME="ratescan.com.au"
+DISTRIBUTION_ID="E1J06U2P33MLHN"
+FRONTEND_DIR="$(cd "$(dirname "$0")/../../app/ratescan/frontend" && pwd)"
+DIST_DIR="$FRONTEND_DIR/dist"
+
+# ── Preflight checks ───────────────────────────────────────────────────────────
+
+if ! command -v aws &>/dev/null; then
+  echo "Error: AWS CLI is not installed."
+  exit 1
+fi
+
+if ! command -v npm &>/dev/null; then
+  echo "Error: npm is not installed."
+  exit 1
+fi
+
 if ! aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
-  echo "Error: Bucket $BUCKET_NAME does not exist. Please create it first."
+  echo "Error: Bucket $BUCKET_NAME not accessible."
   exit 1
 fi
 
-echo "Bucket $BUCKET_NAME exists"
+# ── Build ──────────────────────────────────────────────────────────────────────
 
-# Sync local folder with S3 bucket (www prefix)
-echo "Uploading website files to S3 bucket"
-aws s3 sync "$FOLDER_PATH" s3://"$BUCKET_NAME"/www/
+echo "→ Building frontend..."
+cd "$FRONTEND_DIR"
+npm run build
+cd - > /dev/null
 
-# Check if ba-portal dist folder exists
-if [ -d "$BA_PORTAL_DIST_PATH" ]; then
-  echo "Found ba-portal dist folder at: $BA_PORTAL_DIST_PATH"
-  
-  # Sync ba-portal dist to S3 with ba/ prefix
-  echo "Uploading ba-portal files to S3 bucket with prefix: $BA_PREFIX"
-  aws s3 sync "$BA_PORTAL_DIST_PATH" s3://"$BUCKET_NAME"/"$BA_PREFIX" --delete
-  
-  if [ $? -ne 0 ]; then
-    echo "Failed to upload ba-portal files to S3"
-    exit 1
-  fi
-  
-  echo "ba-portal files uploaded successfully to s3://$BUCKET_NAME/$BA_PREFIX"
-else
-  echo "Warning: ba-portal dist folder not found at: $BA_PORTAL_DIST_PATH"
-  echo "Skipping ba-portal upload"
-fi
+echo "→ Build complete: $DIST_DIR"
 
-# Output the website URL
-echo "Website deployed successfully!"
-echo "You can access the main website at: http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com/www/"
-echo "You can access the ba-portal at: http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com/$BA_PREFIX"
+# ── Upload hashed assets (JS/CSS) — cache 1 year ──────────────────────────────
+# Vite embeds a content hash in every asset filename (e.g. index-B3VOhiNg.js).
+# Safe to cache indefinitely; the hash changes whenever the file changes.
 
-echo "Creating CloudFront invalidation for distribution: $YOUR_DISTRIBUTION_ID"
-INVALIDATION_OUTPUT=$(aws cloudfront create-invalidation --distribution-id "$YOUR_DISTRIBUTION_ID" --paths "/*")
+echo "→ Uploading hashed assets (max-age=31536000)..."
+aws s3 sync "$DIST_DIR/assets/" "s3://$BUCKET_NAME/www/assets/" \
+  --cache-control "max-age=31536000, immutable"
 
-if [ $? -ne 0 ]; then
-  echo "CloudFront invalidation failed."
-  echo "$INVALIDATION_OUTPUT"
-  exit 1
-fi
+# ── Upload root files — no cache ───────────────────────────────────────────────
+# index.html, robots.txt, sitemap.xml, og-image.svg.
+# --delete is safe here because www/ only contains web files.
 
-echo "CloudFront invalidation created successfully."
-echo "$INVALIDATION_OUTPUT"
+echo "→ Uploading root files (no-cache)..."
+aws s3 sync "$DIST_DIR/" "s3://$BUCKET_NAME/www/" \
+  --delete \
+  --exclude "assets/*" \
+  --cache-control "no-cache, no-store, must-revalidate"
+
+# ── CloudFront invalidation ────────────────────────────────────────────────────
+# Only invalidate root files. Hashed assets get new URLs on each build so
+# they don't need invalidation — CloudFront will fetch them on first request.
+
+echo "→ Invalidating CloudFront distribution $DISTRIBUTION_ID..."
+INVALIDATION=$(aws cloudfront create-invalidation \
+  --distribution-id "$DISTRIBUTION_ID" \
+  --paths "/index.html" "/sitemap.xml" "/robots.txt" "/og-image.svg" "/favicon.svg")
+
+echo "$INVALIDATION"
+echo ""
+echo "✓ Deployed to https://ratescan.com.au"

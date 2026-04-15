@@ -80,13 +80,24 @@ aws lambda invoke \
 https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod
 
 ## Frontend build & deploy
+
+Always use the publish script — never run `aws s3 sync` manually against this bucket.
+
 ```bash
-cd app/ratescan/frontend
-npm run build        # outputs to dist/
-# deploy to S3 + invalidate CloudFront
-aws s3 sync dist/ s3://ratescan.com.au/ --delete
-aws cloudfront create-invalidation --distribution-id <ID> --paths "/*"
+cd www/ratescan && ./publish.sh
 ```
+
+The script (`www/ratescan/publish.sh`) handles:
+- `npm run build` inside `app/ratescan/frontend/`
+- Hashed JS/CSS assets → `www/assets/` with `max-age=31536000, immutable`
+- Root files (index.html etc.) → `www/` with `no-cache`
+- CloudFront invalidation for root files only (assets are versioned)
+
+CloudFront distribution ID: `E1J06U2P33MLHN`
+
+⚠️ The S3 bucket `ratescan.com.au` is shared with the data pipeline. Website files
+live under the `www/` prefix. The pipeline data (`iceberg/`, `summaries/`, `cache/`,
+`config.json`) lives at the bucket root. Never sync to the bucket root with `--delete`.
 
 ## Key decisions — do not reverse without discussion
 

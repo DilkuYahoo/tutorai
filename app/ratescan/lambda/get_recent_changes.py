@@ -219,13 +219,12 @@ def _f(v) -> float:
 
 
 def _cors(status: int, body: str) -> dict:
-    return {
-        "statusCode": status,
-        "headers": {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "Content-Type",
-            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-        },
-        "body": body,
+    headers = {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     }
+    if status == 200:
+        headers["Cache-Control"] = "public, max-age=3600, stale-while-revalidate=86400"
+    return {"statusCode": status, "headers": headers, "body": body}

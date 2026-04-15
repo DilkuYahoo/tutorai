@@ -252,13 +252,13 @@ export default function Dashboard({ isDark, onToggleTheme, onApply, onTerms }) {
             </h1>
 
             {/* Sub-headline */}
-            <p className="text-base sm:text-lg text-slate-400 mb-6 max-w-xl">
+            <p className="text-base sm:text-lg text-slate-300 mb-6 max-w-xl">
               Real-time mortgage, personal loan and credit card rates from{' '}
               {loadingSummary ? '…' : s.lenderCount} lenders via Open Banking Consumer Data Standards.
             </p>
 
             {/* Meta row */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-400">
               {loadingSummary ? (
                 <Skeleton className="h-4 w-52" />
               ) : (
