@@ -123,7 +123,7 @@ function SectionHeading({ title, subtitle }) {
 }
 
 // ── main component ────────────────────────────────────────────────────────────
-export default function Dashboard({ isDark, onToggleTheme, onApply }) {
+export default function Dashboard({ isDark, onToggleTheme, onApply, onTerms }) {
   const [summary,        setSummary]        = useState(null)
   const [recentChanges,  setRecentChanges]  = useState(null)
   const [loadingSummary, setLoadingSummary] = useState(true)
@@ -381,7 +381,7 @@ export default function Dashboard({ isDark, onToggleTheme, onApply }) {
 
       {/* ── Footer ──────────────────────────────────────────────────────────── */}
       <div className="mt-10">
-        <SiteFooter />
+        <SiteFooter onTerms={onTerms} />
       </div>
     </div>
   )

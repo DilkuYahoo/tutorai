@@ -19,11 +19,18 @@ Fixed-term label mapping:
 import json
 import os
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
+
+import boto3
+from botocore.exceptions import ClientError
 
 from athena_helper import run_query
 
-DATABASE = os.environ.get("ATHENA_DATABASE", "obdb")
+DATABASE         = os.environ.get("ATHENA_DATABASE", "obdb")
+S3_BUCKET        = os.environ.get("S3_BUCKET", "ratescan.com.au")
+SUMMARIES_PREFIX = os.environ.get("SUMMARIES_PREFIX", "summaries")
+CACHE_PREFIX     = os.environ.get("CACHE_PREFIX", "cache")
 
 # Fetch the 500 most-recently-updated rate rows (post-processing groups by lender)
 _SQL = f"""
@@ -76,13 +83,63 @@ def lambda_handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return _cors(204, "")
 
+    s3 = boto3.client("s3")
+
+    # Cache key is keyed by the pipeline's asOf date so it auto-invalidates
+    # whenever Stage 5 writes a new latest.json (daily after the pipeline run).
+    as_of     = _pipeline_as_of(s3)
+    cache_key = f"{CACHE_PREFIX}/recent-changes-{as_of}.json"
+
+    cached = _read_cache(s3, cache_key)
+    if cached is not None:
+        print(f"INFO: cache hit for {as_of}")
+        return _cors(200, json.dumps(cached))
+
     try:
-        rows = run_query(_SQL)
+        rows    = run_query(_SQL)
         payload = _build_response(rows)
+        _write_cache(s3, cache_key, payload)
         return _cors(200, json.dumps(payload))
     except Exception as exc:
         print(f"ERROR: {exc}")
         return _cors(500, json.dumps({"error": str(exc)}))
+
+
+def _pipeline_as_of(s3) -> str:
+    """Return the asOf date from summaries/latest.json, falling back to today (Sydney)."""
+    try:
+        resp = s3.get_object(Bucket=S3_BUCKET, Key=f"{SUMMARIES_PREFIX}/latest.json")
+        data = json.loads(resp["Body"].read())
+        return data.get("asOf") or datetime.now(ZoneInfo("Australia/Sydney")).date().isoformat()
+    except Exception:
+        return datetime.now(ZoneInfo("Australia/Sydney")).date().isoformat()
+
+
+def _read_cache(s3, key: str):
+    try:
+        resp = s3.get_object(Bucket=S3_BUCKET, Key=key)
+        return json.loads(resp["Body"].read())
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            return None
+        print(f"WARNING: cache read error: {e}")
+        return None
+    except Exception as e:
+        print(f"WARNING: cache read error: {e}")
+        return None
+
+
+def _write_cache(s3, key: str, payload) -> None:
+    try:
+        s3.put_object(
+            Bucket=S3_BUCKET,
+            Key=key,
+            Body=json.dumps(payload),
+            ContentType="application/json",
+        )
+        print(f"INFO: cache written to {key}")
+    except Exception as e:
+        print(f"WARNING: cache write failed: {e}")
 
 
 def _build_response(rows: list) -> list:

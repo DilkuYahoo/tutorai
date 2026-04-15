@@ -8,6 +8,7 @@ import Step4_Financial from './steps/Step4_Financial'
 import Step5_Lifestyle from './steps/Step5_Lifestyle'
 import Step6_Review from './steps/Step6_Review'
 import Dashboard from './pages/Dashboard'
+import TermsPage from './pages/TermsPage'
 
 const TOTAL_STEPS = 6
 
@@ -97,12 +98,17 @@ export default function App() {
 
   const CurrentStep = STEPS[currentStep - 1]
 
+  if (page === 'terms') {
+    return <TermsPage onBack={() => setPage('dashboard')} />
+  }
+
   if (page === 'dashboard') {
     return (
       <Dashboard
         isDark={isDark}
         onToggleTheme={toggleTheme}
         onApply={() => { dispatch({ type: 'RESET' }); setPage('apply') }}
+        onTerms={() => setPage('terms')}
       />
     )
   }

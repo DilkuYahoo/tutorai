@@ -16,7 +16,7 @@ const RATE_LINKS = [
   { label: 'Recent Changes',    href: '#recent-changes' },
 ]
 
-export default function SiteFooter() {
+export default function SiteFooter({ onTerms }) {
   return (
     <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-200">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-8">
@@ -75,7 +75,19 @@ export default function SiteFooter() {
 
         {/* Bottom bar */}
         <div className="border-t border-slate-100 dark:border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 dark:text-slate-600">
-          <span>© {new Date().getFullYear()} RateScan · Australian Open Banking · Not financial advice</span>
+          <span>
+            © {new Date().getFullYear()} RateScan · Australian Open Banking ·{' '}
+            {onTerms ? (
+              <button
+                onClick={onTerms}
+                className="underline underline-offset-2 hover:text-indigo-400 transition-colors"
+              >
+                Terms &amp; Conditions
+              </button>
+            ) : (
+              'Not financial advice'
+            )}
+          </span>
           <span>
             Built &amp; maintained by{' '}
             <a

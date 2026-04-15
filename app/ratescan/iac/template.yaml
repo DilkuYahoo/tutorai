@@ -89,6 +89,7 @@ Resources:
       Environment:
         Variables:
           SUMMARIES_PREFIX: summaries
+          CACHE_PREFIX: cache
       Events:
         GetSummary:
           Type: Api
@@ -113,6 +114,10 @@ Resources:
       Timeout: 60
       MemorySize: 256
       Role: !GetAtt AthenaQueryRole.Arn
+      Environment:
+        Variables:
+          SUMMARIES_PREFIX: summaries
+          CACHE_PREFIX: cache
       Events:
         GetRecentChanges:
           Type: Api
@@ -188,6 +193,13 @@ Resources:
                   - s3:AbortMultipartUpload
                 Resource:
                   - !Sub "arn:aws:s3:::${AthenaResultsBucket}/${AthenaResultsPrefix}/*"
+
+              # S3 — write API response cache files
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DataBucketName}/cache/*"
 
               - Effect: Allow
                 Action:

@@ -35,6 +35,7 @@ from athena_helper import run_query
 DATABASE         = os.environ.get("ATHENA_DATABASE", "obdb")
 S3_BUCKET        = os.environ.get("S3_BUCKET", "ratescan.com.au")
 SUMMARIES_PREFIX = os.environ.get("SUMMARIES_PREFIX", "summaries")
+CACHE_PREFIX     = os.environ.get("CACHE_PREFIX", "cache")
 
 _TREND_CATEGORIES = (
     "variable", "variableIO", "investmentPI", "investmentIO",
@@ -232,10 +233,26 @@ def lambda_handler(event, context):
     if event.get("httpMethod") == "OPTIONS":
         return _cors(204, "")
 
+    s3 = boto3.client("s3")
+
+    # Read latest.json once — used for both cache key and trend attachment.
+    # Cache key is keyed by the pipeline's asOf date so it auto-invalidates
+    # whenever Stage 5 writes a new latest.json (daily after the pipeline run).
+    latest   = _read_latest(s3)
+    today_syd = datetime.now(ZoneInfo("Australia/Sydney")).date().isoformat()
+    as_of    = (latest or {}).get("asOf") or today_syd
+    cache_key = f"{CACHE_PREFIX}/rates-summary-{as_of}.json"
+
+    cached = _read_cache(s3, cache_key)
+    if cached is not None:
+        print(f"INFO: cache hit for {as_of}")
+        return _cors(200, json.dumps(cached))
+
     try:
         rows    = run_query(_SQL)
         payload = _build_response(rows)
-        _attach_trends(payload)
+        _attach_trends(payload, latest)
+        _write_cache(s3, cache_key, payload)
         return _cors(200, json.dumps(payload))
     except Exception as exc:
         print(f"ERROR: {exc}")
@@ -296,10 +313,55 @@ def _build_response(rows: list) -> dict:
     return result
 
 
-def _attach_trends(payload: dict) -> None:
+def _read_latest(s3) -> dict | None:
+    """Load summaries/latest.json from S3. Returns None on any error."""
+    try:
+        resp = s3.get_object(Bucket=S3_BUCKET, Key=f"{SUMMARIES_PREFIX}/latest.json")
+        return json.loads(resp["Body"].read())
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchKey":
+            print("INFO: no summary file found — trends unavailable on first run")
+        else:
+            print(f"WARNING: could not load summary file: {e}")
+        return None
+    except Exception as e:
+        print(f"WARNING: unexpected error loading summary: {e}")
+        return None
+
+
+def _read_cache(s3, key: str) -> dict | None:
+    """Return parsed JSON from S3 cache key, or None on miss/error."""
+    try:
+        resp = s3.get_object(Bucket=S3_BUCKET, Key=key)
+        return json.loads(resp["Body"].read())
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            return None
+        print(f"WARNING: cache read error: {e}")
+        return None
+    except Exception as e:
+        print(f"WARNING: cache read error: {e}")
+        return None
+
+
+def _write_cache(s3, key: str, payload: dict) -> None:
+    """Write payload as JSON to S3 cache key. Failures are non-fatal."""
+    try:
+        s3.put_object(
+            Bucket=S3_BUCKET,
+            Key=key,
+            Body=json.dumps(payload),
+            ContentType="application/json",
+        )
+        print(f"INFO: cache written to {key}")
+    except Exception as e:
+        print(f"WARNING: cache write failed: {e}")
+
+
+def _attach_trends(payload: dict, latest: dict | None) -> None:
     """
-    Load summaries/latest.json from S3 and attach trend/change to each
-    stat-card category in-place.  Also corrects asOf to reflect when the
+    Attach trend/change to each stat-card category in-place using the
+    already-loaded latest.json dict.  Also corrects asOf to reflect when the
     pipeline actually ran rather than when this Lambda executed.
 
     Behaviour by staleness:
@@ -307,19 +369,8 @@ def _attach_trends(payload: dict) -> None:
       latest.json.asOf == yesterday → trends attached, dataStale=True set
       older or missing            → no trends, dataStale=True if file exists
     """
-    s3 = boto3.client("s3")
-    try:
-        resp    = s3.get_object(Bucket=S3_BUCKET, Key=f"{SUMMARIES_PREFIX}/latest.json")
-        latest  = json.loads(resp["Body"].read())
-    except ClientError as e:
-        if e.response["Error"]["Code"] == "NoSuchKey":
-            print("INFO: no summary file found — trends unavailable on first run")
-        else:
-            print(f"WARNING: could not load summary file: {e}")
+    if latest is None:
         return   # degrade gracefully — payload already has correct Athena stats
-    except Exception as e:
-        print(f"WARNING: unexpected error loading summary: {e}")
-        return
 
     summary_as_of = latest.get("asOf", "")
     today         = datetime.now(ZoneInfo("Australia/Sydney")).date()
