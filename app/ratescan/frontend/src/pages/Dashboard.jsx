@@ -183,17 +183,17 @@ export default function Dashboard({ isDark, onToggleTheme, onApply }) {
   const M =
     'Owner-occupied, principal & interest loans only. ' +
     'Rates outside 5%–8% are excluded to remove high-LVR and introductory outliers. ' +
-    'Average, min and max are calculated across all qualifying products from participating lenders.'
+    'Median, P25 and P75 are calculated across all qualifying products from participating lenders.'
 
   const M_IO =
     'Owner-occupied, interest-only loans. ' +
     'Rates outside 5%–10% are excluded to remove outliers. ' +
-    'Average, min and max are calculated across all qualifying products from participating lenders.'
+    'Median, P25 and P75 are calculated across all qualifying products from participating lenders.'
 
   const M_INV =
     'Investment property loans only. ' +
     'Rates outside 5%–8% (P&I) or 5%–9% (IO) are excluded to remove outliers. ' +
-    'Average, min and max calculated across all qualifying products from participating lenders.'
+    'Median, P25 and P75 calculated across all qualifying products from participating lenders.'
 
   const mortgageCards = summary ? [
     {
@@ -297,7 +297,7 @@ export default function Dashboard({ isDark, onToggleTheme, onApply }) {
             <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 transition-colors duration-200">
               <SectionHeading
                 title="Rate by Fixed Term"
-                subtitle="Owner-occupied P&I average across lenders — variable through to 5-year fixed · shaded band shows min–max range"
+                subtitle="Owner-occupied P&I median across lenders — variable through to 5-year fixed · shaded band shows P25–P75 range"
               />
               {termTrendOptionFactory && (
                 <RateChart buildOption={termTrendOptionFactory} isDark={isDark} height="300px" />

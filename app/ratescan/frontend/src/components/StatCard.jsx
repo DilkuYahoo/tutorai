@@ -15,11 +15,11 @@ function InfoIcon() {
  * `highlight` variant uses an indigo accent for the hero variable rate card.
  * `tooltip` text appears on hover/focus of the ⓘ icon.
  */
-export default function StatCard({ label, avg, min, max, count, highlight = false, tooltip }) {
+export default function StatCard({ label, median, p25, p75, count, highlight = false, tooltip }) {
   const [tipVisible, setTipVisible] = useState(false)
 
   const fmt = (v) => (v != null ? Number(v).toFixed(2) : '—')
-  const hasData = avg != null
+  const hasData = median != null
 
   return (
     <div
@@ -65,34 +65,34 @@ export default function StatCard({ label, avg, min, max, count, highlight = fals
         )}
       </div>
 
-      {/* Average rate — hero number */}
+      {/* Median rate — hero number */}
       {hasData ? (
         <div>
           <p className={`text-4xl font-semibold tabular-nums tracking-tight leading-none ${
             highlight ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-900 dark:text-white'
           }`}>
-            {fmt(avg)}
+            {fmt(median)}
             <span className="text-xl font-normal ml-0.5 text-slate-500 dark:text-slate-500">%</span>
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">average rate</p>
+          <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">median rate</p>
         </div>
       ) : (
         <p className="text-2xl font-semibold text-slate-300 dark:text-slate-700">—</p>
       )}
 
-      {/* Min / max range */}
+      {/* P25 / P75 spread band */}
       {hasData && (
         <div className="flex items-center gap-2 text-xs">
-          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+          <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-            <span className="text-slate-600 dark:text-slate-400">Low</span>
-            <span className="tabular-nums font-medium text-slate-700 dark:text-slate-300">{fmt(min)}%</span>
+            <span className="text-slate-600 dark:text-slate-400">P25</span>
+            <span className="tabular-nums font-medium text-slate-700 dark:text-slate-300">{fmt(p25)}%</span>
           </span>
           <span className="text-slate-300 dark:text-slate-700">·</span>
-          <span className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
-            <span className="text-slate-600 dark:text-slate-400">High</span>
-            <span className="tabular-nums font-medium text-slate-700 dark:text-slate-300">{fmt(max)}%</span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+            <span className="text-slate-600 dark:text-slate-400">P75</span>
+            <span className="tabular-nums font-medium text-slate-700 dark:text-slate-300">{fmt(p75)}%</span>
           </span>
         </div>
       )}

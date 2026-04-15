@@ -8,16 +8,16 @@
 export const RATE_SUMMARY = {
   asOf: '2026-04-13',
   lenderCount: 124,
-  variable:   { avg: 6.24, min: 5.69, max: 7.15, count: 312 },
-  variableIO:   { avg: 7.05, min: 6.34, max: 8.45, count: 198 },
-  investmentPI: { avg: 6.54, min: 5.49, max: 7.99, count: 210 },
-  investmentIO: { avg: 7.09, min: 5.79, max: 8.84, count: 185 },
+  variable:     { median: 6.19, p25: 5.89, p75: 6.54, count: 312 },
+  variableIO:   { median: 6.99, p25: 6.54, p75: 7.45, count: 198 },
+  investmentPI: { median: 6.49, p25: 5.99, p75: 6.89, count: 210 },
+  investmentIO: { median: 7.04, p25: 6.29, p75: 7.49, count: 185 },
   fixed: {
-    1: { avg: 5.89, min: 5.35, max: 6.55, count: 187 },
-    2: { avg: 5.74, min: 5.20, max: 6.40, count: 165 },
-    3: { avg: 5.68, min: 5.15, max: 6.30, count: 142 },
-    4: { avg: 5.72, min: 5.22, max: 6.35, count: 98  },
-    5: { avg: 5.81, min: 5.30, max: 6.45, count: 87  },
+    1: { median: 5.84, p25: 5.45, p75: 6.25, count: 187 },
+    2: { median: 5.69, p25: 5.30, p75: 6.10, count: 165 },
+    3: { median: 5.63, p25: 5.25, p75: 6.00, count: 142 },
+    4: { median: 5.67, p25: 5.30, p75: 6.05, count: 98  },
+    5: { median: 5.76, p25: 5.40, p75: 6.15, count: 87  },
   },
 }
 

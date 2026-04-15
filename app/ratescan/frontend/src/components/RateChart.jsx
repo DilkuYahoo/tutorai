@@ -41,25 +41,25 @@ export default function RateChart({ buildOption, isDark, height = '320px' }) {
 export function buildTermTrendOption(summary) {
   const labels = ['Variable', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5']
 
-  const avgs = [
-    summary.variable.avg,
-    summary.fixed[1].avg, summary.fixed[2].avg,
-    summary.fixed[3].avg, summary.fixed[4].avg, summary.fixed[5].avg,
+  const medians = [
+    summary.variable.median,
+    summary.fixed[1].median, summary.fixed[2].median,
+    summary.fixed[3].median, summary.fixed[4].median, summary.fixed[5].median,
   ]
-  const mins = [
-    summary.variable.min,
-    summary.fixed[1].min, summary.fixed[2].min,
-    summary.fixed[3].min, summary.fixed[4].min, summary.fixed[5].min,
+  const p25s = [
+    summary.variable.p25,
+    summary.fixed[1].p25, summary.fixed[2].p25,
+    summary.fixed[3].p25, summary.fixed[4].p25, summary.fixed[5].p25,
   ]
-  const maxs = [
-    summary.variable.max,
-    summary.fixed[1].max, summary.fixed[2].max,
-    summary.fixed[3].max, summary.fixed[4].max, summary.fixed[5].max,
+  const p75s = [
+    summary.variable.p75,
+    summary.fixed[1].p75, summary.fixed[2].p75,
+    summary.fixed[3].p75, summary.fixed[4].p75, summary.fixed[5].p75,
   ]
 
-  // Band series: lower edge = min, upper edge = (max - min) stacked on top
-  const bandBase  = mins
-  const bandDelta = maxs.map((v, i) => +(v - mins[i]).toFixed(3))
+  // Band series: lower edge = P25, upper edge = (P75 - P25) stacked on top
+  const bandBase  = p25s
+  const bandDelta = p75s.map((v, i) => +(v - p25s[i]).toFixed(3))
 
   return (tokens) => ({
     backgroundColor: 'transparent',
@@ -69,17 +69,17 @@ export function buildTermTrendOption(summary) {
       borderColor:     tokens.tooltipBorder,
       textStyle:       { color: tokens.tooltipText, fontSize: 13 },
       formatter: (params) => {
-        const avg = params.find((p) => p.seriesName === 'Avg rate')
-        const mn  = params.find((p) => p.seriesName === 'min-base')
+        const med = params.find((p) => p.seriesName === 'Median rate')
+        const p25 = params.find((p) => p.seriesName === 'p25-base')
         const rng = params.find((p) => p.seriesName === 'range')
-        const minVal = mn  ? Number(mn.value).toFixed(2)  : '—'
-        const maxVal = (mn && rng)
-          ? (Number(mn.value) + Number(rng.value)).toFixed(2)
+        const p25Val = p25  ? Number(p25.value).toFixed(2)  : '—'
+        const p75Val = (p25 && rng)
+          ? (Number(p25.value) + Number(rng.value)).toFixed(2)
           : '—'
-        return avg
+        return med
           ? `<b>${params[0].axisValueLabel}</b><br/>
-             ${avg.marker} Avg: <b>${Number(avg.value).toFixed(2)}%</b><br/>
-             <span style="opacity:.6">Range: ${minVal}% – ${maxVal}%</span>`
+             ${med.marker} Median: <b>${Number(med.value).toFixed(2)}%</b><br/>
+             <span style="opacity:.6">P25–P75: ${p25Val}% – ${p75Val}%</span>`
           : ''
       },
     },
@@ -102,9 +102,9 @@ export function buildTermTrendOption(summary) {
       axisTick:  { show: false },
     },
     series: [
-      // Invisible base for stacked band
+      // Invisible base for stacked band (P25)
       {
-        name: 'min-base',
+        name: 'p25-base',
         type: 'line',
         data: bandBase,
         lineStyle: { opacity: 0 },
@@ -113,7 +113,7 @@ export function buildTermTrendOption(summary) {
         areaStyle: { opacity: 0 },
         tooltip: { show: true },
       },
-      // Stacked range band
+      // Stacked range band (P25–P75)
       {
         name: 'range',
         type: 'line',
@@ -124,11 +124,11 @@ export function buildTermTrendOption(summary) {
         areaStyle: { color: '#6366f1', opacity: 0.10 },
         tooltip: { show: true },
       },
-      // Main avg trend line
+      // Main median trend line
       {
-        name: 'Avg rate',
+        name: 'Median rate',
         type: 'line',
-        data: avgs,
+        data: medians,
         smooth: true,
         symbol: 'circle',
         symbolSize: 8,

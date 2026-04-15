@@ -1,9 +1,16 @@
 """
 get_rates_summary.py — GET /rates/summary
 
-Returns average, min, max and product count for:
+Returns median, P25, P75 and product count for:
   - Variable rate (all lenders)
   - Fixed rate by term: 1Y, 2Y, 3Y, 4Y, 5Y
+
+Median is used instead of average because the rate distribution is right-skewed:
+  - LVR-tiered products produce multiple rows per product (high-LVR tiers are
+    priced higher and would inflate a simple average).
+  - Small specialist lenders with outlier rates have equal row-weight to majors.
+  Median is robust to both effects and better reflects what a typical borrower sees.
+  P25/P75 replace min/max as a meaningful spread band rather than extreme outliers.
 
 Rate normalisation:
   Most lenders store rates as decimals (0.0624 = 6.24%).
@@ -45,13 +52,13 @@ WITH normalised AS (
 
 variable AS (
   SELECT
-    'variable'                    AS category,
-    NULL                          AS term_years,
-    ROUND(AVG(rate_pct), 2)       AS avg_rate,
-    ROUND(MIN(rate_pct), 2)       AS min_rate,
-    ROUND(MAX(rate_pct), 2)       AS max_rate,
-    CAST(COUNT(*) AS VARCHAR)     AS product_count,
-    CAST(COUNT(DISTINCT brand) AS VARCHAR) AS lender_count
+    'variable'                                        AS category,
+    NULL                                              AS term_years,
+    ROUND(approx_percentile(rate_pct, 0.50), 2)      AS median_rate,
+    ROUND(approx_percentile(rate_pct, 0.25), 2)      AS p25_rate,
+    ROUND(approx_percentile(rate_pct, 0.75), 2)      AS p75_rate,
+    CAST(COUNT(*) AS VARCHAR)                         AS product_count,
+    CAST(COUNT(DISTINCT brand) AS VARCHAR)            AS lender_count
   FROM normalised
   WHERE productcategory = 'RESIDENTIAL_MORTGAGES'
     AND lendingratetype = 'VARIABLE'
@@ -62,13 +69,13 @@ variable AS (
 
 variable_io AS (
   SELECT
-    'variable_io'                 AS category,
-    NULL                          AS term_years,
-    ROUND(AVG(rate_pct), 2)       AS avg_rate,
-    ROUND(MIN(rate_pct), 2)       AS min_rate,
-    ROUND(MAX(rate_pct), 2)       AS max_rate,
-    CAST(COUNT(*) AS VARCHAR)     AS product_count,
-    CAST(COUNT(DISTINCT brand) AS VARCHAR) AS lender_count
+    'variable_io'                                     AS category,
+    NULL                                              AS term_years,
+    ROUND(approx_percentile(rate_pct, 0.50), 2)      AS median_rate,
+    ROUND(approx_percentile(rate_pct, 0.25), 2)      AS p25_rate,
+    ROUND(approx_percentile(rate_pct, 0.75), 2)      AS p75_rate,
+    CAST(COUNT(*) AS VARCHAR)                         AS product_count,
+    CAST(COUNT(DISTINCT brand) AS VARCHAR)            AS lender_count
   FROM normalised
   WHERE productcategory = 'RESIDENTIAL_MORTGAGES'
     AND lendingratetype = 'VARIABLE'
@@ -79,13 +86,13 @@ variable_io AS (
 
 investment_pi AS (
   SELECT
-    'investment_pi'               AS category,
-    NULL                          AS term_years,
-    ROUND(AVG(rate_pct), 2)       AS avg_rate,
-    ROUND(MIN(rate_pct), 2)       AS min_rate,
-    ROUND(MAX(rate_pct), 2)       AS max_rate,
-    CAST(COUNT(*) AS VARCHAR)     AS product_count,
-    CAST(COUNT(DISTINCT brand) AS VARCHAR) AS lender_count
+    'investment_pi'                                   AS category,
+    NULL                                              AS term_years,
+    ROUND(approx_percentile(rate_pct, 0.50), 2)      AS median_rate,
+    ROUND(approx_percentile(rate_pct, 0.25), 2)      AS p25_rate,
+    ROUND(approx_percentile(rate_pct, 0.75), 2)      AS p75_rate,
+    CAST(COUNT(*) AS VARCHAR)                         AS product_count,
+    CAST(COUNT(DISTINCT brand) AS VARCHAR)            AS lender_count
   FROM normalised
   WHERE productcategory = 'RESIDENTIAL_MORTGAGES'
     AND lendingratetype = 'VARIABLE'
@@ -96,13 +103,13 @@ investment_pi AS (
 
 investment_io AS (
   SELECT
-    'investment_io'               AS category,
-    NULL                          AS term_years,
-    ROUND(AVG(rate_pct), 2)       AS avg_rate,
-    ROUND(MIN(rate_pct), 2)       AS min_rate,
-    ROUND(MAX(rate_pct), 2)       AS max_rate,
-    CAST(COUNT(*) AS VARCHAR)     AS product_count,
-    CAST(COUNT(DISTINCT brand) AS VARCHAR) AS lender_count
+    'investment_io'                                   AS category,
+    NULL                                              AS term_years,
+    ROUND(approx_percentile(rate_pct, 0.50), 2)      AS median_rate,
+    ROUND(approx_percentile(rate_pct, 0.25), 2)      AS p25_rate,
+    ROUND(approx_percentile(rate_pct, 0.75), 2)      AS p75_rate,
+    CAST(COUNT(*) AS VARCHAR)                         AS product_count,
+    CAST(COUNT(DISTINCT brand) AS VARCHAR)            AS lender_count
   FROM normalised
   WHERE productcategory = 'RESIDENTIAL_MORTGAGES'
     AND lendingratetype = 'VARIABLE'
@@ -122,11 +129,11 @@ fixed AS (
           THEN CAST(REGEXP_EXTRACT(additionalvalue, '^P([0-9]+)M$', 1) AS INTEGER) / 12
       END AS VARCHAR
     ) AS term_years,
-    ROUND(AVG(rate_pct), 2)       AS avg_rate,
-    ROUND(MIN(rate_pct), 2)       AS min_rate,
-    ROUND(MAX(rate_pct), 2)       AS max_rate,
-    CAST(COUNT(*) AS VARCHAR)     AS product_count,
-    CAST(COUNT(DISTINCT brand) AS VARCHAR) AS lender_count
+    ROUND(approx_percentile(rate_pct, 0.50), 2)      AS median_rate,
+    ROUND(approx_percentile(rate_pct, 0.25), 2)      AS p25_rate,
+    ROUND(approx_percentile(rate_pct, 0.75), 2)      AS p75_rate,
+    CAST(COUNT(*) AS VARCHAR)                         AS product_count,
+    CAST(COUNT(DISTINCT brand) AS VARCHAR)            AS lender_count
   FROM normalised
   WHERE productcategory = 'RESIDENTIAL_MORTGAGES'
     AND lendingratetype = 'FIXED'
@@ -148,13 +155,13 @@ fixed AS (
 
 personal_loan AS (
   SELECT
-    'personal_loan'               AS category,
-    NULL                          AS term_years,
-    ROUND(AVG(rate_pct), 2)       AS avg_rate,
-    ROUND(MIN(rate_pct), 2)       AS min_rate,
-    ROUND(MAX(rate_pct), 2)       AS max_rate,
-    CAST(COUNT(*) AS VARCHAR)     AS product_count,
-    CAST(COUNT(DISTINCT brand) AS VARCHAR) AS lender_count
+    'personal_loan'                                   AS category,
+    NULL                                              AS term_years,
+    ROUND(approx_percentile(rate_pct, 0.50), 2)      AS median_rate,
+    ROUND(approx_percentile(rate_pct, 0.25), 2)      AS p25_rate,
+    ROUND(approx_percentile(rate_pct, 0.75), 2)      AS p75_rate,
+    CAST(COUNT(*) AS VARCHAR)                         AS product_count,
+    CAST(COUNT(DISTINCT brand) AS VARCHAR)            AS lender_count
   FROM normalised
   WHERE productcategory = 'PERS_LOANS'
     AND lendingratetype IN ('FIXED', 'VARIABLE')
@@ -163,13 +170,13 @@ personal_loan AS (
 
 business_loan AS (
   SELECT
-    'business_loan'               AS category,
-    NULL                          AS term_years,
-    ROUND(AVG(rate_pct), 2)       AS avg_rate,
-    ROUND(MIN(rate_pct), 2)       AS min_rate,
-    ROUND(MAX(rate_pct), 2)       AS max_rate,
-    CAST(COUNT(*) AS VARCHAR)     AS product_count,
-    CAST(COUNT(DISTINCT brand) AS VARCHAR) AS lender_count
+    'business_loan'                                   AS category,
+    NULL                                              AS term_years,
+    ROUND(approx_percentile(rate_pct, 0.50), 2)      AS median_rate,
+    ROUND(approx_percentile(rate_pct, 0.25), 2)      AS p25_rate,
+    ROUND(approx_percentile(rate_pct, 0.75), 2)      AS p75_rate,
+    CAST(COUNT(*) AS VARCHAR)                         AS product_count,
+    CAST(COUNT(DISTINCT brand) AS VARCHAR)            AS lender_count
   FROM normalised
   WHERE productcategory = 'BUSINESS_LOANS'
     AND lendingratetype IN ('FIXED', 'VARIABLE')
@@ -178,13 +185,13 @@ business_loan AS (
 
 credit_card AS (
   SELECT
-    'credit_card'                 AS category,
-    NULL                          AS term_years,
-    ROUND(AVG(rate_pct), 2)       AS avg_rate,
-    ROUND(MIN(rate_pct), 2)       AS min_rate,
-    ROUND(MAX(rate_pct), 2)       AS max_rate,
-    CAST(COUNT(*) AS VARCHAR)     AS product_count,
-    CAST(COUNT(DISTINCT brand) AS VARCHAR) AS lender_count
+    'credit_card'                                     AS category,
+    NULL                                              AS term_years,
+    ROUND(approx_percentile(rate_pct, 0.50), 2)      AS median_rate,
+    ROUND(approx_percentile(rate_pct, 0.25), 2)      AS p25_rate,
+    ROUND(approx_percentile(rate_pct, 0.75), 2)      AS p75_rate,
+    CAST(COUNT(*) AS VARCHAR)                         AS product_count,
+    CAST(COUNT(DISTINCT brand) AS VARCHAR)            AS lender_count
   FROM normalised
   WHERE productcategory = 'CRED_AND_CHRG_CARDS'
     AND lendingratetype = 'PURCHASE'
@@ -241,14 +248,14 @@ def _build_response(rows: list) -> dict:
 
     for row in rows:
         category = row.get("category")
-        avg  = _f(row.get("avg_rate"))
-        mn   = _f(row.get("min_rate"))
-        mx   = _f(row.get("max_rate"))
-        cnt  = _i(row.get("product_count"))
-        lc   = _i(row.get("lender_count"))
+        median = _f(row.get("median_rate"))
+        p25    = _f(row.get("p25_rate"))
+        p75    = _f(row.get("p75_rate"))
+        cnt    = _i(row.get("product_count"))
+        lc     = _i(row.get("lender_count"))
         total_lenders.add(lc)   # accumulate for overall count
 
-        entry = {"avg": avg, "min": mn, "max": mx, "count": cnt}
+        entry = {"median": median, "p25": p25, "p75": p75, "count": cnt}
 
         if category == "variable":
             result["variable"] = entry
