@@ -44,7 +44,6 @@ const InvestorPanel: React.FC<InvestorPanelProps> = ({
 }) => {
   const [localInvestors, setLocalInvestors] = useState<any[]>(investors);
   const [localProperties] = useState<any[]>(properties);
-  const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -56,7 +55,7 @@ const InvestorPanel: React.FC<InvestorPanelProps> = ({
       const oldName = updated[index].name;
       updated[index] = { ...updated[index], [field]: value };
       setLocalInvestors(updated);
-      setHasChanges(true);
+
 
       // Keep property splits in sync if name changed
       if (field === "name" && value !== oldName) {
@@ -77,7 +76,6 @@ const InvestorPanel: React.FC<InvestorPanelProps> = ({
       ],
     };
     setLocalInvestors(updated);
-    setHasChanges(true);
   }, [localInvestors, index]);
 
   const updateIncomeEvent = useCallback(
@@ -87,7 +85,7 @@ const InvestorPanel: React.FC<InvestorPanelProps> = ({
       events[eIdx] = { ...events[eIdx], [field]: value };
       updated[index] = { ...updated[index], income_events: events };
       setLocalInvestors(updated);
-      setHasChanges(true);
+
     },
     [localInvestors, index],
   );
@@ -100,7 +98,7 @@ const InvestorPanel: React.FC<InvestorPanelProps> = ({
       );
       updated[index] = { ...updated[index], income_events: events };
       setLocalInvestors(updated);
-      setHasChanges(true);
+
     },
     [localInvestors, index],
   );
@@ -120,7 +118,6 @@ const InvestorPanel: React.FC<InvestorPanelProps> = ({
       localProperties,
       () => {
         setIsSaving(false);
-        setHasChanges(false);
         onClose?.();
       },
       () => {
@@ -368,7 +365,7 @@ const InvestorPanel: React.FC<InvestorPanelProps> = ({
         </button>
         <button
           onClick={handleSave}
-          disabled={!hasChanges || isSaving}
+          disabled={isSaving}
           className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-500/30 disabled:cursor-not-allowed text-white transition-colors"
           aria-label="Save changes"
         >

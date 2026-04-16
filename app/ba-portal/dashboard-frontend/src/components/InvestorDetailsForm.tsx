@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Mail, Phone, Calendar, MapPin, Save, X, Copy } from 'lucide-react';
+import { User, Mail, Phone, Calendar, MapPin, Save, Copy } from 'lucide-react';
 
 interface InvestorPersonalDetails {
   name: string;
@@ -137,41 +137,13 @@ const InvestorDetailsForm: React.FC<InvestorDetailsFormProps> = ({ investors, on
   const primaryName = localInvestors[0]?.name || 'Investor 1';
 
   return (
-    <div
-      className="min-h-full p-4 md:p-8"
-      style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-    >
-      <div className="max-w-4xl mx-auto">
-        {/* Page header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              Investor Details
-            </h1>
-            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-              Update personal contact and identity information for each investor.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
-            aria-label="Close"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Investor cards */}
-        <div className="space-y-6">
-          {investors.map((_investor, investorIndex) => (
-            <div
-              key={investorIndex}
-              className="rounded-xl border p-6"
-              style={cardStyle}
-            >
+    <div className="space-y-6">
+      {investors.map((_investor, investorIndex) => (
+        <div
+          key={investorIndex}
+          className="rounded-xl border p-6"
+          style={cardStyle}
+        >
               {/* Card header */}
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
@@ -266,11 +238,10 @@ const InvestorDetailsForm: React.FC<InvestorDetailsFormProps> = ({ investors, on
                   ))}
                 </div>
               </div>
-            </div>
-          ))}
         </div>
+      ))}
 
-        {/* Action buttons */}
+      {/* Action buttons */}
         <div className="flex items-center justify-end gap-3 mt-8 pb-8">
           <button
             onClick={onClose}
@@ -289,7 +260,6 @@ const InvestorDetailsForm: React.FC<InvestorDetailsFormProps> = ({ investors, on
             Save Details
           </button>
         </div>
-      </div>
     </div>
   );
 };

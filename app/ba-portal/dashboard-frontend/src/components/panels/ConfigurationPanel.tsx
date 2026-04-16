@@ -25,6 +25,7 @@ interface ConfigurationPanelProps {
   onPortfolioDependantsChange?: (dependants: number) => void;
   portfolioDependantsEvents?: PortfolioDependantsEvents[];
   onPortfolioDependantsEventsChange?: (events: PortfolioDependantsEvents[]) => void;
+  onClose?: () => void;
 }
 
 const DEFAULT_CONFIG: ConfigParams = {
@@ -46,6 +47,7 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   onPortfolioDependantsChange,
   portfolioDependantsEvents: propPortfolioDependantsEvents,
   onPortfolioDependantsEventsChange,
+  onClose,
 }) => {
   const [configParams, setConfigParams] = useState<ConfigParams>(propConfigParams || DEFAULT_CONFIG);
   const [investmentGoals, setInvestmentGoals] = useState<InvestmentGoals>({ goal: 'Passive Income', riskTolerance: 'moderate' });
@@ -57,7 +59,6 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   const [isLoadingConfig, setIsLoadingConfig] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
-  const [configSuccess, setConfigSuccess] = useState<string | null>(null);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
   // Load config from backend on mount
@@ -105,7 +106,7 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
     if (!selectedPortfolioId) return;
     setIsSavingConfig(true);
     setConfigError(null);
-    setConfigSuccess(null);
+
     try {
       await saveConfigParams(
         configParams,
@@ -118,8 +119,7 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       onConfigParamsChange?.(configParams);
       onPortfolioDependantsChange?.(portfolioDependants);
       onPortfolioDependantsEventsChange?.(portfolioDependantsEvents);
-      setConfigSuccess("Configuration saved successfully!");
-      setTimeout(() => setConfigSuccess(null), 2000);
+      onClose?.();
     } catch (error) {
       console.error("Failed to save config:", error);
       setConfigError("Failed to save configuration to server");
@@ -140,11 +140,6 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       {configError && (
         <div className="text-sm px-3 py-2 rounded" style={{ backgroundColor: "#fef2f2", color: "#dc2626" }}>
           {configError}
-        </div>
-      )}
-      {configSuccess && (
-        <div className="text-sm px-3 py-2 rounded" style={{ backgroundColor: "#f0fdf4", color: "#16a34a" }}>
-          {configSuccess}
         </div>
       )}
 

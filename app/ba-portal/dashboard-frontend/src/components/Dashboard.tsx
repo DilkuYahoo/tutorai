@@ -303,13 +303,19 @@ const Dashboard: React.FC = () => {
   const handleSwitchPortfolio = useCallback(() => setSelectedPortfolioId(''), []);
 
   const handleAddProperty = useCallback(async () => {
+    const openNewPropertyModal = (propertyCount: number) => {
+      setActiveModal({ type: 'property', index: propertyCount - 1 });
+    };
     try {
       const newProperty = await addPropertyWithBaAgent(selectedPortfolioId);
+      newProperty.name = `Property ${data.properties.length + 1}`;
       if (data.investors.length === 1) {
         newProperty.investor_splits = [{ name: data.investors[0].name, percentage: 100 }];
       }
       const updatedProperties = [...data.properties, newProperty];
-      await handleUpdate(data.investors, updatedProperties);
+      await handleUpdate(data.investors, updatedProperties, () => {
+        openNewPropertyModal(updatedProperties.length);
+      });
     } catch (err) {
       console.error("Failed to add property:", err);
       const fallback = data.properties.length > 0
@@ -322,7 +328,10 @@ const Dashboard: React.FC = () => {
             investor_splits: data.investors.length === 1
               ? [{ name: data.investors[0].name, percentage: 100 }] : [],
           };
-      await handleUpdate(data.investors, [...data.properties, fallback]);
+      const updatedProperties = [...data.properties, fallback];
+      await handleUpdate(data.investors, updatedProperties, () => {
+        openNewPropertyModal(updatedProperties.length);
+      });
     }
   }, [selectedPortfolioId, data.investors, data.properties, handleUpdate]);
 
@@ -469,6 +478,7 @@ const Dashboard: React.FC = () => {
                 onPortfolioDependantsChange={setPortfolioDependants}
                 portfolioDependantsEvents={portfolioDependantsEvents}
                 onPortfolioDependantsEventsChange={setPortfolioDependantsEvents}
+                onClose={() => setActiveModal(null)}
               />
             )}
             {activeModal.type === 'householdExpenses' && (
@@ -513,6 +523,7 @@ const Dashboard: React.FC = () => {
           onOpenModal={setActiveModal}
           activeModal={activeModal}
           onAddProperty={handleAddProperty}
+          onReorderProperties={(reordered) => handleUpdate(data.investors, reordered)}
         />
 
         <ChartSection

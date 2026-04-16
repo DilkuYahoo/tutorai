@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   ChevronsLeft,
   ChevronsRight,
@@ -28,6 +28,7 @@ interface NavigationPanelProps {
   onOpenModal: (target: ModalTarget) => void;
   activeModal: ModalTarget | null;
   onAddProperty?: () => Promise<void>;
+  onReorderProperties?: (reordered: any[]) => void;
 }
 
 const NavigationPanel: React.FC<NavigationPanelProps> = ({
@@ -38,8 +39,11 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
   onOpenModal,
   activeModal,
   onAddProperty,
+  onReorderProperties,
 }) => {
   const [isAddingProperty, setIsAddingProperty] = useState(false);
+  const dragIndex = useRef<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const isActive = (target: ModalTarget): boolean => {
     if (!activeModal) return false;
     if (target.type !== activeModal.type) return false;
@@ -184,16 +188,35 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
           ) : (
             properties.map((prop: any, i: number) => {
               const target: ModalTarget = { type: "property", index: i };
+              const isDragOver = dragOverIndex === i;
               return (
-                <button
+                <div
                   key={i}
-                  className={itemClass(isActive(target))}
-                  style={{ color: isActive(target) ? undefined : "var(--text-secondary)", width: "100%", textAlign: "left" }}
-                  onClick={() => onOpenModal(target)}
+                  draggable
+                  onDragStart={() => { dragIndex.current = i; }}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverIndex(i); }}
+                  onDragLeave={() => setDragOverIndex(null)}
+                  onDrop={() => {
+                    const from = dragIndex.current;
+                    if (from === null || from === i) { setDragOverIndex(null); return; }
+                    const reordered = [...properties];
+                    reordered.splice(i, 0, reordered.splice(from, 1)[0]);
+                    onReorderProperties?.(reordered);
+                    setDragOverIndex(null);
+                    dragIndex.current = null;
+                  }}
+                  onDragEnd={() => { setDragOverIndex(null); dragIndex.current = null; }}
+                  className={`rounded-lg transition-all ${isDragOver ? 'border-t-2 border-cyan-400' : 'border-t-2 border-transparent'}`}
                 >
-                  <Building2 size={16} className="flex-shrink-0 text-cyan-400/70" />
-                  <span className="truncate">{prop.name || `Property ${i + 1}`}</span>
-                </button>
+                  <button
+                    className={itemClass(isActive(target))}
+                    style={{ color: isActive(target) ? undefined : "var(--text-secondary)", width: "100%", textAlign: "left", cursor: "grab" }}
+                    onClick={() => onOpenModal(target)}
+                  >
+                    <Building2 size={16} className="flex-shrink-0 text-cyan-400/70" />
+                    <span className="truncate">{prop.name || `Property ${i + 1}`}</span>
+                  </button>
+                </div>
               );
             })
           )}

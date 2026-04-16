@@ -45,7 +45,6 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
   onClose,
 }) => {
   const [localProperties, setLocalProperties] = useState<any[]>(properties);
-  const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [splitErrors, setSplitErrors] = useState<Record<number, string>>({});
@@ -69,7 +68,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
       const updated = [...localProperties];
       updated[index] = { ...updated[index], [field]: value };
       setLocalProperties(updated);
-      setHasChanges(true);
+
     },
     [localProperties, index],
   );
@@ -87,7 +86,6 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
       investor_splits: [...splits, { name: "", percentage: 0 }],
     };
     setLocalProperties(updated);
-    setHasChanges(true);
   }, [localProperties, index, splits, investors]);
 
   const updateSplit = useCallback(
@@ -119,7 +117,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
       }
       updated[index] = { ...updated[index], investor_splits: newSplits };
       setLocalProperties(updated);
-      setHasChanges(true);
+
     },
     [localProperties, index, splits],
   );
@@ -137,7 +135,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
         delete next[sIdx];
         return next;
       });
-      setHasChanges(true);
+
     },
     [localProperties, index, splits],
   );
@@ -157,7 +155,6 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
       localProperties,
       () => {
         setIsSaving(false);
-        setHasChanges(false);
         onClose?.();
       },
       () => {
@@ -515,7 +512,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
         </button>
         <button
           onClick={handleSave}
-          disabled={!hasChanges || isSaving}
+          disabled={isSaving}
           className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-500/30 disabled:cursor-not-allowed text-white transition-colors"
           aria-label="Save changes"
         >

@@ -8,6 +8,18 @@ BA Portal is a financial analytics platform for property investment advisors (Bu
 
 ---
 
+## Development Rules
+
+After **every code change** to the frontend, run the build to validate there are no TypeScript or compile errors before considering the task done:
+
+```bash
+cd app/ba-portal/dashboard-frontend && npm run build
+```
+
+Do not report a task as complete if the build fails.
+
+---
+
 ## Commands
 
 ### Frontend (`dashboard-frontend/`)
