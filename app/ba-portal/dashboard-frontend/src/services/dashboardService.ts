@@ -59,22 +59,7 @@ export interface InvestmentGoals {
   riskTolerance: 'conservative' | 'moderate' | 'aggressive';
 }
 
-export async function fetchDashboardData(): Promise<DashboardApiResponse> {
-  const result = await apiPost(`${FINANCE_URL}/read-table?t=${Date.now()}`, {
-    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-    id: REACT_APP_APPSYNC_FINANCE_ID,
-    region: App_SYNC_REGION,
-  });
 
-  return {
-    chartData: result.result.chart1 || [],
-    investors: result.result.investors || [],
-    properties: result.result.properties || [],
-    investmentYears: result.result.investment_years || 30,
-    executiveSummary: result.result.executive_summary || '',
-    ourAdvice: result.result.our_advice || '',
-  };
-}
 
 export async function fetchPortfolioList(adviserName?: string): Promise<PortfolioListResponse> {
   const adviser = adviserName || REACT_APP_ADVISER_NAME;
@@ -318,18 +303,7 @@ export interface BaAgentResponse {
   property: BaAgentProperty;
 }
 
-export interface AiRecommendationAnalysis {
-  bottlenecks: string;
-  recommendations: string[];
-  optimal_timing: string;
-  max_purchase_price: string;
-}
 
-export interface AiRecommendationResponse {
-  status: string;
-  action: string;
-  analysis: AiRecommendationAnalysis;
-}
 
 export async function addPropertyWithBaAgent(portfolioId?: string): Promise<BaAgentProperty> {
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
@@ -343,17 +317,7 @@ export async function addPropertyWithBaAgent(portfolioId?: string): Promise<BaAg
   return result.property;
 }
 
-export async function generateAiRecommendations(portfolioId?: string): Promise<AiRecommendationAnalysis> {
-  const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
-  
-  const result: AiRecommendationResponse = await apiPost(`${FINANCE_URL}/ba-agent`, {
-    table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
-    id: id,
-    property_action: "optimize",
-  });
 
-  return result.analysis;
-}
 
 export async function generatePortfolioSummary(portfolioId?: string): Promise<{ summary: string }> {
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
