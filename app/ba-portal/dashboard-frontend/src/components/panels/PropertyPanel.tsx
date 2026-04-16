@@ -47,7 +47,6 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
   const [localProperties, setLocalProperties] = useState<any[]>(properties);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [splitErrors, setSplitErrors] = useState<Record<number, string>>({});
 
   const property = localProperties[index];
 
@@ -73,10 +72,6 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
     [localProperties, index],
   );
 
-  const splitTotal = splits.reduce(
-    (sum: number, s: any) => sum + (parseFloat(s.percentage) || 0),
-    0,
-  );
 
   const addSplit = useCallback(() => {
     if (investors.length <= 1) return;
@@ -93,31 +88,34 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
       const updated = [...localProperties];
       const newSplits = [...splits];
       if (field === "percentage") {
-        const parsedVal = parseFloat(value) || 0;
-        const otherTotal = newSplits.reduce(
-          (sum: number, s: any, i: number) =>
-            i !== sIdx ? sum + (parseFloat(s.percentage) || 0) : sum,
-          0,
-        );
-        if (otherTotal + parsedVal > 100) {
-          setSplitErrors((prev) => ({
-            ...prev,
-            [sIdx]: "Total cannot exceed 100%",
-          }));
-          return;
-        }
-        setSplitErrors((prev) => {
-          const next = { ...prev };
-          delete next[sIdx];
-          return next;
-        });
+        const parsedVal = Math.min(100, Math.max(0, parseFloat(value) || 0));
+        // Distribute the remainder proportionally across other investors
+        const remainder = 100 - parsedVal;
+        const others = newSplits.filter((_: any, i: number) => i !== sIdx);
+        const othersTotal = others.reduce((sum: number, s: any) => sum + (s.percentage || 0), 0);
         newSplits[sIdx] = { ...newSplits[sIdx], percentage: parsedVal };
+        if (others.length > 0) {
+          others.forEach((_: any, i: number) => {
+            const realIdx = i >= sIdx ? i + 1 : i;
+            const currentPct = newSplits[realIdx].percentage || 0;
+            const newPct = othersTotal > 0
+              ? Math.round((currentPct / othersTotal) * remainder * 10) / 10
+              : Math.round((remainder / others.length) * 10) / 10;
+            newSplits[realIdx] = { ...newSplits[realIdx], percentage: newPct };
+          });
+          // Fix rounding so total is exactly 100
+          const total = newSplits.reduce((s: number, x: any) => s + (x.percentage || 0), 0);
+          const diff = Math.round((100 - total) * 10) / 10;
+          if (diff !== 0) {
+            const lastOtherIdx = sIdx === newSplits.length - 1 ? newSplits.length - 2 : newSplits.length - 1;
+            newSplits[lastOtherIdx] = { ...newSplits[lastOtherIdx], percentage: Math.round((newSplits[lastOtherIdx].percentage + diff) * 10) / 10 };
+          }
+        }
       } else {
         newSplits[sIdx] = { ...newSplits[sIdx], [field]: value };
       }
       updated[index] = { ...updated[index], investor_splits: newSplits };
       setLocalProperties(updated);
-
     },
     [localProperties, index, splits],
   );
@@ -130,12 +128,6 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
         investor_splits: splits.filter((_: any, i: number) => i !== sIdx),
       };
       setLocalProperties(updated);
-      setSplitErrors((prev) => {
-        const next = { ...prev };
-        delete next[sIdx];
-        return next;
-      });
-
     },
     [localProperties, index, splits],
   );
@@ -392,100 +384,94 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
             </button>
           )}
         </div>
-        <div
-          className="border-b mb-3"
-          style={{ borderColor: "var(--border-color)" }}
-        />
+        <div className="border-b mb-3" style={{ borderColor: "var(--border-color)" }} />
 
-        {investors.length === 1 ? (
-          <div
-            className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm"
-            style={{
-              backgroundColor: "var(--bg-tertiary)",
-              color: "var(--text-secondary)",
-            }}
-          >
-            <span>{investors[0].name}</span>
-            <span className="font-semibold text-cyan-400">100%</span>
-          </div>
-        ) : splits.length === 0 ? (
+        {/* Visual ownership bar */}
+        {(() => {
+          const barItems: { name: string; pct: number }[] =
+            investors.length === 1
+              ? [{ name: investors[0].name, pct: 100 }]
+              : splits.map((s: any) => ({ name: s.name || "—", pct: s.percentage || 0 }));
+
+          const colours = ["#06b6d4", "#818cf8", "#34d399", "#f59e0b", "#f472b6", "#a78bfa"];
+
+          return (
+            <div className="mb-4">
+              {/* Stacked bar */}
+              <div className="flex w-full h-7 rounded-lg overflow-hidden gap-px" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+                {barItems.map((item, i) => (
+                  <div
+                    key={i}
+                    style={{ width: `${item.pct}%`, backgroundColor: colours[i % colours.length], transition: "width 0.3s ease" }}
+                    title={`${item.name}: ${item.pct}%`}
+                  />
+                ))}
+                {/* Unfilled remainder */}
+                {(() => { const rem = 100 - barItems.reduce((s, x) => s + x.pct, 0); return rem > 0 ? <div style={{ width: `${rem}%`, backgroundColor: "var(--bg-tertiary)" }} /> : null; })()}
+              </div>
+              {/* Legend */}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                {barItems.map((item, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-secondary)" }}>
+                    <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: colours[i % colours.length] }} />
+                    <span className="truncate max-w-[120px]">{item.name}</span>
+                    <span className="font-semibold" style={{ color: colours[i % colours.length] }}>{item.pct}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Single investor — no editable rows needed */}
+        {investors.length === 1 ? null : splits.length === 0 ? (
           <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>
             No splits defined — add investors to this property.
           </p>
         ) : (
-          <div className="space-y-0">
-            {/* Header */}
-            <div
-              className="grid grid-cols-[1fr_110px_36px] gap-2 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide"
-              style={{ color: "var(--text-tertiary)" }}
-            >
-              <span>Investor</span>
-              <span className="text-right">Ownership %</span>
-              <span />
-            </div>
-            {/* Rows */}
-            {splits.map((split: any, sIdx: number) => (
-              <div
-                key={sIdx}
-                className="space-y-1"
-              >
-                <div
-                  className="grid grid-cols-[1fr_110px_36px] gap-2 px-2 py-1.5 rounded-lg items-center"
-                  style={{ backgroundColor: "var(--bg-tertiary)" }}
-                >
-                  <input
-                    type="text"
-                    value={split.name || ""}
-                    onChange={(e) => updateSplit(sIdx, "name", e.target.value)}
-                    className="w-full px-2 py-1.5 rounded-md text-sm border focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
-                    style={inputStyle}
-                    placeholder="Investor name"
-                    aria-label="Investor split name"
-                  />
-                  <div className="flex items-center gap-1">
+          <div className="space-y-3">
+            {splits.map((split: any, sIdx: number) => {
+              const colour = ["#06b6d4", "#818cf8", "#34d399", "#f59e0b", "#f472b6", "#a78bfa"][sIdx % 6];
+              return (
+                <div key={sIdx} className="rounded-lg px-3 py-2.5 space-y-2" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+                  {/* Name row */}
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: colour }} />
                     <input
-                      type="number"
-                      value={split.percentage || 0}
-                      onChange={(e) =>
-                        updateSplit(sIdx, "percentage", e.target.value)
-                      }
-                      className="w-full px-2 py-1.5 rounded-md text-sm border focus:outline-none focus:ring-1 focus:ring-cyan-500/50 text-right"
+                      type="text"
+                      value={split.name || ""}
+                      onChange={(e) => updateSplit(sIdx, "name", e.target.value)}
+                      className="flex-1 px-2 py-1 rounded-md text-sm border focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
                       style={inputStyle}
-                      aria-label="Investor split percentage"
+                      placeholder="Investor name"
+                      aria-label="Investor split name"
                     />
-                    <span
-                      className="text-sm flex-shrink-0"
-                      style={{ color: "var(--text-secondary)" }}
-                    >
-                      %
+                    <span className="text-sm font-semibold w-12 text-right flex-shrink-0" style={{ color: colour }}>
+                      {(split.percentage || 0).toFixed(0)}%
                     </span>
+                    <button
+                      onClick={() => deleteSplit(sIdx)}
+                      className="flex items-center justify-center w-7 h-7 rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex-shrink-0"
+                      aria-label="Delete investor split"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => deleteSplit(sIdx)}
-                    className="flex items-center justify-center w-8 h-8 rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
-                    aria-label="Delete investor split"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  {/* Slider */}
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={split.percentage || 0}
+                    onChange={(e) => updateSplit(sIdx, "percentage", e.target.value)}
+                    className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                    style={{ accentColor: colour }}
+                    aria-label={`${split.name || "Investor"} ownership percentage`}
+                  />
                 </div>
-                {splitErrors[sIdx] && (
-                  <p className="text-xs text-red-400 px-2">
-                    {splitErrors[sIdx]}
-                  </p>
-                )}
-              </div>
-            ))}
-            {/* Split total */}
-            <div
-              className={`flex justify-end px-2 pt-2 text-sm font-semibold ${Math.abs(splitTotal - 100) < 0.01 ? "text-green-400" : "text-red-400"}`}
-            >
-              Total: {splitTotal.toFixed(0)}%
-              {Math.abs(splitTotal - 100) >= 0.01 && (
-                <span className="ml-2 font-normal text-xs self-center">
-                  (must equal 100%)
-                </span>
-              )}
-            </div>
+              );
+            })}
           </div>
         )}
       </div>
