@@ -3,7 +3,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { X, AlertCircle, RefreshCw, LogIn } from "lucide-react";
 import Header from "./Header";
-import Sidebar from "./Sidebar";
+import NavigationPanel, { type ModalTarget } from "./NavigationPanel";
+import Modal from "./ui/Modal";
+import InvestorPanel from "./panels/InvestorPanel";
+import PropertyPanel from "./panels/PropertyPanel";
+import ConfigurationPanel from "./panels/ConfigurationPanel";
 import ChartSection from "./ChartSection";
 import Footer from "./Footer";
 import PortfolioSelector from "./PortfolioSelector";
@@ -17,6 +21,7 @@ import {
   updateDashboardData,
   renamePortfolio,
   createPortfolio,
+  addPropertyWithBaAgent,
   type ConfigParams,
   type PortfolioInfo,
   type PortfolioDependantsEvents,
@@ -83,6 +88,7 @@ const Dashboard: React.FC = () => {
   });
 
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [activeModal, setActiveModal] = useState<ModalTarget | null>(null);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -92,8 +98,6 @@ const Dashboard: React.FC = () => {
   const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
   const [progress, setProgress] = useState(100);
   const [investmentYears, setInvestmentYears] = useState(30);
-  const [showExpensesForm, setShowExpensesForm] = useState(false);
-  const [showInvestorDetails, setShowInvestorDetails] = useState(false);
   const [configParams, setConfigParams] = useState<ConfigParams>(DEFAULT_CONFIG_PARAMS);
   const [portfolioDependants, setPortfolioDependants] = useState<number>(0);
   const [portfolioDependantsEvents, setPortfolioDependantsEvents] = useState<PortfolioDependantsEvents[]>([]);
@@ -298,6 +302,30 @@ const Dashboard: React.FC = () => {
 
   const handleSwitchPortfolio = useCallback(() => setSelectedPortfolioId(''), []);
 
+  const handleAddProperty = useCallback(async () => {
+    try {
+      const newProperty = await addPropertyWithBaAgent(selectedPortfolioId);
+      if (data.investors.length === 1) {
+        newProperty.investor_splits = [{ name: data.investors[0].name, percentage: 100 }];
+      }
+      const updatedProperties = [...data.properties, newProperty];
+      await handleUpdate(data.investors, updatedProperties);
+    } catch (err) {
+      console.error("Failed to add property:", err);
+      const fallback = data.properties.length > 0
+        ? { ...JSON.parse(JSON.stringify(data.properties[0])), name: `Property ${data.properties.length + 1}` }
+        : {
+            name: `Property ${data.properties.length + 1}`,
+            property_value: 0, purchase_year: 0, initial_value: 0,
+            loan_amount: 0, interest_rate: 0, rent: 0, growth_rate: 0,
+            other_expenses: 0, annual_principal_change: 0,
+            investor_splits: data.investors.length === 1
+              ? [{ name: data.investors[0].name, percentage: 100 }] : [],
+          };
+      await handleUpdate(data.investors, [...data.properties, fallback]);
+    }
+  }, [selectedPortfolioId, data.investors, data.properties, handleUpdate]);
+
   // --- Render: unauthenticated guard (safe to place here after all hooks) ---
   if (!authLoading && !isAuthenticated) {
     return (
@@ -317,63 +345,17 @@ const Dashboard: React.FC = () => {
     );
   }
 
+  // Helper: get modal title
+  const getModalTitle = (target: ModalTarget): string => {
+    if (target.type === 'investor') return data.investors[target.index]?.name || `Investor ${target.index + 1}`;
+    if (target.type === 'property') return data.properties[target.index]?.name || `Property ${target.index + 1}`;
+    if (target.type === 'configuration') return 'Portfolio Settings';
+    if (target.type === 'householdExpenses') return 'Household Expenses';
+    if (target.type === 'investorDetails') return 'Investor Details';
+    return '';
+  };
+
   if (selectedPortfolioId) {
-    if (showInvestorDetails) {
-      return (
-        <PageLayout header={
-          <Header
-            isDarkMode={isDarkMode}
-            onToggleDarkMode={toggleDarkMode}
-            onBackToDashboard={() => setShowInvestorDetails(false)}
-          />
-        }>
-          <InvestorDetailsForm
-            investors={data.investors}
-            onSave={(updatedInvestors) => {
-              handleUpdate(updatedInvestors, data.properties, () => {
-                setShowInvestorDetails(false);
-              }, () => {});
-            }}
-            onClose={() => setShowInvestorDetails(false)}
-          />
-        </PageLayout>
-      );
-    }
-
-    if (showExpensesForm) {
-      const totalEssential = data.investors.reduce((sum, inv) => sum + (inv.essential_expenditure || 0), 0);
-      const totalNonEssential = data.investors.reduce((sum, inv) => sum + (inv.nonessential_expenditure || 0), 0);
-
-      return (
-        <PageLayout header={
-          <Header
-            isDarkMode={isDarkMode}
-            onToggleDarkMode={toggleDarkMode}
-            onBackToDashboard={() => setShowExpensesForm(false)}
-          />
-        }>
-          <HouseholdExpensesForm
-            onSave={(expensesData) => {
-              const annualEssential = expensesData.totals.essentialTotal * 12;
-              const annualNonEssential = expensesData.totals.nonEssentialTotal * 12;
-              const numInv = data.investors.length;
-              const updatedInvestors = data.investors.map(inv => ({
-                ...inv,
-                essential_expenditure: annualEssential / numInv,
-                nonessential_expenditure: annualNonEssential / numInv,
-              }));
-              handleUpdate(updatedInvestors, data.properties, () => {
-                setShowExpensesForm(false);
-              }, () => {});
-            }}
-            numInvestors={data.investors.length}
-            initialEssentialTotal={totalEssential}
-            initialNonEssentialTotal={totalNonEssential}
-          />
-        </PageLayout>
-      );
-    }
-
     return (
       <PageLayout
         contentClassName="flex flex-1 overflow-hidden"
@@ -382,8 +364,8 @@ const Dashboard: React.FC = () => {
             isDarkMode={isDarkMode}
             onToggleDarkMode={toggleDarkMode}
             onSwitchPortfolio={handleSwitchPortfolio}
-            onShowExpenses={() => setShowExpensesForm(true)}
-            onShowInvestorDetails={() => setShowInvestorDetails(true)}
+            onShowExpenses={() => setActiveModal({ type: 'householdExpenses' })}
+            onShowInvestorDetails={() => setActiveModal({ type: 'investorDetails' })}
           />
         }
       >
@@ -448,23 +430,89 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
-        <Sidebar
+        {/* Modal overlay */}
+        {activeModal && (
+          <Modal
+            isOpen={true}
+            onClose={() => setActiveModal(null)}
+            title={getModalTitle(activeModal)}
+          >
+            {activeModal.type === 'investor' && (
+              <InvestorPanel
+                index={activeModal.index}
+                investors={data.investors}
+                properties={data.properties}
+                selectedPortfolioId={selectedPortfolioId}
+                onUpdate={handleUpdate}
+                onClose={() => setActiveModal(null)}
+              />
+            )}
+            {activeModal.type === 'property' && (
+              <PropertyPanel
+                index={activeModal.index}
+                properties={data.properties}
+                investors={data.investors}
+                chartData={data.chartData}
+                selectedPortfolioId={selectedPortfolioId}
+                onUpdate={handleUpdate}
+                onClose={() => setActiveModal(null)}
+              />
+            )}
+            {activeModal.type === 'configuration' && (
+              <ConfigurationPanel
+                selectedPortfolioId={selectedPortfolioId}
+                investmentYears={investmentYears}
+                onInvestmentYearsChange={setInvestmentYears}
+                configParams={configParams}
+                onConfigParamsChange={setConfigParams}
+                portfolioDependants={portfolioDependants}
+                onPortfolioDependantsChange={setPortfolioDependants}
+                portfolioDependantsEvents={portfolioDependantsEvents}
+                onPortfolioDependantsEventsChange={setPortfolioDependantsEvents}
+              />
+            )}
+            {activeModal.type === 'householdExpenses' && (
+              <HouseholdExpensesForm
+                onSave={(expensesData) => {
+                  const annualEssential = expensesData.totals.essentialTotal * 12;
+                  const annualNonEssential = expensesData.totals.nonEssentialTotal * 12;
+                  const numInv = data.investors.length;
+                  const updatedInvestors = data.investors.map(inv => ({
+                    ...inv,
+                    essential_expenditure: annualEssential / numInv,
+                    nonessential_expenditure: annualNonEssential / numInv,
+                  }));
+                  handleUpdate(updatedInvestors, data.properties, () => {
+                    setActiveModal(null);
+                  }, () => {});
+                }}
+                numInvestors={data.investors.length}
+                initialEssentialTotal={data.investors.reduce((sum, inv) => sum + (inv.essential_expenditure || 0), 0)}
+                initialNonEssentialTotal={data.investors.reduce((sum, inv) => sum + (inv.nonessential_expenditure || 0), 0)}
+              />
+            )}
+            {activeModal.type === 'investorDetails' && (
+              <InvestorDetailsForm
+                investors={data.investors}
+                onSave={(updatedInvestors) => {
+                  handleUpdate(updatedInvestors, data.properties, () => {
+                    setActiveModal(null);
+                  }, () => {});
+                }}
+                onClose={() => setActiveModal(null)}
+              />
+            )}
+          </Modal>
+        )}
+
+        <NavigationPanel
           investors={data.investors}
           properties={data.properties}
-          chartData={data.chartData}
-          loading={data.loading}
           isVisible={sidebarVisible}
           onToggleVisibility={setSidebarVisible}
-          onUpdate={handleUpdate}
-          selectedPortfolioId={selectedPortfolioId}
-          investmentYears={investmentYears}
-          onInvestmentYearsChange={setInvestmentYears}
-          configParams={configParams}
-          onConfigParamsChange={setConfigParams}
-          portfolioDependants={portfolioDependants}
-          onPortfolioDependantsChange={setPortfolioDependants}
-          portfolioDependantsEvents={portfolioDependantsEvents}
-          onPortfolioDependantsEventsChange={setPortfolioDependantsEvents}
+          onOpenModal={setActiveModal}
+          activeModal={activeModal}
+          onAddProperty={handleAddProperty}
         />
 
         <ChartSection
