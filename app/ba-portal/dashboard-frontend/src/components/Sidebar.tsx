@@ -29,28 +29,7 @@ import {
 import { addPropertyWithBaAgent, fetchConfigParams, saveConfigParams } from "../services/dashboardService";
 import type { ConfigParams, InvestmentGoals, PortfolioDependantsEvents } from "../services/dashboardService";
 
-// Format number for display in thousands (e.g., 1500000 → "1.5M")
-const formatInThousands = (value: number): string => {
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)}M`;
-  } else if (value >= 1000) {
-    return `${Math.round(value / 1000)}K`;
-  }
-  return value.toString();
-};
-
-// Parse thousands input back to actual value (e.g., "1.5K" → 1500)
-const parseThousandsInput = (input: string): number => {
-  const trimmed = input.trim().toUpperCase();
-  const num = parseFloat(trimmed);
-
-  if (trimmed.endsWith('M')) {
-    return Math.round(num * 1000000);
-  } else if (trimmed.endsWith('K')) {
-    return Math.round(num * 1000);
-  }
-  return isNaN(num) ? 0 : Math.round(num * 1000); // Default: assume input is in thousands
-};
+import { formatInThousands, parseThousandsInput } from "../utils/formatters";
 
 interface SidebarProps {
   investors: any[];
@@ -543,7 +522,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       >
         <button
           onClick={handleToggle}
-          className="w-10 h-10 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white font-bold transition-colors duration-200 flex items-center justify-center"
+          className="w-10 h-10 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-white transition-colors flex items-center justify-center shadow-lg shadow-cyan-500/20"
           title="Show Sidebar"
           aria-label="Show sidebar"
         >
@@ -576,56 +555,33 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Section Tabs */}
       <div 
-        className="grid grid-cols-2 border-b" 
+        className="grid grid-cols-3 border-b" 
         style={{ borderColor: 'var(--border-color)' }}
         role="tablist"
         aria-label="Sidebar sections"
       >
-        <button
-          onClick={() => setActiveSection('investors')}
-          className={`flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all duration-300 ${
-            activeSection === 'investors'
-              ? 'bg-cyan-500/20 text-cyan-400 border-b-2 border-cyan-400'
-              : 'text-gray-400 hover:text-gray-300 hover:bg-white/5'
-          }`}
-          role="tab"
-          aria-selected={activeSection === 'investors'}
-          aria-controls="investors-panel"
-          id="investors-tab"
-        >
-          <Users size={18} />
-          <span>Investors</span>
-        </button>
-        <button
-          onClick={() => setActiveSection('properties')}
-          className={`flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all duration-300 ${
-            activeSection === 'properties'
-              ? 'bg-cyan-500/20 text-cyan-400 border-b-2 border-cyan-400'
-              : 'text-gray-400 hover:text-gray-300 hover:bg-white/5'
-          }`}
-          role="tab"
-          aria-selected={activeSection === 'properties'}
-          aria-controls="properties-panel"
-          id="properties-tab"
-        >
-          <Building2 size={18} />
-          <span>Properties</span>
-        </button>
-        <button
-          onClick={() => setActiveSection('configuration')}
-          className={`flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all duration-300 ${
-            activeSection === 'configuration'
-              ? 'bg-cyan-500/20 text-cyan-400 border-b-2 border-cyan-400'
-              : 'text-gray-400 hover:text-gray-300 hover:bg-white/5'
-          }`}
-          role="tab"
-          aria-selected={activeSection === 'configuration'}
-          aria-controls="configuration-panel"
-          id="configuration-tab"
-        >
-          <Settings2 size={18} />
-          <span>Config</span>
-        </button>
+        {([
+          { key: 'investors',     icon: <Users size={16} />,    label: 'Investors',   id: 'investors-tab',     ctrl: 'investors-panel' },
+          { key: 'properties',    icon: <Building2 size={16} />, label: 'Properties', id: 'properties-tab',    ctrl: 'properties-panel' },
+          { key: 'configuration', icon: <Settings2 size={16} />, label: 'Config',     id: 'configuration-tab', ctrl: 'configuration-panel' },
+        ] as const).map(({ key, icon, label, id, ctrl }) => {
+          const active = activeSection === key;
+          return (
+            <button
+              key={key}
+              onClick={() => setActiveSection(key)}
+              className={`flex items-center justify-center gap-1.5 py-3 px-2 text-xs font-medium transition-all duration-200 ${active ? 'bg-cyan-500/10 border-b-2 border-cyan-400 text-cyan-400' : 'border-b-2 border-transparent hover:bg-white/[0.04]'}`}
+              style={active ? {} : { color: 'var(--text-secondary)' }}
+              role="tab"
+              aria-selected={active}
+              aria-controls={ctrl}
+              id={id}
+            >
+              {icon}
+              <span>{label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Content Area */}
@@ -670,18 +626,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 onChange={(e) =>
                                   updateInvestor(index, "name", e.target.value)
                                 }
-                                className="bg-slate-600 text-white rounded px-2 py-1 w-full disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                                style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                className="w-full px-2 py-1.5 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors"
+                                style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                                 aria-label="Investor name"
                               />
-                              <p className="text-xs text-gray-400 mt-1">Investor</p>
+                              <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>Investor</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             {dirtyInvestorIndices.has(index) && (
                               <button
                                 onClick={handleRefresh}
-                                className="text-xs bg-cyan-500 hover:bg-cyan-600 text-white px-2 py-1 rounded transition-colors"
+                                className="text-xs bg-cyan-500 hover:bg-cyan-400 text-white px-2 py-1 rounded-lg transition-colors"
                                 title="Save investor"
                                 aria-label="Save investor"
                               >
@@ -702,7 +658,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <div className="space-y-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                              <DollarSign size={14} className="text-gray-400" />
+                              <DollarSign size={14} style={{ color: 'var(--text-tertiary)' }} />
                               <span>Base Income:</span>
                             </div>
                             <input
@@ -715,14 +671,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   parseThousandsInput(e.target.value),
                                 )
                               }
-                              className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right text-xs"
-                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                              className="px-2 py-1.5 rounded-lg border text-xs text-right w-24 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors"
+                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                               aria-label="Base income"
                             />
                           </div>
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                              <TrendingUp size={14} className="text-gray-400" />
+                              <TrendingUp size={14} style={{ color: 'var(--text-tertiary)' }} />
                               <span>Growth Rate:</span>
                             </div>
                             <input
@@ -735,14 +691,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   parseFloat(e.target.value),
                                 )
                               }
-                              className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right text-xs"
-                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                              className="px-2 py-1.5 rounded-lg border text-xs text-right w-24 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors"
+                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                               aria-label="Annual growth rate"
                             />
                           </div>
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                              <Wallet size={14} className="text-gray-400" />
+                              <Wallet size={14} style={{ color: 'var(--text-tertiary)' }} />
                               <span>Essential Expenditure:</span>
                             </div>
                             <input
@@ -755,14 +711,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   parseThousandsInput(e.target.value),
                                 )
                               }
-                              className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right text-xs"
-                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                              className="px-2 py-1.5 rounded-lg border text-xs text-right w-24 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors"
+                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                               aria-label="Essential expenditure"
                             />
                           </div>
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                              <CreditCard size={14} className="text-gray-400" />
+                              <CreditCard size={14} style={{ color: 'var(--text-tertiary)' }} />
                               <span>Nonessential Expenditure:</span>
                             </div>
                             <input
@@ -775,8 +731,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   parseThousandsInput(e.target.value),
                                 )
                               }
-                              className="bg-slate-600 text-white rounded px-2 py-1 w-20 text-right text-xs"
-                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                              className="px-2 py-1.5 rounded-lg border text-xs text-right w-24 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors"
+                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                               aria-label="Nonessential expenditure"
                             />
                           </div>
@@ -806,7 +762,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 </button>
                                 <button
                                   onClick={() => addIncomeEvent(index)}
-                                  className="text-green-400 hover:text-green-300 ml-2 transition-colors"
+                                  className="text-cyan-400 hover:text-cyan-300 ml-2 transition-colors"
                                   title="Add Income Event"
                                   aria-label="Add income event"
                                 >
@@ -830,8 +786,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         <div className="flex-1">
                                           <div className="space-y-1">
                                             <div className="flex gap-2 items-center">
-                                              <Calendar size={12} className="text-gray-400" />
-                                              <label className="text-gray-300">
+                                              <Calendar size={12} style={{ color: 'var(--text-tertiary)' }} />
+                                              <label style={{ color: 'var(--text-secondary)' }}>
                                                 Year:
                                               </label>
                                               <input
@@ -845,13 +801,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     parseInt(e.target.value),
                                                   )
                                                 }
-                                                className="bg-slate-500 text-white rounded px-1 py-0 w-16 text-xs"
+                                                className="px-2 py-1 rounded-lg border text-xs w-16 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                                                style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                                                 aria-label="Income event year"
                                               />
                                             </div>
                                             <div className="flex gap-2 items-center">
-                                              <DollarSign size={12} className="text-gray-400" />
-                                              <label className="text-gray-300">
+                                              <DollarSign size={12} style={{ color: 'var(--text-tertiary)' }} />
+                                              <label style={{ color: 'var(--text-secondary)' }}>
                                                 Amount:
                                               </label>
                                               <input
@@ -865,13 +822,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     parseThousandsInput(e.target.value),
                                                   )
                                                 }
-                                                className="bg-slate-500 text-white rounded px-1 py-0 w-20 text-xs"
+                                                className="px-2 py-1 rounded-lg border text-xs w-20 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                                                style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                                                 aria-label="Income event amount"
                                               />
                                             </div>
                                             <div className="flex gap-2 items-center">
-                                              <Settings size={12} className="text-gray-400" />
-                                              <label className="text-gray-300">
+                                              <Settings size={12} style={{ color: 'var(--text-tertiary)' }} />
+                                              <label style={{ color: 'var(--text-secondary)' }}>
                                                 Type:
                                               </label>
                                               <select
@@ -884,7 +842,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     e.target.value,
                                                   )
                                                 }
-                                                className="bg-slate-500 text-white rounded px-1 py-0 text-xs"
+                                                className="px-2 py-1 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                                                style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                                                 aria-label="Income event type"
                                               >
                                                 <option value="increase">
@@ -918,7 +877,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                           <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
                             <button
                               onClick={() => addIncomeEvent(index)}
-                              className="text-green-400 hover:text-green-300 flex items-center gap-1 text-xs transition-colors"
+                              className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 text-xs transition-colors"
                               aria-label="Add income event"
                             >
                               <Plus size={14} /> Add Income Event
@@ -961,8 +920,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                               onChange={(e) =>
                                 updateProperty(index, "name", e.target.value)
                               }
-                              className="rounded px-2 py-1 w-full text-xs uppercase font-semibold mb-1"
-                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                              className="w-full px-2 py-1.5 rounded-lg border text-xs uppercase font-semibold mb-1 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors"
+                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                               placeholder="Property Name"
                               aria-label="Property name"
                             />
@@ -988,7 +947,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <div className="space-y-1 text-xs border-t pt-3" style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-color)' }}>
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                              <Calendar size={12} className="text-gray-400" />
+                              <Calendar size={12} style={{ color: 'var(--text-tertiary)' }} />
                               <span>Purchase Year:</span>
                             </div>
                             <input
@@ -1001,14 +960,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   parseInt(e.target.value),
                                 )
                               }
-                              className="rounded px-1 py-0 w-16 text-xs text-right"
-                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                              className="px-2 py-1.5 rounded-lg border text-xs text-right w-16 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                               aria-label="Purchase year"
                             />
                           </div>
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                              <DollarSign size={12} className="text-gray-400" />
+                              <DollarSign size={12} style={{ color: 'var(--text-tertiary)' }} />
                               <span>Initial Value:</span>
                             </div>
                             <input
@@ -1021,14 +980,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   parseThousandsInput(e.target.value),
                                 )
                               }
-                              className="rounded px-1 py-0 w-20 text-xs text-right"
-                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                              className="px-2 py-1.5 rounded-lg border text-xs text-right w-20 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                               aria-label="Initial value"
                             />
                           </div>
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                              <CreditCard size={12} className="text-gray-400" />
+                              <CreditCard size={12} style={{ color: 'var(--text-tertiary)' }} />
                               <span>Loan Amount:</span>
                             </div>
                             <input
@@ -1041,14 +1000,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   parseThousandsInput(e.target.value),
                                 )
                               }
-                              className="rounded px-1 py-0 w-20 text-xs text-right"
-                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                              className="px-2 py-1.5 rounded-lg border text-xs text-right w-20 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                               aria-label="Loan amount"
                             />
                           </div>
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                              <Percent size={12} className="text-gray-400" />
+                              <Percent size={12} style={{ color: 'var(--text-tertiary)' }} />
                               <span>Interest Rate:</span>
                             </div>
                             <input
@@ -1061,14 +1020,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   parseFloat(e.target.value),
                                 )
                               }
-                              className="rounded px-1 py-0 w-16 text-xs text-right"
-                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                              className="px-2 py-1.5 rounded-lg border text-xs text-right w-16 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                               aria-label="Interest rate"
                             />
                           </div>
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                              <DollarSign size={12} className="text-gray-400" />
+                              <DollarSign size={12} style={{ color: 'var(--text-tertiary)' }} />
                               <span>Annual Rent:</span>
                             </div>
                             <input
@@ -1081,14 +1040,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   parseThousandsInput(e.target.value),
                                 )
                               }
-                              className="rounded px-1 py-0 w-20 text-xs text-right"
-                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                              className="px-2 py-1.5 rounded-lg border text-xs text-right w-20 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                               aria-label="Annual rent"
                             />
                           </div>
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                              <TrendingUp size={12} className="text-gray-400" />
+                              <TrendingUp size={12} style={{ color: 'var(--text-tertiary)' }} />
                               <span>Growth Rate:</span>
                             </div>
                             <input
@@ -1101,14 +1060,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   parseFloat(e.target.value),
                                 )
                               }
-                              className="rounded px-1 py-0 w-16 text-xs text-right"
-                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                              className="px-2 py-1.5 rounded-lg border text-xs text-right w-16 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                               aria-label="Growth rate"
                             />
                           </div>
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                              <Wallet size={12} className="text-gray-400" />
+                              <Wallet size={12} style={{ color: 'var(--text-tertiary)' }} />
                               <span>Other Expenses:</span>
                             </div>
                             <input
@@ -1121,14 +1080,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   parseThousandsInput(e.target.value),
                                 )
                               }
-                              className="rounded px-1 py-0 w-20 text-xs text-right"
-                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                              className="px-2 py-1.5 rounded-lg border text-xs text-right w-20 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                               aria-label="Other expenses"
                             />
                           </div>
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                              <PieChart size={12} className="text-gray-400" />
+                              <PieChart size={12} style={{ color: 'var(--text-tertiary)' }} />
                               <span>Annual Principal Change:</span>
                             </div>
                             <input
@@ -1141,8 +1100,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                   parseThousandsInput(e.target.value),
                                 )
                               }
-                              className="rounded px-1 py-0 w-20 text-xs text-right"
-                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                              className="px-2 py-1.5 rounded-lg border text-xs text-right w-20 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                               aria-label="Annual principal change"
                             />
                           </div>
@@ -1169,7 +1128,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <button
                               onClick={() => addInvestorSplit(index)}
                               disabled={localInvestors.length === 1}
-                              className={`ml-2 transition-colors ${localInvestors.length === 1 ? 'text-gray-500 cursor-not-allowed' : 'text-green-400 hover:text-green-300'}`}
+                              className={`ml-2 transition-colors ${localInvestors.length === 1 ? 'opacity-30 cursor-not-allowed' : 'text-cyan-400 hover:text-cyan-300'}`}
                               title={localInvestors.length === 1 ? "Cannot add splits with single investor" : "Add Investor Split"}
                               aria-label="Add investor split"
                             >
@@ -1208,8 +1167,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                               e.target.value,
                                             )
                                           }
-                                          className="rounded px-1 py-0 flex-1 text-xs"
-                                          style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                                          className="px-2 py-1 rounded-lg border text-xs flex-1 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                                          style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                                           placeholder="Investor Name"
                                           aria-label="Investor split name"
                                         />
@@ -1224,8 +1183,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                               parseFloat(e.target.value),
                                             )
                                           }
-                                          className="rounded px-1 py-0 w-16 text-xs text-right"
-                                          style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                                          className="px-2 py-1 rounded-lg border text-xs text-right w-16 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                                          style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                                           placeholder="%"
                                           aria-label="Investor split percentage"
                                         />
@@ -1262,7 +1221,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   onClick={addProperty}
                   disabled={isAddingProperty}
-                  className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white text-xs px-3 py-2 rounded mt-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                  className="flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-white text-xs font-semibold px-3 py-2 rounded-lg mt-4 transition-colors disabled:opacity-40 disabled:cursor-not-allowed w-full shadow-lg shadow-cyan-500/20"
                   aria-label="Add property"
                 >
                   {isAddingProperty ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
@@ -1291,12 +1250,12 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
             {configError && (
-              <div className="text-sm px-3 py-2 rounded" style={{ backgroundColor: '#fef2f2', color: '#dc2626' }}>
+              <div className="text-xs px-3 py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20">
                 {configError}
               </div>
             )}
             {configSuccess && (
-              <div className="text-sm px-3 py-2 rounded" style={{ backgroundColor: '#f0fdf4', color: '#16a34a' }}>
+              <div className="text-xs px-3 py-2 rounded-lg bg-green-500/10 text-green-400 border border-green-500/20">
                 {configSuccess}
               </div>
             )}
@@ -1338,8 +1297,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <select
                       value={investmentGoals.goal}
                       onChange={(e) => setInvestmentGoals({ ...investmentGoals, goal: e.target.value })}
-                      className="w-full px-3 py-2 rounded text-sm"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)', borderWidth: '1px' }}
+                      className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors"
+                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                     >
                       <option value="">Select a goal...</option>
                       {["Passive Income", "Capital Growth", "Tax Benefits", "Wealth Accumulation", "Retirement Planning", "Lifestyle & Personal Use"].map((goal) => (
@@ -1393,8 +1352,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                         min="1"
                         value={newDependantEventYear}
                         onChange={(e) => setNewDependantEventYear(parseInt(e.target.value) || 1)}
-                        className="w-full px-2 py-1 rounded text-xs"
-                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)', borderWidth: '1px' }}
+                        className="w-full px-2 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                       />
                     </div>
                     <div className="flex-1">
@@ -1404,8 +1363,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                         min="0"
                         value={newDependantEventCount}
                         onChange={(e) => setNewDependantEventCount(parseInt(e.target.value) || 0)}
-                        className="w-full px-2 py-1 rounded text-xs"
-                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)', borderWidth: '1px' }}
+                        className="w-full px-2 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-cyan-500/60 transition-colors"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                       />
                     </div>
                     <button
@@ -1418,7 +1377,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         setNewDependantEventYear(1);
                         setNewDependantEventCount(1);
                       }}
-                      className="mt-4 px-2 py-1 bg-cyan-500 text-white text-xs rounded hover:bg-cyan-600"
+                      className="mt-4 px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-white text-xs font-medium rounded-lg transition-colors"
                     >
                       Add
                     </button>
@@ -1491,8 +1450,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                       max="1"
                       value={configParams.medicareLevyRate}
                       onChange={(e) => handleConfigChange('medicareLevyRate', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 rounded text-sm"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)', borderWidth: '1px' }}
+                      className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors"
+                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                     />
                   </div>
 
@@ -1506,8 +1465,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                       max="1"
                       value={configParams.cpiRate}
                       onChange={(e) => handleConfigChange('cpiRate', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 rounded text-sm"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)', borderWidth: '1px' }}
+                      className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors"
+                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                     />
                   </div>
 
@@ -1521,8 +1480,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                       max="1"
                       value={configParams.accessibleEquityRate}
                       onChange={(e) => handleConfigChange('accessibleEquityRate', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 rounded text-sm"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)', borderWidth: '1px' }}
+                      className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors"
+                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                     />
                   </div>
 
@@ -1535,8 +1494,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                       min="0"
                       value={configParams.borrowingPowerMultiplierMin}
                       onChange={(e) => handleConfigChange('borrowingPowerMultiplierMin', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 rounded text-sm"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)', borderWidth: '1px' }}
+                      className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors"
+                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                     />
                   </div>
 
@@ -1549,8 +1508,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                       min="0"
                       value={configParams.borrowingPowerMultiplierBase}
                       onChange={(e) => handleConfigChange('borrowingPowerMultiplierBase', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 rounded text-sm"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)', borderWidth: '1px' }}
+                      className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors"
+                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                     />
                   </div>
 
@@ -1563,8 +1522,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                       min="0"
                       value={configParams.borrowingPowerMultiplierDependantReduction}
                       onChange={(e) => handleConfigChange('borrowingPowerMultiplierDependantReduction', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 rounded text-sm"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)', borderWidth: '1px' }}
+                      className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors"
+                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
                     />
                   </div>
                 </div>
@@ -1575,7 +1534,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <button
               onClick={handleConfigSave}
               disabled={isSavingConfig || isLoadingConfig}
-              className="w-full flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-300 text-white text-sm px-4 py-2 rounded transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-lg shadow-cyan-500/20"
             >
               {isSavingConfig ? (
                 <>
@@ -1597,7 +1556,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
         <button
           onClick={handleRefresh}
-          className="flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white text-sm px-4 py-2 rounded transition-colors font-medium w-full"
+          className="flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-lg shadow-cyan-500/20 w-full"
           aria-label="Refresh data"
         >
           <Upload size={16} />

@@ -6,16 +6,16 @@ import { formatInThousands, parseThousandsInput } from "../../utils/formatters";
 
 // Shared design-system constants
 const inputCls =
-  "w-full px-3 py-2.5 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-colors";
+  "w-full px-3 py-2 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 transition-colors";
 const inputStyle = {
   backgroundColor: "var(--bg-secondary)",
   color: "var(--text-primary)",
   borderColor: "var(--border-color)",
 };
-const labelCls = "block text-[11px] font-semibold uppercase tracking-wide mb-1";
+const labelCls = "block text-[10px] font-semibold uppercase tracking-widest mb-1.5";
 const labelStyle = { color: "var(--text-tertiary)" };
 const sectionCls =
-  "text-[11px] font-semibold uppercase tracking-widest border-b pb-1 mb-4";
+  "text-[10px] font-semibold uppercase tracking-widest border-b pb-2 mb-4";
 const sectionStyle = {
   color: "var(--text-tertiary)",
   borderColor: "var(--border-color)",
@@ -348,29 +348,25 @@ const InvestorPanel: React.FC<InvestorPanelProps> = ({
 
       {/* Footer */}
       <div
-        className="flex items-center justify-between pt-4 border-t"
+        className="flex items-center justify-between pt-4 mt-2 border-t"
         style={{ borderColor: "var(--border-color)" }}
       >
         <button
           onClick={handleDelete}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-400 border border-red-400/40 hover:bg-red-500/10 transition-colors"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium text-red-400 border border-red-500/20 hover:bg-red-500/10 hover:border-red-500/40 transition-colors"
           aria-label="Delete investor"
         >
-          <Trash2 size={15} />
-          Delete Investor
+          <Trash2 size={13} />
+          Delete
         </button>
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-500/30 disabled:cursor-not-allowed text-white transition-colors"
+          className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-xs font-semibold bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors shadow-lg shadow-cyan-500/20"
           aria-label="Save changes"
         >
-          {isSaving ? (
-            <Loader2 size={15} className="animate-spin" />
-          ) : (
-            <Save size={15} />
-          )}
-          {isSaving ? "Saving..." : "Save Changes"}
+          {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+          {isSaving ? "Saving…" : "Save Changes"}
         </button>
       </div>
     </div>

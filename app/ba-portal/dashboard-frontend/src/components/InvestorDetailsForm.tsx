@@ -174,7 +174,7 @@ const InvestorDetailsForm: React.FC<InvestorDetailsFormProps> = ({ investors, on
                       onChange={(e) => updateField(investorIndex, field.key, e.target.value)}
                       placeholder={field.placeholder}
                       autoComplete={field.autoComplete}
-                      className="w-full rounded-lg px-3 py-2 text-sm border transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                      className="w-full rounded-lg px-3 py-2 text-sm border transition-colors focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60"
                       style={inputStyle}
                     />
                   </div>
@@ -231,7 +231,7 @@ const InvestorDetailsForm: React.FC<InvestorDetailsFormProps> = ({ investors, on
                         placeholder={field.placeholder}
                         autoComplete={field.autoComplete}
                         disabled={isShared(investorIndex)}
-                        className="w-full rounded-lg px-3 py-2 text-sm border transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/50 disabled:opacity-60"
+                        className="w-full rounded-lg px-3 py-2 text-sm border transition-colors focus:outline-none focus:ring-1 focus:ring-cyan-500/60 focus:border-cyan-500/60 disabled:opacity-60"
                         style={isShared(investorIndex) ? inputStyleDisabled : inputStyle}
                       />
                     </div>
@@ -242,24 +242,22 @@ const InvestorDetailsForm: React.FC<InvestorDetailsFormProps> = ({ investors, on
       ))}
 
       {/* Action buttons */}
-        <div className="flex items-center justify-end gap-3 mt-8 pb-8">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 rounded-lg text-sm font-medium border transition-colors"
-            style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-color)', backgroundColor: 'transparent' }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="flex items-center gap-2 px-5 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            <Save size={15} />
-            Save Details
-          </button>
-        </div>
+      <div className="flex items-center justify-end gap-2 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+        <button
+          onClick={onClose}
+          className="px-4 py-2 rounded-lg text-xs font-medium border transition-colors hover:bg-white/5"
+          style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-color)', backgroundColor: 'transparent' }}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          className="flex items-center gap-1.5 px-5 py-2 bg-cyan-500 hover:bg-cyan-400 text-white rounded-lg text-xs font-semibold transition-colors shadow-lg shadow-cyan-500/20"
+        >
+          <Save size={13} />
+          Save Details
+        </button>
+      </div>
     </div>
   );
 };

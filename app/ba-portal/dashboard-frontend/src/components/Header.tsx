@@ -29,213 +29,164 @@ const Header: React.FC<HeaderProps> = ({
   const { isAuthenticated, user, login, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Close user menu when clicking outside
   useEffect(() => {
     if (!showUserMenu) return;
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.user-menu-container')) {
-        setShowUserMenu(false);
-      }
+      if (!target.closest('.user-menu-container')) setShowUserMenu(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserMenu]);
 
-  // Theme-aware colors
-  const bgColor = isDarkMode ? '#1e293b' : '#f9fafb';
-  const borderColor = isDarkMode ? '#334155' : '#e5e7eb';
-  const textColor = isDarkMode ? '#ffffff' : '#1f2937';
-  const textSecondary = isDarkMode ? '#94a3b8' : '#6b7280';
-
-  const handleLoginClick = () => {
-    login();
-  };
-
-  const handleLogoutClick = () => {
-    setShowUserMenu(false);
-    logout();
+  const menuItemStyle = {
+    color: 'var(--text-primary)',
   };
 
   return (
-    <header 
-      className="px-6 py-4 flex items-center justify-between transition-colors duration-300"
-      style={{ backgroundColor: bgColor, borderColor: borderColor, borderBottomWidth: '1px', borderBottomStyle: 'solid' }}
+    <header
+      className="px-6 py-3 flex items-center justify-between border-b flex-shrink-0"
+      style={{
+        backgroundColor: 'var(--bg-sidebar)',
+        borderColor: 'var(--border-color)',
+      }}
     >
       <div className="flex items-center gap-4">
-        {/* Company Logo */}
-        <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-lg">D</span>
+        {/* Logo */}
+        <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-cyan-500/20">
+          <span className="text-white font-bold text-sm">W</span>
         </div>
         <div>
-          <h1 className="text-xl font-bold" style={{ color: textColor }}>AdviceGenie</h1>
-          <p className="text-xs" style={{ color: textSecondary }}>your AI assisted Wealth Adviser</p>
+          <h1 className="text-sm font-semibold leading-tight" style={{ color: 'var(--text-primary)' }}>
+            WealthPulse
+          </h1>
+          <p className="text-[11px] leading-tight" style={{ color: 'var(--text-tertiary)' }}>
+            AI-assisted Wealth Adviser
+          </p>
         </div>
-        
-        {/* Portfolio Selector */}
-        {(portfolios && portfolios.length > 0) || selectedPortfolioId ? (
-          <div className="relative">
+
+        {/* Portfolio selector */}
+        {((portfolios && portfolios.length > 0) || selectedPortfolioId) && (
+          <div className="relative ml-2">
             <select
               value={selectedPortfolioId || ''}
               onChange={(e) => onPortfolioChange?.(e.target.value)}
-              className="appearance-none px-4 py-2 pr-10 rounded-lg text-sm font-medium cursor-pointer"
-              style={{ 
-                backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', 
-                color: textColor,
-                borderColor: borderColor,
-                borderWidth: '1px'
+              className="appearance-none pl-3 pr-8 py-1.5 rounded-lg text-sm font-medium cursor-pointer border transition-colors focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
+              style={{
+                backgroundColor: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)',
+                borderColor: 'var(--border-color)',
               }}
             >
               {portfolios && portfolios.length > 0 ? (
-                portfolios.map((portfolio) => (
-                  <option key={portfolio.id} value={portfolio.id}>
-                    {portfolio.name || portfolio.id}
-                  </option>
+                portfolios.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name || p.id}</option>
                 ))
               ) : (
                 <option value={selectedPortfolioId}>{selectedPortfolioId}</option>
               )}
             </select>
-            <ChevronDown 
-              className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-              size={16}
-              style={{ color: textSecondary }}
+            <ChevronDown
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+              size={14}
+              style={{ color: 'var(--text-tertiary)' }}
             />
           </div>
-        ) : null}
+        )}
       </div>
-      
-      <div className="flex items-center gap-3">
+
+      <div className="flex items-center gap-1">
         {isAuthenticated ? (
           <div className="relative user-menu-container">
-            <button 
+            <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
-              style={{ 
-                backgroundColor: showUserMenu ? (isDarkMode ? '#334155' : '#e5e7eb') : 'transparent',
-                color: textColor
-              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-white/5"
+              style={{ color: 'var(--text-secondary)' }}
               aria-label="User menu"
             >
-              <User size={18} />
-              <span className="text-sm font-medium max-w-32 truncate">
+              <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                <User size={13} className="text-cyan-400" />
+              </div>
+              <span className="max-w-28 truncate hidden sm:block">
                 {user?.name || user?.email || 'User'}
               </span>
+              <ChevronDown size={14} style={{ color: 'var(--text-tertiary)' }} />
             </button>
 
-            {/* Dropdown Menu */}
             {showUserMenu && (
-              <div 
-                className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg border z-50"
-                style={{ 
-                  backgroundColor: bgColor, 
-                  borderColor: borderColor 
-                }}
+              <div
+                className="absolute right-0 top-full mt-2 w-52 rounded-xl border shadow-2xl ring-1 ring-white/5 z-50 overflow-hidden"
+                style={{ backgroundColor: 'var(--bg-sidebar)', borderColor: 'var(--border-color)' }}
               >
-                <div
-                  className="px-4 py-3 border-b"
-                  style={{ borderColor: borderColor }}
-                >
-                  <p className="text-sm font-medium truncate" style={{ color: textColor }}>
+                <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border-color)' }}>
+                  <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
                     {user?.name || 'User'}
                   </p>
-                  <p className="text-xs truncate" style={{ color: textSecondary }}>
+                  <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                     {user?.email || ''}
                   </p>
                 </div>
-                {onSwitchPortfolio && (
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      onSwitchPortfolio();
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors"
-                    style={{ color: textColor }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#334155' : '#f3f4f6'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <FolderOpen size={16} />
-                    Switch Portfolio
+                <div className="py-1">
+                  {onSwitchPortfolio && (
+                    <button onClick={() => { setShowUserMenu(false); onSwitchPortfolio(); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-white/5"
+                      style={menuItemStyle}>
+                      <FolderOpen size={15} style={{ color: 'var(--text-tertiary)' }} />
+                      Switch Portfolio
+                    </button>
+                  )}
+                  {onBackToDashboard && (
+                    <button onClick={() => { setShowUserMenu(false); onBackToDashboard(); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-white/5"
+                      style={menuItemStyle}>
+                      <Home size={15} style={{ color: 'var(--text-tertiary)' }} />
+                      Back to WealthPulse
+                    </button>
+                  )}
+                  {onShowExpenses && (
+                    <button onClick={() => { setShowUserMenu(false); onShowExpenses(); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-white/5"
+                      style={menuItemStyle}>
+                      <DollarSign size={15} style={{ color: 'var(--text-tertiary)' }} />
+                      Household Expenses
+                    </button>
+                  )}
+                  {onShowInvestorDetails && (
+                    <button onClick={() => { setShowUserMenu(false); onShowInvestorDetails(); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-white/5"
+                      style={menuItemStyle}>
+                      <Users size={15} style={{ color: 'var(--text-tertiary)' }} />
+                      Investor Details
+                    </button>
+                  )}
+                  <div className="my-1 border-t" style={{ borderColor: 'var(--border-color)' }} />
+                  <button onClick={() => { setShowUserMenu(false); logout(); }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-red-500/10 text-red-400">
+                    <LogOut size={15} />
+                    Sign out
                   </button>
-                )}
-                {onBackToDashboard && (
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      onBackToDashboard();
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors"
-                    style={{ color: textColor }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#334155' : '#f3f4f6'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <Home size={16} />
-                    Back to WealthPulse
-                  </button>
-                )}
-                {onShowExpenses && (
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      onShowExpenses();
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors"
-                    style={{ color: textColor }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#334155' : '#f3f4f6'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <DollarSign size={16} />
-                    Household Expenses
-                  </button>
-                )}
-                {onShowInvestorDetails && (
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      onShowInvestorDetails();
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors"
-                    style={{ color: textColor }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#334155' : '#f3f4f6'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <Users size={16} />
-                    Investor Details
-                  </button>
-                )}
-                <button
-                  onClick={handleLogoutClick}
-                  className="w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors"
-                  style={{ color: '#ef4444' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDarkMode ? '#334155' : '#f3f4f6'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  <LogOut size={16} />
-                  Logoff
-                </button>
+                </div>
               </div>
             )}
           </div>
         ) : (
-          <button 
-            onClick={handleLoginClick}
-            className="flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90 bg-cyan-500 hover:bg-cyan-600"
+          <button
+            onClick={login}
+            className="flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg bg-cyan-500 hover:bg-cyan-400 transition-colors"
           >
-            <LogIn size={16} />
-            Login
+            <LogIn size={15} />
+            Sign in
           </button>
         )}
 
-        {/* Dark/Light Mode Toggle */}
-        <button 
+        {/* Dark mode toggle */}
+        <button
           onClick={onToggleDarkMode}
-          className="p-2 rounded-lg transition-colors"
-          style={{ color: textSecondary }}
-          onMouseEnter={(e) => e.currentTarget.style.color = textColor}
-          onMouseLeave={(e) => e.currentTarget.style.color = textSecondary}
+          className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-white/5 ml-1"
+          style={{ color: 'var(--text-tertiary)' }}
           aria-label="Toggle dark mode"
         >
-          {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+          {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
         </button>
       </div>
     </header>

@@ -138,7 +138,7 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       )}
       {configError && (
-        <div className="text-sm px-3 py-2 rounded" style={{ backgroundColor: "#fef2f2", color: "#dc2626" }}>
+        <div className="text-xs px-3 py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20">
           {configError}
         </div>
       )}
@@ -342,18 +342,12 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       <button
         onClick={handleConfigSave}
         disabled={isSavingConfig || isLoadingConfig}
-        className="w-full flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-300 text-white text-sm px-4 py-2 rounded transition-colors"
+        className="w-full flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-lg shadow-cyan-500/20"
       >
         {isSavingConfig ? (
-          <>
-            <Loader2 size={16} className="animate-spin" />
-            Saving...
-          </>
+          <><Loader2 size={14} className="animate-spin" />Saving…</>
         ) : (
-          <>
-            <Save size={16} />
-            Save Configuration
-          </>
+          <><Save size={14} />Save Configuration</>
         )}
       </button>
     </div>
