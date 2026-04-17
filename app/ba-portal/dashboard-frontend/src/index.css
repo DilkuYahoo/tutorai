@@ -5,7 +5,7 @@
   font-feature-settings: "cv11", "ss01";
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light dark;
+  color-scheme: light;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -30,9 +30,9 @@
 .dark {
   --bg-primary:   #080e1c;
   --bg-secondary: #0f1829;
-  --bg-tertiary:  #182034;
+  --bg-tertiary:  #0f1829;
   --bg-sidebar:   #060c18;
-  --text-primary: #eef2ff;
+  --text-primary: #ffffff;
   --text-secondary: #7c8db5;
   --text-tertiary:  #3d5070;
   --border-color: #1c2b42;

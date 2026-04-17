@@ -48,6 +48,17 @@ const DEFAULT_CONFIG_PARAMS: ConfigParams = {
   borrowingPowerMultiplierDependantReduction: 0.25,
 };
 
+const PROPERTY_WORDS = [
+  'Oakwood', 'Maple', 'Pine', 'Cedar', 'Elm', 'Birch', 'Spruce', 'Willow', 'Aspen', 'Poplar',
+  'Chestnut', 'Hazel', 'Beech', 'Sycamore', 'Alder', 'Rowan', 'Hawthorn', 'Holly', 'Ivy', 'Fern',
+  'Thistle', 'Bramble', 'Heather', 'Gorse', 'Briar', 'Vine', 'Reed', 'Rush', 'Moss', 'Lichen',
+  'Stone', 'Rock', 'Hill', 'Dale', 'Glen', 'Vale', 'Ridge', 'Peak', 'Summit', 'Crest',
+  'Brook', 'Stream', 'River', 'Lake', 'Pond', 'Spring', 'Well', 'Fountain', 'Cascade', 'Waterfall',
+  'Sky', 'Cloud', 'Storm', 'Rain', 'Sun', 'Moon', 'Star', 'Dawn', 'Dusk', 'Night',
+  'Forest', 'Wood', 'Grove', 'Thicket', 'Clearing', 'Meadow', 'Field', 'Pasture', 'Prairie', 'Savannah',
+  'Mountain', 'Valley', 'Canyon', 'Gorge', 'Cliff', 'Crag', 'Boulder', 'Slate', 'Quartz', 'Granite'
+];
+
 // Shared full-screen page layout used by all sub-views.
 // contentClassName controls the inner content area; defaults to a scrollable column.
 const PageLayout: React.FC<{
@@ -334,14 +345,13 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const generatePropertyId = useCallback(() => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     const existing = new Set([
       ...data.properties.map((p: any) => p.name),
       ...(pendingProperty ? [pendingProperty.name] : []),
     ]);
     let id: string;
     do {
-      id = 'Property ' + Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+      id = PROPERTY_WORDS[Math.floor(Math.random() * PROPERTY_WORDS.length)];
     } while (existing.has(id));
     return id;
   }, [data.properties, pendingProperty]);
@@ -356,18 +366,16 @@ const Dashboard: React.FC = () => {
       newProperty.investor_splits = defaultSplits;
     } catch (err) {
       console.error("Failed to fetch property from BA agent, using fallback:", err);
-      newProperty = data.properties.length > 0
-        ? { ...JSON.parse(JSON.stringify(data.properties[0])), name: propertyName, investor_splits: defaultSplits }
-        : {
-            name: propertyName,
-            property_value: 0, purchase_year: 0, initial_value: 0,
-            loan_amount: 0, interest_rate: 0, rent: 0, growth_rate: 0,
-            other_expenses: 0, annual_principal_change: 0,
-            investor_splits: defaultSplits,
-          };
+      newProperty = {
+        name: propertyName,
+        property_value: 0, purchase_year: 0, initial_value: 0,
+        loan_amount: 0, interest_rate: 0, rent: 0, growth_rate: 0,
+        other_expenses: 0, annual_principal_change: 0,
+        investor_splits: defaultSplits,
+      };
     }
     setPendingProperty(newProperty);
-    setActiveModal({ type: 'property', index: data.properties.length + (pendingProperty ? 1 : 0) });
+    setActiveModal({ type: 'property', index: data.properties.length });
   }, [selectedPortfolioId, data.investors, data.properties, pendingProperty, calculateEqualSplits, generatePropertyId]);
 
   // --- Render: unauthenticated guard (safe to place here after all hooks) ---
@@ -408,8 +416,6 @@ const Dashboard: React.FC = () => {
             isDarkMode={isDarkMode}
             onToggleDarkMode={toggleDarkMode}
             onSwitchPortfolio={handleSwitchPortfolio}
-            onShowExpenses={() => setActiveModal({ type: 'householdExpenses' })}
-            onShowInvestorDetails={() => setActiveModal({ type: 'investorDetails' })}
           />
         }
       >

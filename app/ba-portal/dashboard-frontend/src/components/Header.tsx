@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Sun, Moon, LogIn, LogOut, User, ChevronDown, FolderOpen, DollarSign, Home, Users } from "lucide-react";
+import { Sun, Moon, LogIn, LogOut, User, ChevronDown, FolderOpen, Home } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import type { PortfolioInfo } from "../services/dashboardService";
 
@@ -10,8 +10,6 @@ interface HeaderProps {
   selectedPortfolioId?: string;
   onPortfolioChange?: (portfolioId: string) => void;
   onSwitchPortfolio?: () => void;
-  onShowExpenses?: () => void;
-  onShowInvestorDetails?: () => void;
   onBackToDashboard?: () => void;
 }
 
@@ -22,8 +20,6 @@ const Header: React.FC<HeaderProps> = ({
   selectedPortfolioId,
   onPortfolioChange,
   onSwitchPortfolio,
-  onShowExpenses,
-  onShowInvestorDetails,
   onBackToDashboard,
 }) => {
   const { isAuthenticated, user, login, logout } = useAuth();
@@ -141,22 +137,6 @@ const Header: React.FC<HeaderProps> = ({
                       style={menuItemStyle}>
                       <Home size={15} style={{ color: 'var(--text-tertiary)' }} />
                       Back to WealthPulse
-                    </button>
-                  )}
-                  {onShowExpenses && (
-                    <button onClick={() => { setShowUserMenu(false); onShowExpenses(); }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-white/5"
-                      style={menuItemStyle}>
-                      <DollarSign size={15} style={{ color: 'var(--text-tertiary)' }} />
-                      Household Expenses
-                    </button>
-                  )}
-                  {onShowInvestorDetails && (
-                    <button onClick={() => { setShowUserMenu(false); onShowInvestorDetails(); }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors hover:bg-white/5"
-                      style={menuItemStyle}>
-                      <Users size={15} style={{ color: 'var(--text-tertiary)' }} />
-                      Investor Details
                     </button>
                   )}
                   <div className="my-1 border-t" style={{ borderColor: 'var(--border-color)' }} />
