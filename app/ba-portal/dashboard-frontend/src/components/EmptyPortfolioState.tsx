@@ -41,7 +41,7 @@ const EmptyPortfolioState: React.FC<EmptyPortfolioStateProps> = ({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <div className="min-h-full flex items-center justify-center p-6" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/10 border-t-cyan-400 mx-auto mb-4" />
           <p className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -54,7 +54,7 @@ const EmptyPortfolioState: React.FC<EmptyPortfolioStateProps> = ({
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <div className="min-h-full flex items-center justify-center p-6" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="max-w-md w-full text-center">
           <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle size={32} className="text-red-400" />
@@ -80,7 +80,7 @@ const EmptyPortfolioState: React.FC<EmptyPortfolioStateProps> = ({
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div className="min-h-full flex items-center justify-center p-6" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <div className="max-w-2xl w-full">
         {/* Header */}
         <div className="text-center mb-8">

@@ -377,19 +377,21 @@ const Dashboard: React.FC = () => {
   // --- Render: unauthenticated guard (safe to place here after all hooks) ---
   if (!authLoading && !isAuthenticated) {
     return (
-      <div className="flex items-center justify-center h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-        <div className="text-center p-8">
-          <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
-          <p className="mb-6">Please log in to access the Platform.</p>
-          <button
-            onClick={login}
-            className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-          >
-            <LogIn size={20} />
-            Log In
-          </button>
+      <PageLayout header={<Header isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />}>
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center p-8">
+            <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
+            <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>Please log in to access the Platform.</p>
+            <button
+              onClick={login}
+              className="inline-flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            >
+              <LogIn size={20} />
+              Log In
+            </button>
+          </div>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
@@ -636,24 +638,26 @@ const Dashboard: React.FC = () => {
 
   if (portfolios.length > 0) {
     return (
-      <PortfolioSelector
-        portfolios={portfolios}
-        onSelectPortfolio={setSelectedPortfolioId}
-        onRenamePortfolio={handleRenamePortfolio}
-        onCreatePortfolio={handleCreatePortfolio}
-        isDarkMode={isDarkMode}
-      />
+      <PageLayout header={<Header isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />}>
+        <PortfolioSelector
+          portfolios={portfolios}
+          onSelectPortfolio={setSelectedPortfolioId}
+          onRenamePortfolio={handleRenamePortfolio}
+          onCreatePortfolio={handleCreatePortfolio}
+        />
+      </PageLayout>
     );
   }
 
   return (
-    <EmptyPortfolioState
-      onCreatePortfolio={handleCreatePortfolio}
-      isDarkMode={isDarkMode}
-      isLoading={portfoliosLoading}
-      error={portfoliosError}
-      onRetry={loadPortfolios}
-    />
+    <PageLayout header={<Header isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />}>
+      <EmptyPortfolioState
+        onCreatePortfolio={handleCreatePortfolio}
+        isLoading={portfoliosLoading}
+        error={portfoliosError}
+        onRetry={loadPortfolios}
+      />
+    </PageLayout>
   );
 };
 
