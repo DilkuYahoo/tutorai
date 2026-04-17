@@ -52,15 +52,10 @@ const InvestorPanel: React.FC<InvestorPanelProps> = ({
   const updateField = useCallback(
     (field: string, value: any) => {
       const updated = [...localInvestors];
-      const oldName = updated[index].name;
       updated[index] = { ...updated[index], [field]: value };
       setLocalInvestors(updated);
 
 
-      // Keep property splits in sync if name changed
-      if (field === "name" && value !== oldName) {
-        // handled at save time — no need to mutate read-only localProperties here
-      }
     },
     [localInvestors, index],
   );
@@ -113,6 +108,7 @@ const InvestorPanel: React.FC<InvestorPanelProps> = ({
     if (!onUpdate) return;
     setIsSaving(true);
     setSaveError(null);
+
     await onUpdate(
       localInvestors,
       localProperties,

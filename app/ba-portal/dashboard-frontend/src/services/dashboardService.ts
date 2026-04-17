@@ -110,8 +110,8 @@ export async function updateDashboardData(
     attributes.investors = investors;
   }
 
-  // Only include properties if it's a non-empty array
-  if (properties !== undefined && properties !== null && Array.isArray(properties) && properties.length > 0) {
+  // Include properties if explicitly provided (even empty array, to support deleting the last property)
+  if (properties !== undefined && properties !== null && Array.isArray(properties)) {
     attributes.properties = properties;
   }
 

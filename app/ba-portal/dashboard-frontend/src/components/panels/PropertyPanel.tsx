@@ -27,6 +27,7 @@ interface PropertyPanelProps {
   investors: any[];
   chartData?: any[];
   selectedPortfolioId?: string;
+  isPending?: boolean;
   onUpdate?: (
     investors: any[],
     properties: any[],
@@ -41,6 +42,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
   properties,
   investors,
   chartData,
+  isPending = false,
   onUpdate,
   onClose,
 }) => {
@@ -133,10 +135,11 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
   );
 
   const handleDelete = useCallback(() => {
+    if (isPending) { onClose?.(); return; }
     if (!onUpdate) return;
     const updatedProperties = localProperties.filter((_, i) => i !== index);
     onUpdate(investors, updatedProperties, () => onClose?.(), () => {});
-  }, [onUpdate, localProperties, investors, index, onClose]);
+  }, [isPending, onUpdate, localProperties, investors, index, onClose]);
 
   const handleSave = useCallback(async () => {
     if (!onUpdate) return;

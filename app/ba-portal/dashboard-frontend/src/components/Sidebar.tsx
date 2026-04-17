@@ -304,6 +304,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     setLocalInvestors(updated);
 
     if (field === "name" && value !== oldName) {
+      console.log('Updating investor name from', oldName, 'to', value);
       setLocalProperties(prev =>
         prev.map(prop => ({
           ...prop,
@@ -312,6 +313,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           ),
         }))
       );
+      console.log('Updated property splits for investor rename');
     }
 
     markInvestorDirty(index);
@@ -491,7 +493,17 @@ const Sidebar: React.FC<SidebarProps> = ({
           growth_rate: 0,
           other_expenses: 0,
           annual_principal_change: 0,
-          investor_splits: localInvestors.length === 1 ? [{ name: localInvestors[0].name, percentage: 100 }] : [],
+          investor_splits: (() => {
+            if (localInvestors.length === 1) {
+              return [{ name: localInvestors[0].name, percentage: 100 }];
+            }
+            const basePercentage = Math.floor(100 / localInvestors.length);
+            const remainder = 100 - basePercentage * localInvestors.length;
+            return localInvestors.map((investor: any, index: number) => ({
+              name: investor.name,
+              percentage: index === 0 ? basePercentage + remainder : basePercentage,
+            }));
+          })(),
         };
       }
       setLocalProperties([...localProperties, fallbackProperty]);

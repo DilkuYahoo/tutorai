@@ -89,6 +89,7 @@ const Dashboard: React.FC = () => {
 
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalTarget | null>(null);
+  const [pendingProperty, setPendingProperty] = useState<any | null>(null);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -263,18 +264,36 @@ const Dashboard: React.FC = () => {
     );
   };
 
+  const syncSplitNames = (updatedInvestors: any[], properties: any[]): any[] => {
+    const nameMap: Record<string, string> = {};
+    data.investors.forEach((old: any, i: number) => {
+      const next = updatedInvestors[i];
+      if (next && old.name && next.name && old.name !== next.name) {
+        nameMap[old.name] = next.name;
+      }
+    });
+    if (Object.keys(nameMap).length === 0) return properties;
+    return properties.map((prop: any) => ({
+      ...prop,
+      investor_splits: (prop.investor_splits || []).map((s: any) =>
+        nameMap[s.name] ? { ...s, name: nameMap[s.name] } : s
+      ),
+    }));
+  };
+
   const handleUpdate = async (
     investors: any[],
     properties: any[],
     onSuccess?: () => void,
     onError?: () => void,
   ) => {
+    const syncedProperties = syncSplitNames(investors, properties);
     try {
       setUpdating(true);
       setUpdateError(null);
       setUpdateSuccess(null);
 
-      await updateDashboardData(investors, properties, investmentYears, '', '', selectedPortfolioId);
+      await updateDashboardData(investors, syncedProperties, investmentYears, '', '', selectedPortfolioId);
 
       const freshData = await fetchDashboardDataById(selectedPortfolioId);
       setData(prev => ({
@@ -302,38 +321,54 @@ const Dashboard: React.FC = () => {
 
   const handleSwitchPortfolio = useCallback(() => setSelectedPortfolioId(''), []);
 
+  const calculateEqualSplits = useCallback((investors: any[]) => {
+    if (investors.length === 1) {
+      return [{ name: investors[0].name, percentage: 100 }];
+    }
+    const basePercentage = Math.floor(100 / investors.length);
+    const remainder = 100 - basePercentage * investors.length;
+    return investors.map((investor: any, index: number) => ({
+      name: investor.name,
+      percentage: index === 0 ? basePercentage + remainder : basePercentage,
+    }));
+  }, []);
+
+  const generatePropertyId = useCallback(() => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const existing = new Set([
+      ...data.properties.map((p: any) => p.name),
+      ...(pendingProperty ? [pendingProperty.name] : []),
+    ]);
+    let id: string;
+    do {
+      id = 'Property ' + Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    } while (existing.has(id));
+    return id;
+  }, [data.properties, pendingProperty]);
+
   const handleAddProperty = useCallback(async () => {
-    const openNewPropertyModal = (propertyCount: number) => {
-      setActiveModal({ type: 'property', index: propertyCount - 1 });
-    };
+    const defaultSplits = calculateEqualSplits(data.investors);
+    const propertyName = generatePropertyId();
+    let newProperty: any;
     try {
-      const newProperty = await addPropertyWithBaAgent(selectedPortfolioId);
-      newProperty.name = `Property ${data.properties.length + 1}`;
-      if (data.investors.length === 1) {
-        newProperty.investor_splits = [{ name: data.investors[0].name, percentage: 100 }];
-      }
-      const updatedProperties = [...data.properties, newProperty];
-      await handleUpdate(data.investors, updatedProperties, () => {
-        openNewPropertyModal(updatedProperties.length);
-      });
+      newProperty = await addPropertyWithBaAgent(selectedPortfolioId);
+      newProperty.name = propertyName;
+      newProperty.investor_splits = defaultSplits;
     } catch (err) {
-      console.error("Failed to add property:", err);
-      const fallback = data.properties.length > 0
-        ? { ...JSON.parse(JSON.stringify(data.properties[0])), name: `Property ${data.properties.length + 1}` }
+      console.error("Failed to fetch property from BA agent, using fallback:", err);
+      newProperty = data.properties.length > 0
+        ? { ...JSON.parse(JSON.stringify(data.properties[0])), name: propertyName, investor_splits: defaultSplits }
         : {
-            name: `Property ${data.properties.length + 1}`,
+            name: propertyName,
             property_value: 0, purchase_year: 0, initial_value: 0,
             loan_amount: 0, interest_rate: 0, rent: 0, growth_rate: 0,
             other_expenses: 0, annual_principal_change: 0,
-            investor_splits: data.investors.length === 1
-              ? [{ name: data.investors[0].name, percentage: 100 }] : [],
+            investor_splits: defaultSplits,
           };
-      const updatedProperties = [...data.properties, fallback];
-      await handleUpdate(data.investors, updatedProperties, () => {
-        openNewPropertyModal(updatedProperties.length);
-      });
     }
-  }, [selectedPortfolioId, data.investors, data.properties, handleUpdate]);
+    setPendingProperty(newProperty);
+    setActiveModal({ type: 'property', index: data.properties.length + (pendingProperty ? 1 : 0) });
+  }, [selectedPortfolioId, data.investors, data.properties, pendingProperty, calculateEqualSplits, generatePropertyId]);
 
   // --- Render: unauthenticated guard (safe to place here after all hooks) ---
   if (!authLoading && !isAuthenticated) {
@@ -459,12 +494,16 @@ const Dashboard: React.FC = () => {
             {activeModal.type === 'property' && (
               <PropertyPanel
                 index={activeModal.index}
-                properties={data.properties}
+                properties={pendingProperty ? [...data.properties, pendingProperty] : data.properties}
                 investors={data.investors}
                 chartData={data.chartData}
                 selectedPortfolioId={selectedPortfolioId}
-                onUpdate={handleUpdate}
-                onClose={() => setActiveModal(null)}
+                isPending={!!pendingProperty}
+                onUpdate={(investors, properties, onSuccess, onError) => {
+                  setPendingProperty(null);
+                  return handleUpdate(investors, properties, onSuccess, onError);
+                }}
+                onClose={() => { setPendingProperty(null); setActiveModal(null); }}
               />
             )}
             {activeModal.type === 'configuration' && (
