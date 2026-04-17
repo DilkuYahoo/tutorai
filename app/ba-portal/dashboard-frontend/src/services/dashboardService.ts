@@ -305,14 +305,25 @@ export interface BaAgentResponse {
 
 
 
+export class PropertyNotRecommendedError extends Error {
+  constructor(public readonly reason: string) {
+    super(reason);
+    this.name = 'PropertyNotRecommendedError';
+  }
+}
+
 export async function addPropertyWithBaAgent(portfolioId?: string): Promise<BaAgentProperty> {
   const id = portfolioId || REACT_APP_APPSYNC_FINANCE_ID;
-  
-  const result: BaAgentResponse = await apiPost(`${FINANCE_URL}/ba-agent`, {
+
+  const result: any = await apiPost(`${FINANCE_URL}/ba-agent`, {
     table_name: REACT_APP_APPSYNC_FINANCE_TABLE_NAME,
     id: id,
     property_action: "add",
   });
+
+  if (result.status === 'not_recommended') {
+    throw new PropertyNotRecommendedError(result.message || 'A new property cannot be recommended at this time.');
+  }
 
   return result.property;
 }

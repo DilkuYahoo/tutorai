@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { X, AlertCircle, RefreshCw, LogIn } from "lucide-react";
+import { X, AlertCircle, RefreshCw, LogIn, AlertTriangle } from "lucide-react";
 import Header from "./Header";
 import NavigationPanel, { type ModalTarget } from "./NavigationPanel";
 import Modal from "./ui/Modal";
@@ -113,6 +113,7 @@ const Dashboard: React.FC = () => {
   const [configParams, setConfigParams] = useState<ConfigParams>(DEFAULT_CONFIG_PARAMS);
   const [portfolioDependants, setPortfolioDependants] = useState<number>(0);
   const [portfolioDependantsEvents, setPortfolioDependantsEvents] = useState<PortfolioDependantsEvents[]>([]);
+  const [errorModal, setErrorModal] = useState<{ title: string; message: string } | null>(null);
 
   // Handle OAuth callback on mount
   useEffect(() => {
@@ -365,14 +366,9 @@ const Dashboard: React.FC = () => {
       newProperty.name = propertyName;
       newProperty.investor_splits = defaultSplits;
     } catch (err) {
-      console.error("Failed to fetch property from BA agent, using fallback:", err);
-      newProperty = {
-        name: propertyName,
-        property_value: 0, purchase_year: 0, initial_value: 0,
-        loan_amount: 0, interest_rate: 0, rent: 0, growth_rate: 0,
-        other_expenses: 0, annual_principal_change: 0,
-        investor_splits: defaultSplits,
-      };
+      const message = err instanceof Error ? err.message : "Unable to generate a property recommendation at this time. Please try again.";
+      setErrorModal({ title: "Property Recommendation", message });
+      return;
     }
     setPendingProperty(newProperty);
     setActiveModal({ type: 'property', index: data.properties.length });
@@ -558,6 +554,54 @@ const Dashboard: React.FC = () => {
               />
             )}
           </Modal>
+        )}
+
+        {/* Error modal */}
+        {errorModal && (
+          <div
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setErrorModal(null)}
+          >
+            <div
+              className="relative w-full max-w-md rounded-2xl border shadow-2xl ring-1 ring-white/5 overflow-hidden"
+              style={{ backgroundColor: 'var(--bg-sidebar)', borderColor: 'var(--border-color)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--border-color)' }}>
+                <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
+                  {errorModal.title}
+                </span>
+                <button
+                  onClick={() => setErrorModal(null)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-white/10"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  <X size={15} />
+                </button>
+              </div>
+              {/* Body */}
+              <div className="p-5">
+                <div className="flex gap-3">
+                  <div className="w-9 h-9 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle size={18} className="text-amber-400" />
+                  </div>
+                  <p className="text-sm leading-relaxed pt-1.5" style={{ color: 'var(--text-primary)' }}>
+                    {errorModal.message}
+                  </p>
+                </div>
+              </div>
+              {/* Footer */}
+              <div className="px-5 pb-5 flex justify-end">
+                <button
+                  onClick={() => setErrorModal(null)}
+                  className="px-5 py-2 bg-cyan-500 hover:bg-cyan-400 text-white text-xs font-semibold rounded-lg transition-colors shadow-lg shadow-cyan-500/20"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         <NavigationPanel

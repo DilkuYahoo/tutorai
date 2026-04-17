@@ -152,63 +152,648 @@ def get_data_from_dynamodb(table_name: str, item_id: str, region: str = "ap-sout
 
 def extract_metrics_from_chart1(chart1_data: dict) -> dict:
     """
-    Extract key financial metrics from pre-calculated chart1 timeline.
-    
+    Extract key financial metrics from pre-calculated chart1 timeline with enhanced analysis.
+
     Args:
         chart1_data: The chart1 data from DynamoDB (can be dict with yearly_forecast or a list)
-    
+
     Returns:
-        Dictionary with extracted metrics
+        Dictionary with extracted metrics including trend analysis, risk metrics, and timing indicators
     """
     if not chart1_data:
         return {}
-    
+
     # Handle case where chart1_data is a list (direct yearly_forecast)
     if isinstance(chart1_data, list):
         yearly_forecast = chart1_data
     else:
         yearly_forecast = chart1_data.get('yearly_forecast', [])
-    
+
     if not yearly_forecast:
         return {}
-    
-    # Get latest year data (first year for current metrics)
-    current_data = yearly_forecast[0]
-    
+
+    # Use the year when ALL properties have been purchased as the "current" baseline.
+    # Year 1 may show zero debt/DTI if properties have future purchase_years — reading
+    # it would give the agent a false picture of a debt-free portfolio.
+    # Find the last year where a new property first appears (highest property count year).
+    max_prop_count = max(len(yr.get('property_values', {})) for yr in yearly_forecast)
+    current_data = yearly_forecast[0]  # fallback
+    baseline_year = int(yearly_forecast[0].get('year', 1))
+    for yr in yearly_forecast:
+        if len(yr.get('property_values', {})) >= max_prop_count:
+            current_data = yr
+            baseline_year = int(yr.get('year', baseline_year))
+            break
+
     # Calculate aggregate metrics
     total_property_values = sum(current_data.get('property_values', {}).values())
     total_loan_balances = sum(current_data.get('property_loan_balances', {}).values())
     total_equity = total_property_values - total_loan_balances
-    
+
     # Get DTI metrics
     dti_ratios = [yr.get('dti_ratio', 0) for yr in yearly_forecast if 'dti_ratio' in yr]
     current_dti = current_data.get('dti_ratio', 0)
     min_dti = min(dti_ratios) if dti_ratios else 0
-    
+    max_dti = max(dti_ratios) if dti_ratios else 0
+
     # Get accessible equity metrics
     accessible_equities = [yr.get('accessible_equity', 0) for yr in yearly_forecast if 'accessible_equity' in yr]
     max_accessible_equity = max(accessible_equities) if accessible_equities else 0
-    
+
     # Get borrowing capacities
     borrowing_capacities = current_data.get('investor_borrowing_capacities', {})
-    
+    total_borrowing_capacity = sum(borrowing_capacities.values())
+
     # Get other metrics
     household_surplus = current_data.get('household_surplus', 0)
     property_cashflow = current_data.get('property_cashflow', 0)
-    
+
+    # ===== ENHANCED METRICS =====
+
+    # 1. Trend Analysis
+    dti_trend = _calculate_trend(dti_ratios) if len(dti_ratios) > 1 else 0
+    equity_trend = _calculate_trend(accessible_equities) if len(accessible_equities) > 1 else 0
+
+    # Borrowing capacity trend over time
+    borrowing_capacity_trend = []
+    for year_data in yearly_forecast[:5]:  # First 5 years
+        year_capacity = sum(year_data.get('investor_borrowing_capacities', {}).values())
+        borrowing_capacity_trend.append(year_capacity)
+    borrowing_capacity_trend_value = _calculate_trend(borrowing_capacity_trend) if len(borrowing_capacity_trend) > 1 else 0
+
+    # 2. Risk Metrics
+    dti_volatility = _calculate_volatility(dti_ratios) if len(dti_ratios) > 1 else 0
+    equity_buffer_ratio = max_accessible_equity / total_borrowing_capacity if total_borrowing_capacity > 0 else 0
+
+    # 3. Timing Indicators - Optimal purchase windows
+    optimal_purchase_windows = _find_optimal_purchase_years(yearly_forecast)
+
+    # 4. Serviceability Buffers - Additional borrowing headroom
+    # Australian lenders typically assess 2-3x serviceability buffer
+    serviceability_buffer = total_borrowing_capacity * 2.5  # Conservative buffer
+    risk_adjusted_capacity = _calculate_risk_adjusted_capacity(current_dti, total_borrowing_capacity)
+
+    # 5. LVR Analysis
+    current_lvrs = current_data.get('property_lvrs', {})
+    avg_lvr = sum(current_lvrs.values()) / len(current_lvrs) if current_lvrs else 0
+
+    # LVR risk zones: <60% low risk, 60-80% caution, 80-90% LMI required, >90% critical
+    lvr_risk_score = _calculate_lvr_risk_score(avg_lvr, current_lvrs)
+
+    # LVR trends over time
+    lvr_trends = []
+    for year_data in yearly_forecast[:3]:  # First 3 years
+        year_lvrs = year_data.get('property_lvrs', {})
+        if year_lvrs:
+            year_avg_lvr = sum(year_lvrs.values()) / len(year_lvrs)
+            lvr_trends.append(year_avg_lvr)
+    lvr_trend = _calculate_trend(lvr_trends) if len(lvr_trends) > 1 else 0
+
+    # 6. Cashflow Projections
+    household_surplus_trend = []
+    property_cashflow_trend = []
+    for year_data in yearly_forecast[:5]:  # First 5 years
+        household_surplus_trend.append(year_data.get('household_surplus', 0))
+        property_cashflow_trend.append(year_data.get('property_cashflow', 0))
+
+    surplus_stability = _calculate_stability(household_surplus_trend)
+    cashflow_stability = _calculate_stability(property_cashflow_trend)
+
     return {
+        # Basic metrics (existing)
+        'baseline_year': baseline_year,
         'current_dti': current_dti,
         'min_dti': min_dti,
+        'max_dti': max_dti,
         'max_accessible_equity': max_accessible_equity,
         'total_equity': total_equity,
         'total_property_values': total_property_values,
         'total_loan_balances': total_loan_balances,
-        'borrowing_capacity': sum(borrowing_capacities.values()),
+        'borrowing_capacity': total_borrowing_capacity,
         'investor_borrowing_capacities': borrowing_capacities,
         'household_surplus': household_surplus,
         'property_cashflow': property_cashflow,
-        'yearly_forecast': yearly_forecast
+        'yearly_forecast': yearly_forecast,
+
+        # Enhanced metrics (new)
+        'dti_trend': dti_trend,
+        'equity_trend': equity_trend,
+        'borrowing_capacity_trend': borrowing_capacity_trend_value,
+        'dti_volatility': dti_volatility,
+        'equity_buffer_ratio': equity_buffer_ratio,
+        'optimal_purchase_windows': optimal_purchase_windows,
+        'serviceability_buffer': serviceability_buffer,
+        'risk_adjusted_capacity': risk_adjusted_capacity,
+        'avg_lvr': avg_lvr,
+        'lvr_risk_score': lvr_risk_score,
+        'lvr_trend': lvr_trend,
+        'surplus_stability': surplus_stability,
+        'cashflow_stability': cashflow_stability
     }
+
+
+def _calculate_trend(values: list) -> float:
+    """Calculate linear trend slope for a list of values."""
+    if len(values) < 2:
+        return 0
+
+    n = len(values)
+    x_values = list(range(n))
+
+    # Calculate means
+    x_mean = sum(x_values) / n
+    y_mean = sum(values) / n
+
+    # Calculate slope
+    numerator = sum((x - x_mean) * (y - y_mean) for x, y in zip(x_values, values))
+    denominator = sum((x - x_mean) ** 2 for x in x_values)
+
+    return numerator / denominator if denominator != 0 else 0
+
+
+def _calculate_volatility(values: list) -> float:
+    """Calculate coefficient of variation (volatility) for a list of values."""
+    if len(values) < 2:
+        return 0
+
+    mean = sum(values) / len(values)
+    if mean == 0:
+        return 0
+
+    variance = sum((x - mean) ** 2 for x in values) / len(values)
+    std_dev = variance ** 0.5
+
+    return std_dev / mean  # Coefficient of variation
+
+
+def _find_optimal_purchase_years(yearly_forecast: list) -> list:
+    """Find years with optimal financial conditions for property purchase, considering Australian market realities."""
+    if len(yearly_forecast) < 3:
+        return [1]  # Default to year 1
+
+    optimal_years = []
+    existing_purchase_years = []  # Track existing purchases to ensure minimum gaps
+
+    # First pass: collect existing purchase years from the data
+    for year_data in yearly_forecast:
+        if year_data.get('property_values'):
+            # If there are properties purchased in this year, add it to existing purchases
+            year = year_data.get('year', 1)
+            existing_purchase_years.append(year)
+
+    for i, year_data in enumerate(yearly_forecast[:15]):  # Check first 15 years for realistic timelines
+        year = year_data.get('year', i + 1)
+        dti = year_data.get('dti_ratio', 0)
+        equity = year_data.get('accessible_equity', 0)
+        borrowing = sum(year_data.get('investor_borrowing_capacities', {}).values())
+
+        # Check minimum time gap from existing purchases (realistic Australian market timing)
+        min_gap_required = 2  # Minimum 2 years between acquisitions for market stabilization
+        if existing_purchase_years:
+            closest_existing = min(existing_purchase_years)
+            if year - closest_existing < min_gap_required:
+                continue  # Skip years too close to existing purchases
+
+        # Enhanced scoring for Australian market realities
+        score = 0
+
+        # DTI scoring (stricter for Australian lending standards)
+        if dti < 2.5:
+            score += 45  # Excellent - well below safe limits
+        elif dti < 3.5:
+            score += 30  # Good - safe zone
+        elif dti < 4.5:
+            score += 15  # Fair - caution zone
+        elif dti < 5.5:
+            score += 5   # Poor - high risk
+
+        # Equity buffer scoring (higher thresholds for Australian market)
+        if equity > 200000:
+            score += 35  # Strong buffer for transaction costs
+        elif equity > 100000:
+            score += 20  # Adequate buffer
+        elif equity > 50000:
+            score += 10  # Minimum buffer
+
+        # Borrowing capacity scoring (realistic for Australian lenders)
+        if borrowing > 300000:
+            score += 35  # Excellent capacity for good properties
+        elif borrowing > 200000:
+            score += 25  # Good capacity
+        elif borrowing > 100000:
+            score += 15  # Adequate capacity
+        elif borrowing > 50000:
+            score += 5   # Limited capacity
+
+        # Market cycle consideration (prefer years 3-8 for typical holding periods)
+        if 3 <= year <= 8:
+            score += 10  # Bonus for realistic investment horizons
+        elif year > 8:
+            score += 5   # Slight bonus for longer-term planning
+
+        # Australian market cycle consideration (avoid year 1 for stabilization)
+        if year == 1:
+            score -= 10  # Penalty for immediate acquisition (allow stabilization)
+
+        if score >= 70:  # Higher threshold for Australian market realism
+            optimal_years.append(year)
+            existing_purchase_years.append(year)  # Add to existing for gap calculations
+
+    # Return optimal years with realistic Australian market timing
+    return optimal_years[:4] if len(optimal_years) >= 4 else (optimal_years + [max(existing_purchase_years) + 3] if existing_purchase_years else [3])[:4]
+
+
+def _calculate_risk_adjusted_capacity(current_dti: float, total_capacity: float) -> float:
+    """Calculate risk-adjusted borrowing capacity based on current DTI."""
+    if current_dti < 2.0:
+        return total_capacity * 1.0  # Full capacity
+    elif current_dti < 3.0:
+        return total_capacity * 0.9  # 90% capacity
+    elif current_dti < 4.0:
+        return total_capacity * 0.7  # 70% capacity
+    elif current_dti < 5.0:
+        return total_capacity * 0.5  # 50% capacity
+    else:
+        return total_capacity * 0.3  # 30% capacity (high risk)
+
+
+def _calculate_lvr_risk_score(avg_lvr: float, individual_lvrs: dict) -> float:
+    """Calculate LVR risk score (0-100, higher = more risk)."""
+    if not individual_lvrs:
+        return 0
+
+    risk_score = 0
+
+    # Average LVR risk
+    if avg_lvr > 90:
+        risk_score += 50  # Critical zone
+    elif avg_lvr > 80:
+        risk_score += 30  # LMI required
+    elif avg_lvr > 60:
+        risk_score += 15  # Caution zone
+    # <60% = low risk, score += 0
+
+    # Individual property risk (highest LVR contributes most)
+    max_lvr = max(individual_lvrs.values()) if individual_lvrs else 0
+    if max_lvr > 95:
+        risk_score += 30
+    elif max_lvr > 90:
+        risk_score += 20
+    elif max_lvr > 85:
+        risk_score += 10
+
+    # Diversity factor (penalty for concentrated high LVR properties)
+    high_lvr_count = sum(1 for lvr in individual_lvrs.values() if lvr > 80)
+    risk_score += high_lvr_count * 5
+
+    return min(risk_score, 100)  # Cap at 100
+
+
+def _calculate_stability(values: list) -> float:
+    """Calculate stability score (0-100, higher = more stable)."""
+    if len(values) < 2:
+        return 100  # Single value is perfectly stable
+
+    # Calculate coefficient of variation (lower = more stable)
+    mean = sum(values) / len(values)
+    if mean == 0:
+        return 50  # Neutral stability when mean is zero
+
+    variance = sum((x - mean) ** 2 for x in values) / len(values)
+    cv = (variance ** 0.5) / abs(mean)  # Coefficient of variation
+
+    # Convert to stability score (0-100)
+    # CV of 0 = perfectly stable (100)
+    # CV of 1.0 = highly volatile (0)
+    stability = max(0, 100 - (cv * 100))
+
+    return stability
+
+
+def calculate_buy_signal_score(metrics: dict, risk_tolerance: str = 'moderate') -> dict:
+    """
+    Calculate buy signal score using risk-adjusted weighting based on investor profile.
+
+    Args:
+        metrics: Enhanced metrics from extract_metrics_from_chart1()
+        risk_tolerance: 'conservative', 'moderate', or 'aggressive'
+
+    Returns:
+        Dictionary with composite score and component breakdowns
+    """
+    # Component scoring functions
+    dti_score = _score_dti_factor(metrics.get('current_dti', 0))
+    borrowing_capacity_score = _score_borrowing_capacity(metrics)
+    equity_score = _score_equity_position(metrics)
+    cashflow_score = _score_cashflow_stability(metrics)
+    timing_score = _score_timing_opportunity(metrics)
+
+    # Risk-adjusted weighting based on profile
+    if risk_tolerance.lower() == 'conservative':
+        weights = {
+            'dti': 0.50,        # Highest priority for safety
+            'cashflow': 0.25,   # Stability focus
+            'equity': 0.15,     # Buffer importance
+            'borrowing': 0.10   # Lower leverage priority
+        }
+        timing_weight = 0  # Conservative investors avoid timing plays
+
+    elif risk_tolerance.lower() == 'aggressive':
+        weights = {
+            'dti': 0.25,        # Still important but less critical
+            'borrowing': 0.30,  # Maximize leverage
+            'equity': 0.25,     # Growth through equity
+            'cashflow': 0.10,   # Minimal cashflow requirement
+            'timing': 0.10      # Include timing opportunities
+        }
+
+    else:  # moderate (default)
+        weights = {
+            'dti': 0.35,        # Balanced importance
+            'borrowing': 0.25,  # Good leverage utilization
+            'equity': 0.20,     # Solid equity position
+            'cashflow': 0.15,   # Reasonable stability
+            'timing': 0.05      # Slight timing consideration
+        }
+
+    # Calculate weighted composite score
+    composite_score = (
+        dti_score * weights.get('dti', 0.35) +
+        borrowing_capacity_score * weights.get('borrowing', 0.25) +
+        equity_score * weights.get('equity', 0.20) +
+        cashflow_score * weights.get('cashflow', 0.15) +
+        timing_score * weights.get('timing', 0.05)
+    )
+
+    # Determine rating based on composite score
+    if composite_score >= 80:
+        rating = "Strong Buy"
+        confidence = "High"
+    elif composite_score >= 60:
+        rating = "Buy"
+        confidence = "Medium"
+    elif composite_score >= 40:
+        rating = "Hold"
+        confidence = "Low"
+    else:
+        rating = "Wait"
+        confidence = "Very Low"
+
+    # Risk-adjusted conservatism modifier
+    conservatism_modifier = _calculate_conservatism_modifier(risk_tolerance, composite_score)
+
+    return {
+        'composite_score': round(composite_score, 1),
+        'rating': rating,
+        'confidence': confidence,
+        'risk_tolerance': risk_tolerance,
+        'component_scores': {
+            'dti_score': round(dti_score, 1),
+            'borrowing_capacity_score': round(borrowing_capacity_score, 1),
+            'equity_score': round(equity_score, 1),
+            'cashflow_score': round(cashflow_score, 1),
+            'timing_score': round(timing_score, 1)
+        },
+        'weights': weights,
+        'conservatism_modifier': conservatism_modifier,
+        'recommended_dti_limit': _get_recommended_dti_limit(risk_tolerance),
+        'recommended_leverage_ratio': _get_recommended_leverage_ratio(risk_tolerance)
+    }
+
+
+def _score_dti_factor(current_dti: float) -> float:
+    """Score DTI factor (0-100)."""
+    if current_dti <= 2.0:
+        return 100  # Excellent - well below safe limits
+    elif current_dti <= 3.0:
+        return 85   # Very good - safe zone
+    elif current_dti <= 3.5:
+        return 70   # Good - approaching caution zone
+    elif current_dti <= 4.0:
+        return 55   # Fair - in caution zone
+    elif current_dti <= 4.5:
+        return 40   # Poor - high caution
+    elif current_dti <= 5.0:
+        return 25   # Very poor - approaching high risk
+    else:
+        return 10   # Critical - high risk zone
+
+
+def _score_borrowing_capacity(metrics: dict) -> float:
+    """Score borrowing capacity factor (0-100)."""
+    total_capacity = metrics.get('borrowing_capacity', 0)
+    risk_adjusted_capacity = metrics.get('risk_adjusted_capacity', 0)
+
+    if total_capacity <= 0:
+        return 0  # No capacity — hard zero, not a passing score
+
+    # Base score on risk-adjusted capacity
+    if risk_adjusted_capacity >= 500000:
+        base_score = 100
+    elif risk_adjusted_capacity >= 300000:
+        base_score = 85
+    elif risk_adjusted_capacity >= 200000:
+        base_score = 70
+    elif risk_adjusted_capacity >= 100000:
+        base_score = 55
+    elif risk_adjusted_capacity >= 50000:
+        base_score = 40
+    else:
+        base_score = 25
+
+    # Small bonus for growing capacity trend — clamped so it never drives score negative
+    trend_bonus = max(-base_score, min(15, metrics.get('borrowing_capacity_trend', 0) * 10))
+
+    return min(100, base_score + trend_bonus)
+
+
+def _score_equity_position(metrics: dict) -> float:
+    """Score equity position factor (0-100)."""
+    max_equity = metrics.get('max_accessible_equity', 0)
+    total_equity = metrics.get('total_equity', 0)
+    equity_buffer_ratio = metrics.get('equity_buffer_ratio', 0)
+
+    # Score based on accessible equity
+    if max_equity >= 500000:
+        equity_score = 100
+    elif max_equity >= 300000:
+        equity_score = 85
+    elif max_equity >= 200000:
+        equity_score = 70
+    elif max_equity >= 100000:
+        equity_score = 55
+    elif max_equity >= 50000:
+        equity_score = 40
+    else:
+        equity_score = 25
+
+    # Bonus for equity buffer ratio (higher ratio = more conservative buffer)
+    buffer_bonus = min(15, equity_buffer_ratio * 50)  # Max 15 points bonus
+
+    # Small bonus for positive equity trend — clamped so it never drives score negative
+    trend_bonus = max(-(equity_score + buffer_bonus), min(15, metrics.get('equity_trend', 0) * 5))
+
+    return min(100, equity_score + buffer_bonus + trend_bonus)
+
+
+def _score_cashflow_stability(metrics: dict) -> float:
+    """Score cashflow stability factor (0-100)."""
+    surplus_stability = metrics.get('surplus_stability', 50)
+    cashflow_stability = metrics.get('cashflow_stability', 50)
+    current_surplus = metrics.get('household_surplus', 0)
+    current_cashflow = metrics.get('property_cashflow', 0)
+
+    # Average stability scores
+    avg_stability = (surplus_stability + cashflow_stability) / 2
+
+    # Bonus for positive cashflow
+    cashflow_bonus = 0
+    if current_surplus > 50000:
+        cashflow_bonus += 15
+    elif current_surplus > 25000:
+        cashflow_bonus += 10
+    elif current_surplus > 10000:
+        cashflow_bonus += 5
+
+    if current_cashflow > 0:
+        cashflow_bonus += 10
+    elif current_cashflow > -10000:
+        cashflow_bonus += 5
+
+    return min(100, avg_stability + cashflow_bonus)
+
+
+def _score_timing_opportunity(metrics: dict) -> float:
+    """Score timing opportunity factor (0-100)."""
+    optimal_windows = metrics.get('optimal_purchase_windows', [])
+    current_year = metrics.get('baseline_year', 1)
+
+    # Score based on whether current year is optimal
+    if current_year in optimal_windows:
+        return 100  # Perfect timing
+    elif len(optimal_windows) > 0:
+        # Check proximity to optimal years
+        closest_optimal = min(optimal_windows, key=lambda x: abs(x - current_year))
+        distance = abs(closest_optimal - current_year)
+
+        if distance <= 1:
+            return 80  # Very close to optimal
+        elif distance <= 2:
+            return 60  # Reasonably close
+        elif distance <= 3:
+            return 40  # Somewhat close
+        else:
+            return 20  # Not optimal timing
+    else:
+        return 50  # Neutral timing
+
+
+def _calculate_conservatism_modifier(risk_tolerance: str, composite_score: float) -> float:
+    """Calculate conservatism modifier based on risk tolerance and score."""
+    base_modifier = 1.0
+
+    if risk_tolerance.lower() == 'conservative':
+        # Conservative investors get more conservative recommendations
+        if composite_score > 70:
+            base_modifier = 0.8  # Reduce aggressive recommendations
+        else:
+            base_modifier = 1.2  # Amplify caution for lower scores
+
+    elif risk_tolerance.lower() == 'aggressive':
+        # Aggressive investors can handle more risk
+        if composite_score < 60:
+            base_modifier = 1.3  # Allow more aggressive recommendations
+        else:
+            base_modifier = 0.9  # Slightly more conservative for very high scores
+
+    # Moderate investors use base_modifier = 1.0
+
+    return base_modifier
+
+
+def _get_recommended_dti_limit(risk_tolerance: str) -> float:
+    """Get recommended DTI limit based on risk tolerance."""
+    limits = {
+        'conservative': 3.5,
+        'moderate': 4.5,
+        'aggressive': 5.0
+    }
+    return limits.get(risk_tolerance.lower(), 4.0)
+
+
+def _get_recommended_leverage_ratio(risk_tolerance: str) -> float:
+    """Get recommended leverage ratio based on risk tolerance."""
+    ratios = {
+        'conservative': 0.7,  # 70% of available capacity
+        'moderate': 0.85,     # 85% of available capacity
+        'aggressive': 1.0     # 100% of available capacity
+    }
+    return ratios.get(risk_tolerance.lower(), 0.8)
+
+
+def _get_australian_market_context(risk_tolerance: str) -> str:
+    """Get Australian market context based on risk tolerance."""
+    base_context = """
+AUSTRALIAN PROPERTY MARKET REALITIES (2026):
+- Median house price: $1.3M (Sydney CBD), $900k (Melbourne CBD), $750k (regional capitals)
+- Average unit price: $800k-$1.1M (capital city CBD), $500k-$800k (capital city suburbs), $400k-$600k (regional cities)
+- Entry-level pricing: $400k-$700k (regional markets, secondary capitals, affordable suburbs)
+- Realistic growth rates: 3-7% annually (varies by location and market conditions)
+- Gross rental yields: 4-6% for houses, 5-7% for units, 6-8% for regional properties
+- Property holding periods: 5-10+ years for optimal tax benefits and capital growth
+- Transaction costs: Stamp duty (0.75-5.5%), legal fees, agent commissions (~3-5% total)
+- Vacancy rates: 3-5% annually (factor into cashflow projections)
+- Interest rates: Variable around 5.5-7.0% (affects borrowing capacity)
+- Market cycles: Consider 5-7 year cycles with peaks and troughs
+
+LOCATION-BASED MARKET BIAS:
+- CAPITAL CITY CBD: Higher growth (5-7%) but higher prices and vacancy risk
+- CAPITAL CITY SUBURBS: Balanced growth (4-6%) with good rental demand
+- REGIONAL CITIES: Steady growth (3-5%) with higher yields but limited capital appreciation
+- SECONDARY REGIONAL: Stable yields (5-7%) with lower entry barriers but slower growth"""
+
+    if risk_tolerance.lower() == 'conservative':
+        return base_context + """
+
+CONSERVATIVE INVESTOR MARKET APPROACH:
+- Focus on established suburbs with stable growth (2-4% annually)
+- Prioritize houses over units for long-term capital appreciation
+- Target gross rental yields of 4.5-5.5% for reliable cashflow
+- Allow 3-5 years between acquisitions for portfolio stabilization
+- Consider regional markets ($400k-$600k entry) with lower volatility but steady growth
+- Prefer secondary regional areas for lower entry costs and stable yields"""
+
+    elif risk_tolerance.lower() == 'aggressive':
+        return base_context + """
+
+AGGRESSIVE INVESTOR MARKET APPROACH:
+- Target high-growth suburbs (5-7%+ annually) in emerging areas
+- Consider units in CBD locations ($800k-$1.1M) for rental demand and capital growth
+- Target gross rental yields of 5-7% balancing income with growth potential
+- Minimize time between acquisitions (1-2 years) during market upswings
+- Consider development sites or off-the-plan opportunities in growth corridors
+- Location bias: Capital city growth suburbs over regional stability"""
+
+    else:  # moderate
+        return base_context + """
+
+MODERATE INVESTOR MARKET APPROACH:
+- Balance established suburbs (3-5% growth) with some higher-growth opportunities
+- Mix houses and units for portfolio diversification
+- Target gross rental yields of 4.5-6% for balanced income and growth
+- Allow 2-3 years between acquisitions for market timing and stabilization
+- Consider both capital city suburbs ($500k-$800k) and regional opportunities ($400k-$700k)
+- Use location bias: regional for stability, capital suburbs for growth potential"""
+
+
+def _get_minimum_time_between_purchases(risk_tolerance: str) -> int:
+    """Get minimum recommended time between property purchases."""
+    timing = {
+        'conservative': 3,  # Allow time for stabilization
+        'moderate': 2,      # Balanced approach
+        'aggressive': 1     # Maximize acquisition pace
+    }
+    return timing.get(risk_tolerance.lower(), 2)
 
 
 def format_investor_details(investors: List[dict]) -> str:
@@ -284,41 +869,88 @@ def build_property_prompt(
     investors: List[dict],
     chart1_metrics: dict,
     existing_properties: List[dict],
-    property_action: str
+    property_action: str,
+    investment_goals: Optional[dict] = None,
+    risk_tolerance: str = 'moderate',
+    next_buy_year: Optional[int] = None,
+    next_buy_score: Optional[float] = None,
 ) -> Tuple[str, str]:
     """
-    Build system and user prompts for property generation or optimization.
-    
+    Build system and user prompts for property generation or optimization with risk-adjusted analysis.
+
     Args:
         investors: List of investor data
-        chart1_metrics: Extracted financial metrics from chart1
+        chart1_metrics: Enhanced financial metrics from extract_metrics_from_chart1()
         existing_properties: List of existing properties
         property_action: Either "add" or "optimize"
-    
+        investment_goals: Optional dict with 'goal' and 'risk_tolerance' keys
+        risk_tolerance: Risk tolerance level ('conservative', 'moderate', 'aggressive')
+
     Returns:
         Tuple of (system_prompt, user_prompt)
     """
     
-    # System prompt - Updated for Australian lending standards
-    system_prompt = """You are a professional Australian property investment analyst specializing in property acquisition strategy.
-Your role is to analyze investor financial capacity and recommend optimal property attributes for investment.
+    # Enhanced system prompt with comprehensive Australian market context and realistic timing
+    system_prompt = """You are a senior Australian property investment strategist specializing in portfolio optimization and acquisition strategy.
+Your expertise covers advanced financial analysis, risk assessment, APRA lending standards, and Australian property market dynamics.
 
-IMPORTANT: Australian Lending Standards:
-- DTI (Debt-to-Income) ratio is expressed as a MULTIPLE (e.g., 1.5 = 150% = debt is 1.5x annual income)
-- Australian lenders typically accept DTI up to 5-6x (500-600%)
-- DTI below 3.0 (300%) is considered SAFE - comfortable borrowing capacity
-- DTI 3.0-5.0 (300-500%) is CAUTION - still acceptable but reducing
-- DTI above 5.0 (500%) is HIGH RISK - may struggle with additional borrowing
+CRITICAL AUSTRALIAN LENDING STANDARDS & RISK FRAMEWORK:
 
-Consider these financial factors:
-1. Debt-to-Income (DTI) Ratio: Target < 5.0 for Australian lending (but lower is safer)
-2. Borrowing Power: Maximum loan amount based on income and existing debt
-3. Loan-to-Value Ratio (LVR): Target ≤ 80% to avoid LMI
-4. Surplus Cashflow: Positive cashflow after expenses
-5. Equity Position: Accessible equity determines deposit capacity
-6. Timing: Best time to buy
+**DTI Risk Zones (Debt-to-Income Multiples):**
+- SAFE ZONE: < 3.0x (300%) - Excellent borrowing capacity, lowest risk
+- CAUTION ZONE: 3.0x - 4.5x (300-450%) - Acceptable but monitor closely
+- HIGH RISK ZONE: 4.5x - 5.5x (450-550%) - Requires strong buffers, limited lenders
+- CRITICAL ZONE: > 5.5x (550%) - Very difficult lending, high default risk
 
-Output ONLY valid JSON matching the specified schema. No additional text."""
+**LVR Risk Assessment:**
+- LOW RISK: < 60% - No LMI required, best rates
+- CAUTION: 60-75% - Approaching LMI threshold
+- LMI REQUIRED: 75-80% - Lender's Mortgage Insurance mandatory
+- HIGH RISK: 80-90% - Significantly higher rates and fees
+- CRITICAL: > 90% - Very limited lender appetite
+
+**Australian Market Realities:**
+- Median house prices: $1.3M (Sydney), $900k (Melbourne), $750k (regional capitals)
+- Realistic growth rates: 3-7% annually depending on location and market cycle
+- Gross rental yields: 4-6% for houses, 5-7% for units in high-demand areas
+- Transaction costs: 3-5% of property value (stamp duty, legal, agent fees)
+- Vacancy rates: 3-5% annually (must be factored into cashflow projections)
+- Holding periods: 5-10+ years optimal for tax benefits and capital growth
+- Market cycles: 5-7 year cycles requiring strategic timing between acquisitions
+
+**Serviceability Requirements:**
+- 2.5x minimum buffer above current debt commitments
+- Minimum 10% equity buffer for property acquisition
+- Positive cashflow after all expenses, loan repayments, and realistic vacancy rates
+
+**Buy Signal Framework:**
+- STRONG BUY: Score ≥80 - Optimal conditions, prioritize acquisition
+- BUY: Score 60-79 - Good conditions, proceed with due diligence
+- HOLD: Score 40-59 - Marginal conditions, wait for improvement
+- WAIT: Score <40 - Poor conditions, focus on debt reduction
+
+**Realistic Timing Considerations:**
+- Minimum 1-3 years between acquisitions depending on risk tolerance
+- Allow time for portfolio stabilization after each purchase
+- Consider market cycles and interest rate environment
+- Factor in settlement periods (30-90 days) and holding requirements
+
+**Risk-Adjusted Investment Strategy:**
+- CONSERVATIVE: DTI <3.5x, 20% equity buffers, 3-5 year gaps, established suburbs
+- MODERATE: DTI up to 4.5x, 10-15% buffers, 2-3 year gaps, balanced growth
+- AGGRESSIVE: DTI up to 5.0x, minimal buffers, 1-2 year gaps, high-growth areas
+
+KEY ANALYSIS FACTORS:
+1. **DTI Trajectory**: Current ratio + trend analysis for future risk
+2. **Borrowing Capacity**: Risk-adjusted capacity considering all constraints
+3. **Equity Buffers**: Accessible equity vs. serviceability requirements
+4. **Cashflow Stability**: Household surplus consistency and property cashflow with vacancy rates
+5. **LVR Risk Profile**: Individual property risk and portfolio concentration
+6. **Realistic Timing**: Market-appropriate intervals between acquisitions
+7. **Australian Market Context**: Local pricing, growth rates, and market conditions
+8. **Serviceability Headroom**: Additional borrowing capacity beyond current needs
+
+CRITICAL: Output ONLY valid JSON. Do NOT include any explanations, markdown formatting, or additional text. The response must be pure JSON starting with {{ and ending with }}. No code blocks, no backticks, no prose."""
     
     # User prompt based on action
     if property_action == "add":
@@ -333,61 +965,127 @@ Output ONLY valid JSON matching the specified schema. No additional text."""
                 except:
                     pass
         next_property_name = f"Property {chr(ord('A') + len(existing_properties))}"  # Property B, C, etc.
-        
-        user_prompt = f"""FINANCIAL ANALYSIS FOR PROPERTY ATTRIBUTE GENERATION:
 
-EXISTING CHART1 TIMELINE DATA:
-{json.dumps(chart1_metrics.get('yearly_forecast', [])[:5], indent=2)}
+        # Format investment goals and risk tolerance
+        goals_text = ""
+        if investment_goals:
+            goal = investment_goals.get('goal', 'Not specified')
+            goals_text = f"""
+INVESTMENT OBJECTIVES:
+- Primary Goal: {goal}
+- Risk Tolerance: {risk_tolerance.title()}
+- Investment Horizon: Long-term portfolio growth"""
 
-CURRENT PORTFOLIO STATUS:
-- Property Count: {len(existing_properties)}
-- Total Property Values: ${chart1_metrics.get('total_property_values', 0):,.2f}
-- Total Loan Balances: ${chart1_metrics.get('total_loan_balances', 0):,.2f}
-- Total Equity: ${chart1_metrics.get('total_equity', 0):,.2f}
+        # Risk-adjusted capacity limits based on risk tolerance
+        dti_limit = _get_recommended_dti_limit(risk_tolerance)
+        leverage_ratio = _get_recommended_leverage_ratio(risk_tolerance)
 
-CURRENT FINANCIAL METRICS (Year 1):
-- DTI Ratio: {chart1_metrics.get('current_dti', 0):.1f}%
-- Borrowing Power: ${chart1_metrics.get('borrowing_capacity', 0):,.2f}
-- Accessible Equity: ${chart1_metrics.get('max_accessible_equity', 0):,.2f}
-- Household Surplus: ${chart1_metrics.get('household_surplus', 0):,.2f}
-- Property Cashflow: ${chart1_metrics.get('property_cashflow', 0):,.2f}
+        # Australian market context
+        market_context = _get_australian_market_context(risk_tolerance)
 
-PEAK FINANCIAL METRICS (Over Timeline):
-- Max Accessible Equity: ${chart1_metrics.get('max_accessible_equity', 0):,.2f}
-- Min DTI: {chart1_metrics.get('min_dti', 0):.1f}%
+        user_prompt = f"""AUSTRALIAN PROPERTY INVESTMENT ANALYSIS WITH REALISTIC MARKET TIMING:
+
+{goals_text}
+
+AUSTRALIAN MARKET CONTEXT:
+{market_context}
+
+PORTFOLIO FINANCIAL METRICS:
+{json.dumps(chart1_metrics, indent=2)}
+
+EXISTING PORTFOLIO:
+- Properties: {len(existing_properties)}
+- Total Value: ${chart1_metrics.get('total_property_values', 0):,.0f}
+- Total Debt: ${chart1_metrics.get('total_loan_balances', 0):,.0f}
+- Total Equity: ${chart1_metrics.get('total_equity', 0):,.0f}
+
+CURRENT POSITION (Year {chart1_metrics.get('baseline_year', 1)} — first year all properties are active):
+- DTI Ratio: {chart1_metrics.get('current_dti', 0):.2f}x ({chart1_metrics.get('current_dti', 0)*100:.1f}%)
+- Borrowing Capacity: ${chart1_metrics.get('borrowing_capacity', 0):,.0f}
+- Risk-Adjusted Capacity: ${chart1_metrics.get('risk_adjusted_capacity', 0):,.0f}
+- Accessible Equity: ${chart1_metrics.get('max_accessible_equity', 0):,.0f}
+- Household Surplus: ${chart1_metrics.get('household_surplus', 0):,.0f}/yr
+- Property Cashflow: ${chart1_metrics.get('property_cashflow', 0):,.0f}/yr
+
+TREND ANALYSIS:
+- DTI Trend: {chart1_metrics.get('dti_trend', 0):.3f} (direction over time)
+- Equity Trend: {chart1_metrics.get('equity_trend', 0):.3f}
+- Borrowing Capacity Trend: {chart1_metrics.get('borrowing_capacity_trend', 0):.3f}
+- DTI Volatility: {chart1_metrics.get('dti_volatility', 0):.3f}
+- Surplus Stability: {chart1_metrics.get('surplus_stability', 0):.1f}/100
+- Cashflow Stability: {chart1_metrics.get('cashflow_stability', 0):.1f}/100
+
+RISK METRICS:
+- LVR Risk Score: {chart1_metrics.get('lvr_risk_score', 0)}/100
+- Average LVR: {chart1_metrics.get('avg_lvr', 0):.1f}%
+- Equity Buffer Ratio: {chart1_metrics.get('equity_buffer_ratio', 0):.2f}
+- Serviceability Buffer: ${chart1_metrics.get('serviceability_buffer', 0):,.0f}
+
+OPTIMAL TIMING:
+- Best Purchase Years: {chart1_metrics.get('optimal_purchase_windows', [1])}
+- RECOMMENDED PURCHASE YEAR: Year {next_buy_year if next_buy_year is not None else 'N/A'} (buy score: {next_buy_score if next_buy_score is not None else 'N/A'}/100)
+- IMPORTANT: Set purchase_year in your response to {next_buy_year if next_buy_year is not None else 1}. This is the first year where portfolio conditions support a new acquisition.
+
+LOCATION-BASED PRICING GUIDELINES ({risk_tolerance.title()} Profile):
+- Capital City CBD: $800k-$1.1M (higher growth, higher risk)
+- Capital City Suburbs: $500k-$800k (balanced opportunity)
+- Regional Cities: $400k-$600k (stable yields, lower entry)
+- Secondary Regional: $350k-$550k (maximum affordability, steady returns)
+
+INVESTOR PROFILES:
+{format_investor_details(investors)}
 
 EXISTING PROPERTIES:
 {format_existing_properties(existing_properties)}
 
-INVESTOR BORROWING CAPACITIES:
-{json.dumps(chart1_metrics.get('investor_borrowing_capacities', {}), indent=2)}
+RISK-ADJUSTED STRATEGY ({risk_tolerance.title()} Profile):
+- DTI Limit: ≤ {dti_limit}x (maintains {risk_tolerance} risk posture)
+- Leverage Ratio: {leverage_ratio:.0%} of available borrowing capacity
+- Minimum Time Between Purchases: {_get_minimum_time_between_purchases(risk_tolerance)} years
+- Realistic Property Pricing: Based on Australian median house prices and market conditions
 
-INVESTOR DETAILS:
-{format_investor_details(investors)}
+CRITICAL REQUIREMENTS:
+1. Property name MUST be "{next_property_name}" - no variations allowed
+2. Purchase year must allow sufficient time for portfolio stabilization and market conditions
+3. Consider Australian property pricing by location type and market conditions (minimum $400k)
+4. Loan amount must keep DTI ≤ {dti_limit}x considering current portfolio
+5. Property value must be supportable by equity + {leverage_ratio:.0%} of risk-adjusted capacity
+6. LVR should minimize risk (target <80% for conservative, <85% for moderate/aggressive)
+7. Rent must provide positive cashflow with realistic yields (4-6% for houses, 5-7% for units, 6-8% for regional)
+8. Growth rate should be realistic by location (3-5% regional, 4-6% capital suburbs, 5-7% CBD)
+9. Minimum {_get_minimum_time_between_purchases(risk_tolerance)}-year gap between property acquisitions
 
-IMPORTANT: The new property name must be "{next_property_name}". Do not use any other name.
+AUSTRALIAN MARKET CONSIDERATIONS:
+- Property pricing ranges: $400k-$1.5M (varies by location and risk tolerance)
+- Regional entry level: $400k-$600k (stable yields, lower capital growth)
+- Capital city suburbs: $500k-$800k (balanced growth and rental demand)
+- Capital city CBD: $800k-$1.1M (higher growth potential, higher risk)
+- Realistic purchase timelines: Allow 2-5+ years between acquisitions
+- Market cycles: Consider property market conditions and interest rate environment
+- Holding periods: Properties typically held 5-10+ years for optimal returns
+- Stamp duty and transaction costs: Factor in 1-3% of property value
+- Vacancy rates: Assume 3-5% vacancy when calculating cashflow
 
-Based on this financial analysis, recommend property attributes for the NEXT investment property.
-Consider:
-1. Optimal purchase year when financial capacity is sufficient
-2. Loan amount that keeps DTI sustainable
-3. Property value within borrowing capacity + accessible equity
-4. Rental income that covers costs with positive cashflow
-5. Appropriate LVR to avoid LMI
+RECOMMENDATION FRAMEWORK:
+- Consider realistic Australian property market conditions and timelines
+- Ensure sufficient time between acquisitions for portfolio stabilization
+- Factor in transaction costs, market conditions, and holding periods
+- {'Prioritize capital preservation and long-term stability' if risk_tolerance == 'conservative' else 'Balance growth with prudent risk management and market timing' if risk_tolerance == 'moderate' else 'Maximize growth potential while respecting market realities'}
 
-Respond with a JSON object containing:
+IMPORTANT: Respond with ONLY valid JSON. No explanations, no markdown, no additional text. The response must be parseable JSON starting with {{ and ending with }}.
+
 {{
   "name": "{next_property_name}",
-  "purchase_year": <year>,
-  "loan_amount": <amount>,
+  "purchase_year": <realistic_year_considering_location_and_market_timing>,
+  "loan_amount": <{risk_tolerance}_loan_amount_based_on_location>,
   "annual_principal_change": 0,
-  "rent": <annual_rent>,
-  "interest_rate": <rate>,
-  "other_expenses": <expenses>,
-  "property_value": <value>,
-  "initial_value": <value>,
-  "growth_rate": <rate>,
-  "investor_splits": [{{"name": "<investor>", "percentage": <percent>}}]
+  "rent": <realistic_australian_rental_yield_by_location>,
+  "interest_rate": <current_australian_market_rate>,
+  "other_expenses": <realistic_australian_property_expenses>,
+  "property_value": <location_biased_australian_price_$400k_minimum>,
+  "initial_value": <starting_value>,
+  "growth_rate": <location_specific_australian_growth_rate>,
+  "investor_splits": [{{"name": "<investor>", "percentage": <split>}}]
 }}"""
     
     else:  # optimize
@@ -452,22 +1150,28 @@ Respond with JSON containing:
 def parse_property_attributes(response: str) -> dict:
     """
     Parse Bedrock response into property attribute format.
-    
+
     Args:
         response: The raw response from Bedrock
-    
+
     Returns:
         Parsed property object or error dict
     """
+    logger.info(f"Raw Bedrock response (first 1000 chars): {response[:1000]}")
+
     try:
         # Try to find JSON in the response
         json_match = re.search(r'\{[\s\S]*\}', response)
         if json_match:
-            parsed = json.loads(json_match.group())
+            json_str = json_match.group()
+            logger.info(f"Extracted JSON: {json_str}")
+            parsed = json.loads(json_str)
+            logger.info(f"Successfully parsed JSON with keys: {list(parsed.keys())}")
             return parsed
     except json.JSONDecodeError as e:
         logger.error(f"JSON parsing error: {e}")
-    
+        logger.error(f"Failed JSON string: {response}")
+
     return {"error": "Failed to parse property attributes", "raw_response": response[:500]}
 
 
@@ -1098,17 +1802,71 @@ def lambda_handler(event: dict, context: any) -> dict:
             'advice': advice_text
         }
     else:
-        # Original logic for add and optimize actions
+        # Enhanced logic for add and optimize actions with buy signal analysis
+
+        # Extract investment goals for risk-adjusted recommendations
+        investment_goals = None
+        if 'investment_goals' in data:
+            investment_goals = data['investment_goals']
+
+        # Determine risk tolerance (use from goals or default to moderate)
+        risk_tolerance = 'moderate'
+        if investment_goals and 'risk_tolerance' in investment_goals:
+            risk_tolerance = investment_goals['risk_tolerance'].lower()
+        elif 'risk_tolerance' in data:
+            risk_tolerance = data['risk_tolerance'].lower()
+
+        # Validate risk tolerance
+        if risk_tolerance not in ['conservative', 'moderate', 'aggressive']:
+            risk_tolerance = 'moderate'
+
+        # Calculate buy signal score
+        buy_signal = calculate_buy_signal_score(chart1_metrics, risk_tolerance)
+        logger.info(f"Buy signal calculated - Score: {buy_signal['composite_score']}, Rating: {buy_signal['rating']}")
+
+        # Forward-looking gate: find the next year in the forecast where buy_score >= 60.
+        # Borrowing capacity at the baseline year may be $0 but grows over time — we look
+        # ahead across all 30 years and let Bedrock target the correct future purchase year.
+        yearly_forecast_raw = chart1 if isinstance(chart1, list) else chart1.get('yearly_forecast', [])
+        next_buy_year = None
+        next_buy_score = None
+        for yr in yearly_forecast_raw:
+            if yr.get('buy_score', 0) >= 60 and yr.get('buy_rating') in ('Buy', 'Strong Buy'):
+                next_buy_year = yr.get('year')
+                next_buy_score = yr.get('buy_score')
+                break
+
+        if property_action == "add" and next_buy_year is None:
+            logger.warning("Blocking add recommendation: no viable purchase year found across 30-year forecast")
+            return create_response(200, {
+                'status': 'not_recommended',
+                'action': 'add',
+                'message': (
+                    "No viable purchase year was found across the 30-year forecast. "
+                    "Focus on reducing existing debt or increasing income before acquiring additional properties."
+                ),
+                'buy_signal': {
+                    'score': buy_signal['composite_score'],
+                    'rating': buy_signal['rating'],
+                    'next_buy_year': None,
+                }
+            })
+
+        # Use buy signal insights internally to enhance recommendations
         system_prompt, user_prompt = build_property_prompt(
             investors=investors,
             chart1_metrics=chart1_metrics,
             existing_properties=properties,
-            property_action=property_action
+            property_action=property_action,
+            investment_goals=investment_goals,
+            risk_tolerance=risk_tolerance,
+            next_buy_year=next_buy_year,
+            next_buy_score=next_buy_score,
         )
-        
+
         # Invoke Bedrock
         try:
-            logger.info(f"Invoking Bedrock for property_action: {property_action}, region: {region}")
+            logger.info(f"Invoking Bedrock for property_action: {property_action}, region: {region}, risk_tolerance: {risk_tolerance}")
             bedrock_response = invoke_bedrock(
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,

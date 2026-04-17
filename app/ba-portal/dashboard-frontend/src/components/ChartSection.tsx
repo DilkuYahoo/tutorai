@@ -167,7 +167,8 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
             investor_borrowing_capacities: item.investor_borrowing_capacities,
             max_purchase_price: item.max_purchase_price || 0,
             // Buy score fields
-            buy_score: item.buy_score || 0,
+            buy_score: item.buy_score ?? 0,
+            buy_rating: item.buy_rating || 'Wait',
             buy_score_equity_ratio: item.buy_score_equity_ratio || 0,
             buy_score_borrowing_ratio: item.buy_score_borrowing_ratio || 0,
             buy_score_dti: item.buy_score_dti || 0,
@@ -359,6 +360,103 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
     ]
   };
 
+  // Buy Signal Timeline Chart
+  const buySignalOption = {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
+      borderColor: isDarkMode ? '#334155' : '#e5e7eb',
+      textStyle: { color: chartColors.text, fontSize: 12 },
+      formatter: (params: any[]) => {
+        const p = params[0];
+        const d = transformedData[p.dataIndex];
+        const score = d?.buy_score ?? 0;
+        const rating = d?.buy_rating ?? 'Wait';
+        const ratingColor =
+          rating === 'Strong Buy' ? '#10b981' :
+          rating === 'Buy'        ? '#06b6d4' :
+          rating === 'Hold'       ? '#f59e0b' : '#94a3b8';
+        return `
+          <div style="font-weight:600;margin-bottom:6px">${p.name}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${ratingColor}"></span>
+            <span style="color:${ratingColor};font-weight:700">${rating}</span>
+          </div>
+          <div style="margin-top:4px">Buy Score: <strong>${score}/100</strong></div>
+        `;
+      },
+    },
+    grid: { left: 60, right: 40, top: 60, bottom: 40 },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: transformedData.map(d => d.year),
+      axisLabel: { color: chartColors.axisLabel, fontSize: 11 },
+      axisLine: { lineStyle: { color: isDarkMode ? '#334155' : '#e5e7eb' } },
+      splitLine: { show: false },
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      interval: 20,
+      axisLabel: {
+        color: chartColors.axisLabel,
+        fontSize: 11,
+        formatter: (v: number) => `${v}`,
+      },
+      splitLine: { lineStyle: { color: isDarkMode ? '#1e293b' : '#f3f4f6', type: 'dashed' } },
+    },
+    // Coloured zone bands: Wait (0-40), Hold (40-60), Buy (60-80), Strong Buy (80-100)
+    visualMap: {
+      show: false,
+      type: 'piecewise',
+      dimension: 1,
+      seriesIndex: 0,
+      pieces: [
+        { min: 80, max: 100, color: '#10b981' },  // Strong Buy — green
+        { min: 60, max: 80,  color: '#06b6d4' },  // Buy — cyan
+        { min: 40, max: 60,  color: '#f59e0b' },  // Hold — amber
+        { min: 0,  max: 40,  color: '#94a3b8' },  // Wait — muted
+      ],
+    },
+    series: [
+      {
+        name: 'Buy Score',
+        type: 'line',
+        smooth: true,
+        lineStyle: { width: 3 },
+        symbol: 'circle',
+        symbolSize: 7,
+        areaStyle: { opacity: 0.15 },
+        data: transformedData.map(d => d.buy_score ?? 0),
+        markLine: {
+          silent: true,
+          lineStyle: { type: 'dashed', width: 1 },
+          label: { fontSize: 10, color: chartColors.markLineLabel },
+          data: [
+            {
+              yAxis: 80,
+              lineStyle: { color: '#10b981' },
+              label: { formatter: 'Strong Buy', color: '#10b981', position: 'end' },
+            },
+            {
+              yAxis: 60,
+              lineStyle: { color: '#06b6d4' },
+              label: { formatter: 'Buy', color: '#06b6d4', position: 'end' },
+            },
+            {
+              yAxis: 40,
+              lineStyle: { color: '#f59e0b' },
+              label: { formatter: 'Hold', color: '#f59e0b', position: 'end' },
+            },
+          ],
+        },
+      },
+    ],
+  };
+
   // LVR Chart
   const lvrOption = {
     tooltip: {
@@ -504,9 +602,23 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
         itemStyle: { color: '#f59e0b' },
         areaStyle: { color: '#f59e0b', opacity: 0.2 },
         markLine: {
+          silent: true,
           data: [
-            { yAxis: 3.0, name: 'Safe Zone', lineStyle: { color: '#10b981', type: 'dashed' } },
-            { yAxis: 4.3, name: 'Caution', lineStyle: { color: '#f59e0b', type: 'dashed' } }
+            {
+              yAxis: 4.5,
+              lineStyle: { color: '#10b981', type: 'dashed', width: 1 },
+              label: { formatter: '4.5× Standard limit', color: '#10b981', fontSize: 10, position: 'end' },
+            },
+            {
+              yAxis: 6.0,
+              lineStyle: { color: '#f59e0b', type: 'dashed', width: 1 },
+              label: { formatter: '6.0× Elevated', color: '#f59e0b', fontSize: 10, position: 'end' },
+            },
+            {
+              yAxis: 7.0,
+              lineStyle: { color: '#ef4444', type: 'dashed', width: 1 },
+              label: { formatter: '7.0× Hard limit', color: '#ef4444', fontSize: 10, position: 'end' },
+            },
           ],
           label: { color: chartColors.markLineLabel, fontSize: 10 }
         }
@@ -924,11 +1036,12 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
                   <p className="ml-2 text-xs mt-1">Result is a multiplier — e.g. a DTI of 4.5 means total debt is 4.5× annual gross income.</p>
                   <p className="mt-3 mb-1"><strong style={{ color: cardText }}>Interpretation:</strong></p>
                   <ul className="list-disc list-inside ml-2 space-y-1">
-                    <li>DTI &lt; 3.0: <span style={{ color: '#10b981' }}>Safe zone</span> — comfortable debt level, good borrowing headroom</li>
-                    <li>DTI 3.0 – 4.3: <span style={{ color: '#f59e0b' }}>Caution</span> — elevated leverage, may limit new borrowing</li>
-                    <li>DTI &gt; 4.3: <span style={{ color: '#ef4444' }}>High risk</span> — lenders likely to restrict further credit</li>
+                    <li>DTI &lt; 4.5×: <span style={{ color: '#10b981' }}>Standard limit</span> — comfortable leverage, full borrowing headroom</li>
+                    <li>DTI 4.5× – 6.0×: <span style={{ color: '#f59e0b' }}>Elevated</span> — most lenders will still approve with strong equity</li>
+                    <li>DTI 6.0× – 7.0×: <span style={{ color: '#f97316' }}>Stretched</span> — LVR relief may apply; Buy Signal accounts for equity position</li>
+                    <li>DTI &gt; 7.0×: <span style={{ color: '#ef4444' }}>Hard limit</span> — exceeds lender thresholds regardless of equity; Buy Signal blocked</li>
                   </ul>
-                  <p className="mt-3 text-sm" style={{ color: cardTextSecondary }}>Tip: The Total Borrowing Capacity line shows your purchasing power. Higher capacity with lower DTI indicates the best position for additional investment.</p>
+                  <p className="mt-3 text-sm" style={{ color: cardTextSecondary }}>These thresholds align with the Buy Signal Timeline — the Buy Signal only activates LVR relief when DTI is at or below 7.0×, so both charts reflect the same lending logic.</p>
                 </div>
               )}
               <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
@@ -975,6 +1088,51 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
                 Tracks LVR over the investment period. Lower LVR indicates stronger equity and reduced lender risk.
               </p>
               <ReactECharts option={lvrOption} style={{ height: '300px' }} />
+            </div>
+
+            {/* Buy Signal Timeline Chart */}
+            <div className="rounded-xl p-6 border shadow-lg" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-xl font-bold" style={{ color: cardText }}>
+                  Buy Signal Timeline
+                </h2>
+                <button
+                  onClick={() => toggleSection('buySignal')}
+                  className="transition-colors"
+                  style={{ color: cardTextSecondary }}
+                  title="Learn more about this chart"
+                >
+                  <svg className={`w-6 h-6 transform transition-transform ${expandedSection === 'buySignal' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+              </div>
+              {expandedSection === 'buySignal' && (
+                <div className="rounded-lg p-4 mb-4" style={{ backgroundColor: isDarkMode ? '#334155' : '#e5e7eb', color: cardTextSecondary }}>
+                  <p className="mb-2"><strong style={{ color: cardText }}>What this chart shows:</strong> A composite 0–100 score indicating the best years to acquire a new property, calculated independently for each year of the forecast.</p>
+                  <p className="mt-3 mb-1"><strong style={{ color: cardText }}>Score components:</strong></p>
+                  <ul className="list-disc list-inside ml-2 space-y-1">
+                    <li>DTI ratio (up to 45 pts) — lower debt-to-income earns more points</li>
+                    <li>Accessible equity (up to 35 pts) — larger equity buffer scores higher</li>
+                    <li>Borrowing capacity (up to 35 pts) — income-based lending headroom</li>
+                    <li>Cashflow stability (up to 15 pts) — positive household surplus</li>
+                    <li>LVR relief (up to 25 pts) — low LVR unlocks lending even when income DTI is high</li>
+                    <li>Market cycle bonus (up to 10 pts) — earlier years in a cycle score slightly higher</li>
+                  </ul>
+                  <p className="mt-3 mb-1"><strong style={{ color: cardText }}>Rating thresholds:</strong></p>
+                  <ul className="list-disc list-inside ml-2 space-y-1">
+                    <li><span style={{ color: '#10b981' }}>Strong Buy (80–100)</span> — excellent conditions, low LVR, strong equity</li>
+                    <li><span style={{ color: '#06b6d4' }}>Buy (60–79)</span> — good conditions, viable acquisition year</li>
+                    <li><span style={{ color: '#f59e0b' }}>Hold (40–59)</span> — marginal, monitor and wait for improvement</li>
+                    <li><span style={{ color: '#94a3b8' }}>Wait (0–39)</span> — conditions not yet suitable for new acquisition</li>
+                  </ul>
+                  <p className="mt-3 text-sm" style={{ color: cardTextSecondary }}>The BA Agent uses this signal to determine the recommended purchase year when generating a new property recommendation.</p>
+                </div>
+              )}
+              <p className="text-sm mb-4" style={{ color: cardTextSecondary }}>
+                Composite readiness score (0–100) for each forecast year. The first year reaching <span style={{ color: '#06b6d4' }}>Buy (≥60)</span> becomes the recommended acquisition window.
+              </p>
+              <ReactECharts option={buySignalOption} style={{ height: '300px' }} />
             </div>
           </>
         )}

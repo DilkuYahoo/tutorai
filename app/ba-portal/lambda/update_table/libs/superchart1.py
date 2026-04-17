@@ -7,6 +7,80 @@ def debug_print(msg):
     print(f"[SUPERCHART1 DEBUG] {msg}", file=sys.stdout)
 
 
+def _score_year_for_purchase(year_data: dict, year_num: int, existing_purchase_years: list) -> dict:
+    """Score a single forecast year for property purchase readiness (0-100)."""
+    dti = year_data.get('dti_ratio', 99)
+    accessible_equity = year_data.get('accessible_equity', 0)
+    raw_equity = year_data.get('raw_equity', 0)
+    total_debt = year_data.get('total_debt', 0)
+    borrowing_capacity = sum(year_data.get('investor_borrowing_capacities', {}).values())
+    household_surplus = year_data.get('household_surplus', 0)
+    property_cashflow = year_data.get('property_cashflow', 0)
+
+    # DTI score (45 pts max)
+    if dti <= 0:       dti_score = 0
+    elif dti < 2.5:    dti_score = 45
+    elif dti < 3.5:    dti_score = 35
+    elif dti < 4.5:    dti_score = 20
+    elif dti < 5.5:    dti_score = 10
+    else:              dti_score = 0
+
+    # Equity score (35 pts max)
+    if accessible_equity > 200_000:   eq_score = 35
+    elif accessible_equity > 100_000: eq_score = 20
+    elif accessible_equity > 50_000:  eq_score = 10
+    else:                             eq_score = 0
+
+    # Borrowing capacity score (35 pts max)
+    if borrowing_capacity > 300_000:   bc_score = 35
+    elif borrowing_capacity > 200_000: bc_score = 25
+    elif borrowing_capacity > 100_000: bc_score = 15
+    elif borrowing_capacity > 50_000:  bc_score = 5
+    else:                              bc_score = 0
+
+    # Cashflow score (15 pts max)
+    combined_cf = household_surplus + property_cashflow
+    if combined_cf > 20_000:   cf_score = 15
+    elif combined_cf > 5_000:  cf_score = 10
+    elif combined_cf > 0:      cf_score = 5
+    else:                      cf_score = 0
+
+    # LVR relief (25 pts max): low LVR can support lending even when income-based metrics are stretched.
+    # Hard capped at DTI ≤ 7x — above that, no lender approves regardless of equity.
+    # This threshold deliberately aligns with the DTI chart's hard-limit markline at 7.0x.
+    # LVR = total_debt / (raw_equity + total_debt)  i.e. debt as % of total property value
+    total_property_value = raw_equity + total_debt
+    if total_property_value > 0 and raw_equity > 0 and dti <= 7:
+        lvr = total_debt / total_property_value
+        if lvr < 0.30:    lvr_bonus = 25   # very low LVR — strong security position
+        elif lvr < 0.50:  lvr_bonus = 15
+        elif lvr < 0.65:  lvr_bonus = 5
+        else:             lvr_bonus = 0
+    else:
+        lvr_bonus = 0
+
+    # Market cycle bonus (10 pts)
+    cycle_bonus = 10 if 3 <= year_num <= 8 else (5 if year_num > 8 else 0)
+    if year_num == 1: cycle_bonus -= 10
+
+    # Gap penalty: suppress years within 2 of an existing purchase
+    gap_penalty = 0
+    for py in existing_purchase_years:
+        if abs(year_num - py) < 2:
+            gap_penalty = 50
+            break
+
+    raw_score = dti_score + eq_score + bc_score + cf_score + lvr_bonus + cycle_bonus - gap_penalty
+    score = max(0, min(100, raw_score))
+
+    if score >= 80:   rating = "Strong Buy"
+    elif score >= 60: rating = "Buy"
+    elif score >= 40: rating = "Hold"
+    else:             rating = "Wait"
+
+    return {'buy_score': round(score, 1), 'buy_rating': rating}
+
+
 # --- Default Tax configuration (Australia - simplified) ---
 DEFAULT_TAX_BRACKETS = [
     (0, 18_200, 0.00),
@@ -471,6 +545,20 @@ def borrowing_capacity_forecast_investor_blocks(
             investor_borrowing_capacities[name] = round(max(0, net_income * borrowing_multiple - debt), 2)
 
         # ---- write results for year ----
+        _existing_purchase_years = [p.get('purchase_year', 0) for p in properties]
+        _buy_signal = _score_year_for_purchase(
+            {
+                'dti_ratio': dti_result["dti_ratio"],
+                'accessible_equity': max_purchase_result["accessible_equity"],
+                'raw_equity': max_purchase_result["raw_equity"],
+                'total_debt': total_debt,
+                'investor_borrowing_capacities': investor_borrowing_capacities,
+                'household_surplus': household_surplus,
+                'property_cashflow': property_cashflow,
+            },
+            year,
+            _existing_purchase_years,
+        )
         results["yearly_forecast"].append({
             "year": year,
             "investor_net_incomes": investor_income_snapshot,
@@ -499,7 +587,10 @@ def borrowing_capacity_forecast_investor_blocks(
             "accessible_equity": max_purchase_result["accessible_equity"],
             "raw_equity": max_purchase_result["raw_equity"],
             # DTI (Debt to Income) ratio
-            "dti_ratio": dti_result["dti_ratio"]
+            "dti_ratio": dti_result["dti_ratio"],
+            # Per-year property purchase readiness score
+            "buy_score": _buy_signal["buy_score"],
+            "buy_rating": _buy_signal["buy_rating"],
         })
 
     # Return just the yearly_forecast
