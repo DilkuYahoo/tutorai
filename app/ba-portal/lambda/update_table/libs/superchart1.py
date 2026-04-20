@@ -78,7 +78,17 @@ def _score_year_for_purchase(year_data: dict, year_num: int, existing_purchase_y
     elif score >= 40: rating = "Hold"
     else:             rating = "Wait"
 
-    return {'buy_score': round(score, 1), 'buy_rating': rating}
+    return {
+        'buy_score': round(score, 1),
+        'buy_rating': rating,
+        'buy_score_dti': dti_score,
+        'buy_score_equity_ratio': eq_score,
+        'buy_score_borrowing_ratio': bc_score,
+        'buy_score_cashflow': cf_score,
+        'buy_score_lvr_relief': lvr_bonus,
+        'buy_score_cycle': cycle_bonus,
+        'buy_score_gap_penalty': gap_penalty,
+    }
 
 
 # --- Default Tax configuration (Australia - simplified) ---
@@ -591,6 +601,13 @@ def borrowing_capacity_forecast_investor_blocks(
             # Per-year property purchase readiness score
             "buy_score": _buy_signal["buy_score"],
             "buy_rating": _buy_signal["buy_rating"],
+            "buy_score_dti": _buy_signal["buy_score_dti"],
+            "buy_score_equity_ratio": _buy_signal["buy_score_equity_ratio"],
+            "buy_score_borrowing_ratio": _buy_signal["buy_score_borrowing_ratio"],
+            "buy_score_cashflow": _buy_signal["buy_score_cashflow"],
+            "buy_score_lvr_relief": _buy_signal["buy_score_lvr_relief"],
+            "buy_score_cycle": _buy_signal["buy_score_cycle"],
+            "buy_score_gap_penalty": _buy_signal["buy_score_gap_penalty"],
         })
 
     # Return just the yearly_forecast

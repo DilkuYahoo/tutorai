@@ -169,9 +169,13 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
             // Buy score fields
             buy_score: item.buy_score ?? 0,
             buy_rating: item.buy_rating || 'Wait',
+            buy_score_dti: item.buy_score_dti || 0,
             buy_score_equity_ratio: item.buy_score_equity_ratio || 0,
             buy_score_borrowing_ratio: item.buy_score_borrowing_ratio || 0,
-            buy_score_dti: item.buy_score_dti || 0,
+            buy_score_cashflow: item.buy_score_cashflow || 0,
+            buy_score_lvr_relief: item.buy_score_lvr_relief || 0,
+            buy_score_cycle: item.buy_score_cycle || 0,
+            buy_score_gap_penalty: item.buy_score_gap_penalty || 0,
             // DTI ratio from backend
             dti_ratio: item.dti_ratio || 0,
           };
@@ -360,37 +364,49 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
     ]
   };
 
-  // Buy Signal Timeline Chart
+  // Buy Signal Timeline Chart — stacked bar by factor + total score line
   const buySignalOption = {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
+      axisPointer: { type: 'shadow' },
       backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
       borderColor: isDarkMode ? '#334155' : '#e5e7eb',
       textStyle: { color: chartColors.text, fontSize: 12 },
       formatter: (params: any[]) => {
-        const p = params[0];
-        const d = transformedData[p.dataIndex];
+        const d = transformedData[params[0].dataIndex];
         const score = d?.buy_score ?? 0;
         const rating = d?.buy_rating ?? 'Wait';
         const ratingColor =
           rating === 'Strong Buy' ? '#10b981' :
           rating === 'Buy'        ? '#06b6d4' :
           rating === 'Hold'       ? '#f59e0b' : '#94a3b8';
-        return `
-          <div style="font-weight:600;margin-bottom:6px">${p.name}</div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${ratingColor}"></span>
-            <span style="color:${ratingColor};font-weight:700">${rating}</span>
-          </div>
-          <div style="margin-top:4px">Buy Score: <strong>${score}/100</strong></div>
-        `;
+        let html = `<div style="font-weight:600;margin-bottom:6px">${params[0].name}</div>`;
+        params.forEach((p: any) => {
+          if (p.seriesName === 'Total Score') {
+            html += `<div style="display:flex;align-items:center;gap:8px;margin:4px 0">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${ratingColor}"></span>
+              <span style="color:${ratingColor};font-weight:700">${rating}</span>
+              <span style="margin-left:auto;font-weight:700">${score}/100</span>
+            </div>`;
+          } else if (p.value > 0) {
+            html += `<div style="display:flex;align-items:center;gap:8px;margin:2px 0">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${p.color}"></span>
+              <span>${p.seriesName}</span>
+              <span style="margin-left:auto;font-weight:600">${Number(p.value).toFixed(1)} pts</span>
+            </div>`;
+          }
+        });
+        return html;
       },
     },
-    grid: { left: 60, right: 40, top: 60, bottom: 40 },
+    legend: {
+      top: 0,
+      textStyle: { color: chartColors.legend, fontSize: 11 },
+    },
+    grid: { left: 60, right: 60, top: 60, bottom: 40 },
     xAxis: {
       type: 'category',
-      boundaryGap: false,
       data: transformedData.map(d => d.year),
       axisLabel: { color: chartColors.axisLabel, fontSize: 11 },
       axisLine: { lineStyle: { color: isDarkMode ? '#334155' : '#e5e7eb' } },
@@ -401,56 +417,77 @@ const ChartSection: React.FC<ChartSectionProps> = ({ chartData, loading, isDarkM
       min: 0,
       max: 100,
       interval: 20,
-      axisLabel: {
-        color: chartColors.axisLabel,
-        fontSize: 11,
-        formatter: (v: number) => `${v}`,
-      },
+      axisLabel: { color: chartColors.axisLabel, fontSize: 11, formatter: (v: number) => `${v}` },
       splitLine: { lineStyle: { color: isDarkMode ? '#1e293b' : '#f3f4f6', type: 'dashed' } },
-    },
-    // Coloured zone bands: Wait (0-40), Hold (40-60), Buy (60-80), Strong Buy (80-100)
-    visualMap: {
-      show: false,
-      type: 'piecewise',
-      dimension: 1,
-      seriesIndex: 0,
-      pieces: [
-        { min: 80, max: 100, color: '#10b981' },  // Strong Buy — green
-        { min: 60, max: 80,  color: '#06b6d4' },  // Buy — cyan
-        { min: 40, max: 60,  color: '#f59e0b' },  // Hold — amber
-        { min: 0,  max: 40,  color: '#94a3b8' },  // Wait — muted
-      ],
     },
     series: [
       {
-        name: 'Buy Score',
+        name: 'DTI Score',
+        type: 'bar',
+        stack: 'signal',
+        data: transformedData.map(d => d.buy_score_dti ?? 0),
+        itemStyle: { color: '#f59e0b' },
+      },
+      {
+        name: 'Equity Score',
+        type: 'bar',
+        stack: 'signal',
+        data: transformedData.map(d => d.buy_score_equity_ratio ?? 0),
+        itemStyle: { color: '#06b6d4' },
+      },
+      {
+        name: 'Borrowing Score',
+        type: 'bar',
+        stack: 'signal',
+        data: transformedData.map(d => d.buy_score_borrowing_ratio ?? 0),
+        itemStyle: { color: '#8b5cf6' },
+      },
+      {
+        name: 'Cashflow Score',
+        type: 'bar',
+        stack: 'signal',
+        data: transformedData.map(d => d.buy_score_cashflow ?? 0),
+        itemStyle: { color: '#10b981' },
+      },
+      {
+        name: 'LVR Relief',
+        type: 'bar',
+        stack: 'signal',
+        data: transformedData.map(d => d.buy_score_lvr_relief ?? 0),
+        itemStyle: { color: '#ec4899' },
+      },
+      {
+        name: 'Cycle Bonus',
+        type: 'bar',
+        stack: 'signal',
+        data: transformedData.map(d => Math.max(0, d.buy_score_cycle ?? 0)),
+        itemStyle: { color: '#a3e635' },
+      },
+      {
+        name: 'Gap Penalty',
+        type: 'bar',
+        stack: 'signal',
+        data: transformedData.map(d => -(d.buy_score_gap_penalty ?? 0)),
+        itemStyle: { color: '#ef4444' },
+      },
+      {
+        name: 'Total Score',
         type: 'line',
         smooth: true,
-        lineStyle: { width: 3 },
+        lineStyle: { width: 3, color: '#ffffff' },
+        itemStyle: { color: '#ffffff', borderColor: '#94a3b8', borderWidth: 2 },
         symbol: 'circle',
         symbolSize: 7,
-        areaStyle: { opacity: 0.15 },
+        z: 10,
         data: transformedData.map(d => d.buy_score ?? 0),
         markLine: {
           silent: true,
           lineStyle: { type: 'dashed', width: 1 },
-          label: { fontSize: 10, color: chartColors.markLineLabel },
+          label: { fontSize: 10 },
           data: [
-            {
-              yAxis: 80,
-              lineStyle: { color: '#10b981' },
-              label: { formatter: 'Strong Buy', color: '#10b981', position: 'end' },
-            },
-            {
-              yAxis: 60,
-              lineStyle: { color: '#06b6d4' },
-              label: { formatter: 'Buy', color: '#06b6d4', position: 'end' },
-            },
-            {
-              yAxis: 40,
-              lineStyle: { color: '#f59e0b' },
-              label: { formatter: 'Hold', color: '#f59e0b', position: 'end' },
-            },
+            { yAxis: 80, lineStyle: { color: '#10b981' }, label: { formatter: 'Strong Buy', color: '#10b981', position: 'end' } },
+            { yAxis: 60, lineStyle: { color: '#06b6d4' }, label: { formatter: 'Buy', color: '#06b6d4', position: 'end' } },
+            { yAxis: 40, lineStyle: { color: '#f59e0b' }, label: { formatter: 'Hold', color: '#f59e0b', position: 'end' } },
           ],
         },
       },

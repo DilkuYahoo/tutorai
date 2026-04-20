@@ -117,6 +117,12 @@ Wealth Pulse Insights Engine is designed for:
 | Investor Management | ✅ Active | Add, edit, and manage multiple investors per portfolio |
 | Property Tracking | ✅ Active | Track property investments with all financial details |
 | Chart1 Calculations | ✅ Active | Automatic calculation of DTI, LVR, borrowing capacity |
+| Buy Signal Scoring | ✅ Active | Risk-adjusted 0–100 buy signal score across 30-year forecast |
+| Buy Signal Timeline Chart | ✅ Active | Colour-coded visualisation of purchase readiness by year |
+| Investor Splits | ✅ Active | Per-property ownership percentages with auto equal-split on add |
+| Drag-and-Drop Reordering | ✅ Active | Reorder properties in sidebar via drag and drop |
+| Pending Property Workflow | ✅ Active | Review AI-generated property before confirming to portfolio |
+| Trend Analysis Metrics | ✅ Active | DTI, equity, borrowing capacity, and LVR trend projections |
 | Configuration Parameters | ✅ Active | Adjust financial assumptions (CPI, borrowing multipliers) |
 | Dark/Light Mode | ✅ Active | Toggle between dark and light themes |
 | Passwordless Auth | ✅ Active | Email-based verification |
@@ -127,19 +133,54 @@ Wealth Pulse Insights Engine is designed for:
 
 ### AI-Powered Features
 
-1. **Intelligent Recommendations** - AI analyses your portfolio and provides actionable advice
-2. **Portfolio Optimisation** - Identify underperforming properties and optimisation opportunities
-3. **Acquisition Timing** - AI determines the optimal time to purchase your next property
-4. **Risk Analysis** - Comprehensive risk scoring with mitigation recommendations
-5. **Goal Alignment** - Recommendations tailored to your specific investment goals
+1. **Intelligent Recommendations (Add)** - AI analyses portfolio and generates a new property recommendation, incorporating the next viable buy signal year. Blocked with an explanatory modal if no viable year exists across the 30-year forecast.
+2. **Portfolio Optimisation (Optimize)** - Identifies bottlenecks across DTI, equity, cashflow, and borrowing capacity. Returns optimal timing assessment and max purchase price.
+3. **Executive Portfolio Summary (Summary)** - AI-generated one-page narrative overview of portfolio health, cached in the database.
+4. **Strategic Advice (Advice)** - Returns 3 actionable recommendations tailored to the investor's goals and risk profile, cached in the database.
+5. **Goal Alignment** - All AI actions incorporate investment goals (passive income, capital growth, retirement, etc.) and risk tolerance (conservative / moderate / aggressive).
+
+### Buy Signal Scoring System
+
+A risk-adjusted 0–100 score calculated for every year of the 30-year forecast, determining the optimal time to purchase a property.
+
+**Score Components**
+
+| Component | Description |
+|---|---|
+| DTI Factor | Debt-to-income ratio assessment (≤2.0 = 100 pts, >5.0 = 10 pts) |
+| Borrowing Capacity | Available borrowing headroom |
+| Equity Position | Accessible equity and buffer analysis |
+| Cashflow Stability | Household surplus + property cashflow over 5-year window |
+| Timing Opportunity | Optimal purchase window detection (first 15 years) |
+
+**Rating Zones**
+
+| Score | Rating | Colour |
+|---|---|---|
+| 80–100 | Strong Buy | Green |
+| 60–79 | Buy | Cyan |
+| 40–59 | Hold | Amber |
+| <40 | Wait | Grey |
+
+**Risk-Adjusted Weighting**
+
+| Profile | DTI | Borrowing | Equity | Cashflow | Timing |
+|---|---|---|---|---|---|
+| Conservative | 50% | 10% | 15% | 25% | 0% |
+| Moderate | 35% | 25% | 20% | 15% | 5% |
+| Aggressive | 25% | 30% | 25% | 10% | 10% |
+
+The AI **Add Property** action uses a forward-looking gate: if the current year score is <60, it finds the next year where score ≥60 and incorporates that into the recommendation. If no viable year exists across the full 30-year horizon, the system returns a `PropertyNotRecommended` error displayed as an explanatory modal.
 
 ### Financial Modelling Features
 
 1. **30-Year Projections** - Automated forecasting of all key financial metrics
-2. **Scenario Modelling** - Test "what if" scenarios (interest rate changes, property values, income changes)
-3. **DTI Monitoring** - Real-time debt-to-income tracking with alerts
-4. **LVR Tracking** - Loan-to-value monitoring across all properties
-5. **Cashflow Forecasting** - Projected cashflow for the next 30 years
+2. **DTI Monitoring** - Debt-to-income tracking with risk zone classification (Safe <3.0, Caution 3.0–5.0, High Risk >5.0)
+3. **LVR Tracking** - Loan-to-value monitoring across all properties with risk bands (<60% low, 60–80% caution, 80–90% LMI, >90% critical)
+4. **Cashflow Forecasting** - Projected household surplus and property cashflow for 30 years
+5. **Trend Analysis** - Linear regression on DTI, equity, borrowing capacity, and LVR to detect trajectory over time
+6. **Risk Metrics** - DTI volatility (coefficient of variation), equity buffer ratio, serviceability buffer (2.5× conservative)
+7. **LVR Risk Score** - 0–100 scored LVR risk with colour-coded zone classification
 
 ### Reporting Features
 
@@ -289,6 +330,14 @@ Create and manage multiple investment portfolios with deep intelligence:
 - Switch between portfolios seamlessly
 - Compare portfolio performance side-by-side
 - Archive inactive portfolios
+
+### Property Management
+
+- **Drag-and-Drop Reordering** - Reorder properties in the sidebar via drag and drop; grip handle appears on hover with a visual drop-zone indicator
+- **Pending Property Workflow** - AI-generated properties are held in a pending state for review and editing before being confirmed and saved to the portfolio
+- **Word-Based Property IDs** - New properties receive human-readable generated IDs (e.g. `Property_Alpha_1`) for easier identification
+- **Investor Splits** - Define per-property ownership percentages per investor with auto equal-split when a new property is added; splits stay in sync when investor names change
+- **PropertyNotRecommended Modal** - When the AI cannot find a viable purchase year, an explanatory modal is shown rather than returning a silent error
 
 ### Property Intelligence
 
@@ -574,6 +623,8 @@ Total Cashflow =
 | Borrowing Capacity Bar | Year-by-year borrowing power |
 | Equity Area Chart | Total and accessible equity growth |
 | Cashflow Line | Property and household cashflow |
+| LVR Risk Zone Chart | Per-property LVR with colour-coded risk bands (ECharts) |
+| Buy Signal Timeline | 30-year colour-coded buy signal score with zone bands (Strong Buy / Buy / Hold / Wait) and interactive tooltips |
 | Property Comparison | Side-by-side performance |
 | Portfolio Allocation | Asset distribution pie chart |
 
@@ -701,6 +752,19 @@ Enterprise customers get full API access:
 | Monte Carlo Simulations | Probability-based projections |
 | Export Reports | PDF and CSV generation |
 | Bank Integration | Auto-categorise transactions |
+
+### Recently Shipped
+
+| Feature | Description |
+|---------|-------------|
+| Buy Signal Scoring Engine | Risk-adjusted 0–100 purchase readiness score per forecast year |
+| Buy Signal Timeline Chart | Colour-coded 30-year visualisation with zone bands |
+| Investor Splits UI | Per-property ownership percentages with auto equal-split |
+| Drag-and-Drop Reordering | Sidebar property order via drag and drop |
+| Pending Property Workflow | Review AI-generated properties before saving |
+| Trend Analysis Metrics | DTI, equity, borrowing capacity, and LVR trajectories |
+| Risk-Adjusted Capacity | Serviceability buffer and DTI-adjusted borrowing estimates |
+| PageLayout Wrapper | Unified dashboard layout with consistent header/footer |
 
 ### Phase 3 (Future)
 
