@@ -1,0 +1,60 @@
+import { useState } from 'react'
+import { useCandidates } from '@/hooks/useCandidates'
+import { PIPELINE_STAGES, MOCK_JOBS } from '@/data/mockData'
+
+export default function KanbanCard({ application, candidate }) {
+  const { moveStage, openDrawer } = useCandidates()
+  const [showMove, setShowMove] = useState(false)
+
+  const job = MOCK_JOBS.find(j => j.id === application.jobId)
+
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900 p-3 space-y-2.5 hover:border-indigo-500/40 transition-colors cursor-pointer group">
+      {/* Header: avatar + name */}
+      <div className="flex items-center gap-2" onClick={() => openDrawer(application.id)}>
+        <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-400 shrink-0">
+          {candidate.firstName[0]}{candidate.lastName[0]}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-white truncate">{candidate.firstName} {candidate.lastName}</p>
+          <p className="text-xs text-slate-500 truncate">{job?.title ?? '—'}</p>
+        </div>
+      </div>
+
+      {/* Fit score bar */}
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-1 rounded-full bg-slate-800 overflow-hidden">
+          <div className="h-full rounded-full bg-indigo-500" style={{ width: `${application.fitScore}%` }} />
+        </div>
+        <span className="text-xs text-slate-500">{application.fitScore}%</span>
+      </div>
+
+      {/* Move select */}
+      <div className="flex items-center gap-2">
+        {showMove ? (
+          <select
+            autoFocus
+            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none"
+            defaultValue=""
+            onChange={e => {
+              if (e.target.value) { moveStage(application.id, e.target.value); setShowMove(false) }
+            }}
+            onBlur={() => setShowMove(false)}
+          >
+            <option value="" disabled>Move to...</option>
+            {PIPELINE_STAGES.filter(s => s !== application.stage).map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        ) : (
+          <button
+            onClick={() => setShowMove(true)}
+            className="text-xs text-slate-600 hover:text-indigo-400 transition-colors opacity-0 group-hover:opacity-100"
+          >
+            Move stage →
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
