@@ -8,6 +8,37 @@ import { RATE_SUMMARY as MOCK_SUMMARY, RECENT_CHANGES as MOCK_CHANGES } from '..
 
 const API = import.meta.env.VITE_API_URL || ''
 
+const HEROES = [
+  {
+    h1: "See Your Real Home Loan Rate — Live, Personalised, and Impossible to Hide.",
+    h2: "Get matched to the rates lenders would actually offer you — not generic tables. Compare instantly and know if you're overpaying.",
+  },
+  {
+    h1: "Stop Guessing. See the Rate You Actually Qualify For — In Real Time.",
+    h2: "Ditch static comparison sites. We calculate your real borrowing profile and show live rates tailored to you.",
+  },
+  {
+    h1: "Think You've Got a Good Rate? Let's Prove It.",
+    h2: "Instantly benchmark your loan against what lenders would offer you today — and uncover hidden overpayments.",
+  },
+  {
+    h1: "Not Just Rates. Your Rate — Personalised, Live, and Unfiltered.",
+    h2: "We use your financial profile to surface real offers — so you see what you qualify for, not what banks advertise.",
+  },
+  {
+    h1: "Make Smarter Home Loan Decisions — Backed by Real-Time Data.",
+    h2: "Track your personalised rate, monitor market changes, and act at the right time with confidence.",
+  },
+  {
+    h1: "The Truth About Your Home Loan Rate — Instantly.",
+    h2: "Advanced rate intelligence tailored to your situation, helping you compare, validate, and optimise your loan.",
+  },
+  {
+    h1: "Find Out If You're Overpaying on Your Home Loan — In 60 Seconds.",
+    h2: "Enter a few details and see the exact rate you should be getting, based on your profile and today's market.",
+  },
+]
+
 // ── skeleton primitives ───────────────────────────────────────────────────────
 function Skeleton({ className = '' }) {
   return <div className={`animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800 ${className}`} />
@@ -130,6 +161,7 @@ export default function Dashboard({ isDark, onToggleTheme, onApply, onTerms }) {
   const [loadingChanges, setLoadingChanges] = useState(true)
   const [errorSummary,   setErrorSummary]   = useState(null)
   const [errorChanges,   setErrorChanges]   = useState(null)
+  const [currentHero,    setCurrentHero]    = useState(0)
 
   const fetchSummary = () => {
     setLoadingSummary(true)
@@ -164,12 +196,20 @@ export default function Dashboard({ isDark, onToggleTheme, onApply, onTerms }) {
     fetchChanges()
   }, [])
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentHero((prev) => (prev + 1) % HEROES.length)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
   const termTrendOptionFactory = useMemo(
     () => summary ? buildTermTrendOption(summary) : null,
     [summary],
   )
 
   const s = summary || MOCK_SUMMARY
+  const hero = HEROES[currentHero]
 
   // ── tooltip methodology strings ─────────────────────────────────────────────
   const M =
@@ -247,14 +287,12 @@ export default function Dashboard({ isDark, onToggleTheme, onApply, onTerms }) {
 
             {/* Headline */}
             <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white leading-tight mb-4">
-              Compare Today's<br />
-              <span className="text-indigo-400">Australian Rates</span>
+              {hero.h1}
             </h1>
 
             {/* Sub-headline */}
             <p className="text-base sm:text-lg text-slate-300 mb-6 max-w-xl">
-              Real-time mortgage, personal loan and credit card rates from{' '}
-              {loadingSummary ? '…' : s.lenderCount} lenders via Open Banking Consumer Data Standards.
+              {hero.h2}
             </p>
 
             {/* Meta row */}

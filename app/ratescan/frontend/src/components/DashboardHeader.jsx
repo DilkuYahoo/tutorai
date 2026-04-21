@@ -9,7 +9,7 @@ function LogoMark() {
   )
 }
 
-export default function DashboardHeader({ isDark, onToggleTheme, onApply }) {
+export default function DashboardHeader({ isDark, onToggleTheme, onApply, buttonText = 'Get My Rate →' }) {
   return (
     <header className="fixed top-0 inset-x-0 z-50 h-14 flex items-center px-4 sm:px-6
       bg-white/90 dark:bg-slate-950/90 backdrop-blur-md
@@ -36,7 +36,7 @@ export default function DashboardHeader({ isDark, onToggleTheme, onApply }) {
           onClick={onApply}
           className="px-4 py-2 rounded-full bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-600 text-white text-sm font-semibold transition-colors duration-150 shadow-sm shadow-indigo-500/20"
         >
-          Get My Rate →
+          {buttonText}
         </button>
       </div>
     </header>
