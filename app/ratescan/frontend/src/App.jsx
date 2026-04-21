@@ -7,8 +7,11 @@ import Step3_Employment from './steps/Step3_Employment'
 import Step4_Financial from './steps/Step4_Financial'
 import Step5_Lifestyle from './steps/Step5_Lifestyle'
 import Step6_Review from './steps/Step6_Review'
+import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import TermsPage from './pages/TermsPage'
+import PrivacyPage from './pages/PrivacyPage'
+import ContactPage from './pages/ContactPage'
 import DashboardHeader from './components/DashboardHeader'
 import SiteFooter from './components/SiteFooter'
 
@@ -80,6 +83,7 @@ export default function App() {
 
   const [isDark, setIsDark] = useState(true)
   const [page, setPage]     = useState('dashboard') // 'dashboard' | 'apply'
+  const [emailVerification, setEmailVerification] = useState({ isOpen: false, code: '' })
 
   useEffect(() => {
     const root = document.documentElement
@@ -92,7 +96,13 @@ export default function App() {
 
   const toggleTheme = useCallback(() => setIsDark((d) => !d), [])
   const updateField = useCallback((field, value) => dispatch({ type: 'UPDATE_FIELD', field, value }), [])
-  const handleNext  = useCallback(() => dispatch({ type: 'NEXT' }), [])
+  const handleNext  = useCallback(() => {
+    if (currentStep === 1 && formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(formData.email.trim())) {
+      setEmailVerification({ isOpen: true, code: '' })
+    } else {
+      dispatch({ type: 'NEXT' })
+    }
+  }, [currentStep, formData.email])
   const handleBack  = useCallback(() => dispatch({ type: 'BACK' }), [])
   const handleGoTo  = useCallback((step) => dispatch({ type: 'GO_TO_STEP', step }), [])
 
@@ -115,24 +125,77 @@ export default function App() {
   const CurrentStep = STEPS[currentStep - 1]
 
   if (page === 'terms') {
-    return <TermsPage onBack={() => setPage('dashboard')} />
-  }
-
-  if (page === 'dashboard') {
     return (
-      <Dashboard
+      <Layout
         isDark={isDark}
         onToggleTheme={toggleTheme}
         onApply={() => { dispatch({ type: 'RESET' }); setPage('apply') }}
         onTerms={() => setPage('terms')}
-      />
+        onPrivacy={() => setPage('privacy')}
+        onContact={() => setPage('contact')}
+      >
+        <TermsPage onBack={() => setPage('dashboard')} />
+      </Layout>
+    )
+  }
+
+  if (page === 'privacy') {
+    return (
+      <Layout
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onApply={() => { dispatch({ type: 'RESET' }); setPage('apply') }}
+        onTerms={() => setPage('terms')}
+        onPrivacy={() => setPage('privacy')}
+        onContact={() => setPage('contact')}
+      >
+        <PrivacyPage onBack={() => setPage('dashboard')} />
+      </Layout>
+    )
+  }
+
+  if (page === 'contact') {
+    return (
+      <Layout
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onApply={() => { dispatch({ type: 'RESET' }); setPage('apply') }}
+        onTerms={() => setPage('terms')}
+        onPrivacy={() => setPage('privacy')}
+        onContact={() => setPage('contact')}
+      >
+        <ContactPage onBack={() => setPage('dashboard')} />
+      </Layout>
+    )
+  }
+
+  if (page === 'dashboard') {
+    return (
+      <Layout
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onApply={() => { dispatch({ type: 'RESET' }); setPage('apply') }}
+        onTerms={() => setPage('terms')}
+        onPrivacy={() => setPage('privacy')}
+        onContact={() => setPage('contact')}
+        buttonText="Get My Rate →"
+      >
+        <Dashboard />
+      </Layout>
     )
   }
 
   if (submitted) {
     return (
-      <div className={`min-h-screen flex flex-col ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} transition-colors duration-200`}>
-        <DashboardHeader isDark={isDark} onToggleTheme={toggleTheme} onApply={() => setPage('dashboard')} buttonText="← Back to Rates" />
+      <Layout
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onApply={() => setPage('dashboard')}
+        onTerms={() => setPage('terms')}
+        onPrivacy={() => setPage('privacy')}
+        onContact={() => setPage('contact')}
+        buttonText="← Back to Rates"
+      >
         <div className="flex-1 flex items-center justify-center px-4 py-12">
           <div className="text-center animate-fade-in">
             <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-6">
@@ -162,14 +225,20 @@ export default function App() {
             </div>
           </div>
         </div>
-        <SiteFooter onTerms={() => setPage('terms')} />
-      </div>
+      </Layout>
     )
   }
 
   return (
-    <div className={`min-h-screen flex flex-col ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} transition-colors duration-200`}>
-      <DashboardHeader isDark={isDark} onToggleTheme={toggleTheme} onApply={() => setPage('dashboard')} buttonText="← Back to Rates" />
+    <Layout
+      isDark={isDark}
+      onToggleTheme={toggleTheme}
+      onApply={() => setPage('dashboard')}
+      onTerms={() => setPage('terms')}
+      onPrivacy={() => setPage('privacy')}
+      onContact={() => setPage('contact')}
+      buttonText="← Back to Rates"
+    >
       <main className="flex-1 flex flex-col">
         <div className="pt-20 pb-8">
           <ProgressBar current={currentStep} total={TOTAL_STEPS} />
@@ -192,7 +261,6 @@ export default function App() {
           </div>
         </div>
       </main>
-      <SiteFooter onTerms={() => setPage('terms')} />
-    </div>
+    </Layout>
   )
 }

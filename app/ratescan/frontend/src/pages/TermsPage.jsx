@@ -1,7 +1,6 @@
 export default function TermsPage({ onBack }) {
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-200">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-14">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-14">
 
         {/* Back nav */}
         <button
@@ -241,8 +240,6 @@ export default function TermsPage({ onBack }) {
           >
             ← Back to RateScan
           </button>
-        </div>
-
       </div>
     </div>
   )

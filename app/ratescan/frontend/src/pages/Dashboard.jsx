@@ -154,7 +154,7 @@ function SectionHeading({ title, subtitle }) {
 }
 
 // ── main component ────────────────────────────────────────────────────────────
-export default function Dashboard({ isDark, onToggleTheme, onApply, onTerms }) {
+export default function Dashboard({ isDark, onToggleTheme, onApply, onTerms, onPrivacy, onContact }) {
   const [summary,        setSummary]        = useState(null)
   const [recentChanges,  setRecentChanges]  = useState(null)
   const [loadingSummary, setLoadingSummary] = useState(true)
@@ -264,10 +264,7 @@ export default function Dashboard({ isDark, onToggleTheme, onApply, onTerms }) {
   ] : null
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
-      <DashboardHeader isDark={isDark} onToggleTheme={onToggleTheme} onApply={onApply} />
-
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-0 space-y-10">
+    <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-0 space-y-10">
 
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
         <section className="relative overflow-hidden bg-hero-gradient pt-24 pb-14 sm:pt-28 sm:pb-16 -mx-4 sm:-mx-6 px-4 sm:px-6">
@@ -415,12 +412,6 @@ export default function Dashboard({ isDark, onToggleTheme, onApply, onTerms }) {
           </button>
         </section>
 
-      </main>
-
-      {/* ── Footer ──────────────────────────────────────────────────────────── */}
-      <div className="mt-10">
-        <SiteFooter onTerms={onTerms} />
-      </div>
-    </div>
+    </main>
   )
 }

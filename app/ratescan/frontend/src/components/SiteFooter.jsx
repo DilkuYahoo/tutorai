@@ -16,7 +16,7 @@ const RATE_LINKS = [
   { label: 'Recent Changes',    href: '#recent-changes' },
 ]
 
-export default function SiteFooter({ onTerms }) {
+export default function SiteFooter({ onTerms, onPrivacy, onContact }) {
   return (
     <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-200">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-8">
@@ -78,12 +78,28 @@ export default function SiteFooter({ onTerms }) {
           <span>
             © {new Date().getFullYear()} RateScan · Australian Open Banking ·{' '}
             {onTerms ? (
-              <button
-                onClick={onTerms}
-                className="underline underline-offset-2 hover:text-indigo-400 transition-colors"
-              >
-                Terms &amp; Conditions
-              </button>
+              <>
+                <button
+                  onClick={onTerms}
+                  className="underline underline-offset-2 hover:text-indigo-400 transition-colors"
+                >
+                  Terms &amp; Conditions
+                </button>
+                {' · '}
+                <button
+                  onClick={onPrivacy}
+                  className="underline underline-offset-2 hover:text-indigo-400 transition-colors"
+                >
+                  Privacy Statement
+                </button>
+                {' · '}
+                <button
+                  onClick={onContact}
+                  className="underline underline-offset-2 hover:text-indigo-400 transition-colors"
+                >
+                  Contact Us
+                </button>
+              </>
             ) : (
               'Not financial advice'
             )}
