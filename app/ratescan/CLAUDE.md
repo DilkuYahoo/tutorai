@@ -30,13 +30,19 @@ app/ratescan/
     │   ├── sitemap.xml               # Single URL entry, changefreq: daily
     │   └── og-image.svg             # 1200×630 branded Open Graph image
     └── src/
-        ├── pages/Dashboard.jsx       # Full dashboard — gradient hero, rate cards, chart, table
+        ├── App.jsx                   # Root; useReducer state machine; page routing via `page` state ('dashboard'|'apply'|'terms'|'privacy'|'contact')
+        ├── pages/
+        │   ├── Dashboard.jsx         # Full dashboard — gradient hero, rate cards, chart, table
+        │   ├── TermsPage.jsx         # Terms & Conditions (10 sections, AU law)
+        │   ├── PrivacyPage.jsx       # Privacy Policy (12 sections, Privacy Act 1988 / APPs compliant)
+        │   └── ContactPage.jsx       # Contact Us — info panel + enquiry form with submitted confirmation state
         ├── components/
-        │   ├── DashboardHeader.jsx   # Diamond logo mark, two-tone wordmark
+        │   ├── Layout.jsx            # Global wrapper: DashboardHeader + children + SiteFooter; accepts isDark, onToggleTheme, onApply, onTerms, onPrivacy, onContact, buttonText
+        │   ├── DashboardHeader.jsx   # Fixed h-14 navbar; logo, nav (Home, Rates dropdown, Contact, Privacy), theme toggle, CTA button
         │   ├── StatCard.jsx          # TrendIndicator ↑↓→, RangeBar, tipSide prop (mobile tooltip)
         │   ├── RateChart.jsx         # ECharts wrapper; buildTermTrendOption for Market Rate Outlook
         │   ├── RecentChangesTable.jsx
-        │   └── SiteFooter.jsx        # 3-column footer: brand, rate links, legal; CognifyLabs.ai credit
+        │   └── SiteFooter.jsx        # 3-column footer: brand, rate links, legal (Terms/Privacy/Contact); CognifyLabs.ai credit
         └── data/mockRates.js         # Fallback data when API is unreachable
 ```
 
@@ -128,6 +134,17 @@ daily_rates is a point-in-time snapshot, not a history table.
 - P25/P75 row: `grid grid-cols-2` (not flex) to prevent overflow on narrow mobile cards
 - "Market Rate Outlook" chart uses real API data (`summary.fixed` term structure) — do NOT replace with mock historical data
 - 12-month trend chart was intentionally removed — no real historical data source exists yet
+
+### Global Layout & page routing
+- All pages (dashboard, apply, terms, privacy, contact, submitted) render inside `<Layout>` which provides the fixed header and footer.
+- `App.jsx` drives routing via `page` state string — there is no React Router; use `setPage('...')` to navigate.
+- Fixed header is `h-14` (56px). All full-page content wrappers must use `pt-20` (80px) as top padding to clear the navbar with breathing room. Never use `py-8` or `py-14` alone on page root elements.
+- Legal pages (TermsPage, PrivacyPage, ContactPage) share the same layout pattern: `pt-20 pb-14`, back-nav button at top and bottom, section headings in `uppercase tracking-wide text-base font-semibold`.
+
+### Privacy Policy
+- 12-section policy compliant with Privacy Act 1988 (Cth) and Australian Privacy Principles (APPs).
+- Covers: identity/contact/financial/usage data collected; CDR clarification (not an Accredited Data Recipient); AWS ap-southeast-2 data residency; access/correction rights (APPs 12–13); OAIC complaints pathway.
+- Privacy Officer contact: privacy@ratescan.com.au
 
 ### SEO implementation
 - `index.html`: meta description, keywords, canonical, OG tags, Twitter Card, JSON-LD (WebSite + FinancialService)

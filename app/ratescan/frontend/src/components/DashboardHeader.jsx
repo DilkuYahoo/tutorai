@@ -10,7 +10,7 @@ function LogoMark() {
   )
 }
 
-export default function DashboardHeader({ isDark, onToggleTheme, onApply, onPrivacy, onContact, buttonText = '' }) {
+export default function DashboardHeader({ isDark, onToggleTheme, onApply, onPrivacy, onContact, onHome, onMortgageRates, onOtherRates, onRecentChanges, buttonText = '' }) {
   const [ratesDropdownOpen, setRatesDropdownOpen] = useState(false)
   return (
     <header className="fixed top-0 inset-x-0 z-50 h-14 flex items-center px-4 sm:px-6
@@ -32,16 +32,16 @@ export default function DashboardHeader({ isDark, onToggleTheme, onApply, onPriv
 
       {/* Navigation */}
       <nav className="hidden md:flex items-center space-x-6 flex-1 justify-center relative">
-        <a href="#" className="text-sm text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Home</a>
+        <button onClick={onHome} className="text-sm text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Home</button>
         <div className="relative">
           <button onClick={() => setRatesDropdownOpen(!ratesDropdownOpen)} className="text-sm text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors flex items-center gap-1">
             Rates <span className={`transition-transform ${ratesDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
           </button>
           {ratesDropdownOpen && (
             <div className="absolute top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg py-2 min-w-48 z-10">
-              <a href="#mortgage-rates" onClick={() => setRatesDropdownOpen(false)} className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Mortgage Rates</a>
-              <a href="#other-rates" onClick={() => setRatesDropdownOpen(false)} className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Other Rates</a>
-              <a href="#recent-changes" onClick={() => setRatesDropdownOpen(false)} className="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Recent Changes</a>
+              <button onClick={() => { setRatesDropdownOpen(false); onMortgageRates(); }} className="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Mortgage Rates</button>
+              <button onClick={() => { setRatesDropdownOpen(false); onOtherRates(); }} className="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Other Rates</button>
+              <button onClick={() => { setRatesDropdownOpen(false); onRecentChanges(); }} className="block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Recent Changes</button>
             </div>
           )}
         </div>

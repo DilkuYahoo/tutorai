@@ -135,6 +135,41 @@ export default function PrivacyPage({ onBack }) {
             </li>
           </ul>
           <p className="text-slate-600 dark:text-slate-400 mt-3">
+            <strong>Sharing with Licensed Mortgage Brokers</strong>
+          </p>
+          <p className="text-slate-600 dark:text-slate-400 mt-3">
+            Where you submit an enquiry or expression of interest through our application form, we may share
+            your contact details (name, email address, and phone number) and relevant financial information
+            (property value, loan amount sought, and loan purpose) with licensed, qualified mortgage brokers
+            who are authorised to provide personalised financial advice.
+          </p>
+          <p className="text-slate-600 dark:text-slate-400 mt-3">
+            <strong>Why we share your information with brokers.</strong> RateScan is operated by CognifyLabs.ai
+            and is restricted from providing personalised financial advice, recommending specific interest
+            rates, or suggesting financial products under Australian Financial Services Licence (AFSL) requirements.
+            To ensure you receive regulated, tailored financial guidance from a qualified professional, we
+            facilitate a connection between you and a licensed mortgage broker who can assess your individual
+            circumstances and provide appropriate advice.
+          </p>
+          <p className="text-slate-600 dark:text-slate-400 mt-3">
+            These mortgage brokers are holder(s) of an Australian Financial Services Licence (AFSL) or are
+            authorised representatives under such a licence. As such, they are legally obligated to handle
+            all personal information in accordance with:
+          </p>
+          <ul className="list-disc pl-5 mt-3 space-y-1.5 text-slate-600 dark:text-slate-400">
+            <li>the <em>Privacy Act 1988 (Cth)</em> and the Australian Privacy Principles (APPs);</li>
+            <li>the <em>Corporations Act 2001 (Cth)</em> and relevant regulations;</li>
+            <li>their obligations under their AFSL, including client money and advice documentation requirements;</li>
+            <li>any additional requirements imposed by the Australian Securities and Investments Commission (ASIC); and</li>
+            <li>their own internal privacy policies and data handling procedures.</li>
+          </ul>
+          <p className="text-slate-600 dark:text-slate-400 mt-3">
+            We will only share your information with brokers where you have provided your contact details
+            through our enquiry or application process. By proceeding with an enquiry, you consent to your
+            information being shared in this manner for the purpose of receiving personalised mortgage
+            advice from a licensed professional.
+          </p>
+          <p className="text-slate-600 dark:text-slate-400 mt-3">
             We do not currently disclose personal information to overseas recipients. If this changes, we will
             update this Privacy Policy and take reasonable steps to ensure overseas recipients handle your
             information consistently with the APPs (APP 8).

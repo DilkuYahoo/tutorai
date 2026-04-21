@@ -38,7 +38,6 @@ function ContactPage({ onBack }) {
             <p className="mb-4">Have questions about RateScan or need help with your loan application? We're here to help.</p>
             <div className="space-y-2">
               <p><strong>Email:</strong> info@ratescan.com.au</p>
-              <p><strong>Phone:</strong> 1800-RATESCAN (1800 728 372)</p>
               <p><strong>Hours:</strong> Monday to Friday, 9am - 6pm AEST</p>
             </div>
           </div>
