@@ -1,0 +1,707 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: ATS — Applicant Tracking System (SAM template)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Parameters
+# ─────────────────────────────────────────────────────────────────────────────
+Parameters:
+  SesFromAddress:
+    Type: String
+    Default: noreply@recruit.example.com
+  SesRegion:
+    Type: String
+    Default: ap-southeast-2
+  CorsOrigin:
+    Type: String
+    Default: "*"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Globals
+# ─────────────────────────────────────────────────────────────────────────────
+Globals:
+  Function:
+    Runtime: python3.13
+    MemorySize: 256
+    Timeout: 15
+    Architectures: [arm64]
+    Layers:
+      - !Ref SharedLayer
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref AtsTable
+        RESUME_BUCKET: advicelab
+        RESUME_PREFIX: ats/resumes/prod
+        SES_FROM_ADDRESS: !Ref SesFromAddress
+        SES_REGION: !Ref SesRegion
+        NOTIFICATION_LAMBDA_ARN: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:ats-send-email"
+        CORS_ORIGIN: !Ref CorsOrigin
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Resources
+# ─────────────────────────────────────────────────────────────────────────────
+Resources:
+
+  # ── Shared Lambda Layer ───────────────────────────────────────────────────
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: ats-shared
+      Description: Shared Python utilities (db, auth, response, ids, validation)
+      ContentUri: ../lambda/
+      CompatibleRuntimes: [python3.13]
+      CompatibleArchitectures: [arm64, x86_64]
+    Metadata:
+      BuildMethod: python3.13
+
+  # ── DynamoDB Table ────────────────────────────────────────────────────────
+  AtsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: al_ats_prod
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI2
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  # ── Cognito User Pool ─────────────────────────────────────────────────────
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: ats-users
+      UsernameAttributes: [email]
+      AutoVerifiedAttributes: [email]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      Schema:
+        - Name: role
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+      UserPoolAddOns:
+        AdvancedSecurityMode: AUDIT
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: ats-web
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+
+  # ── API Gateway ───────────────────────────────────────────────────────────
+  Api:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: prod
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref CorsOrigin
+        AllowHeaders:
+          - Authorization
+          - Content-Type
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        MaxAge: 600
+      Auth:
+        DefaultAuthorizer: CognitoJwt
+        Authorizers:
+          CognitoJwt:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              issuer: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+              audience:
+                - !Ref UserPoolClient
+
+  # ── IAM Role shared by all Lambda functions ───────────────────────────────
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ats-lambda
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: AtsAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:TransactWriteItems
+                  - dynamodb:BatchGetItem
+                Resource:
+                  - !GetAtt AtsTable.Arn
+                  - !Sub "${AtsTable.Arn}/index/*"
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                Resource:
+                  - arn:aws:s3:::advicelab/ats/resumes/prod/*
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:ats-send-email"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Lambda Functions — Jobs
+  # ─────────────────────────────────────────────────────────────────────────
+  ListJobsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-list-jobs
+      CodeUri: ../lambda/jobs/
+      Handler: list_jobs.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /jobs
+
+  ListJobsPublicFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-list-jobs-public
+      CodeUri: ../lambda/jobs/
+      Handler: list_jobs_public.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /jobs/public
+            Auth:
+              Authorizer: NONE
+
+  GetJobPublicFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-get-job-public
+      CodeUri: ../lambda/jobs/
+      Handler: get_job_public.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /jobs/public/{jobId}
+            Auth:
+              Authorizer: NONE
+
+  GetJobFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-get-job
+      CodeUri: ../lambda/jobs/
+      Handler: get_job.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /jobs/{jobId}
+            Auth:
+              Authorizer: CognitoJwt
+
+  CreateJobFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-create-job
+      CodeUri: ../lambda/jobs/
+      Handler: create_job.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /jobs
+            Auth:
+              Authorizer: CognitoJwt
+
+  UpdateJobFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-update-job
+      CodeUri: ../lambda/jobs/
+      Handler: update_job.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: PUT
+            Path: /jobs/{jobId}
+            Auth:
+              Authorizer: CognitoJwt
+
+  ArchiveJobFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-archive-job
+      CodeUri: ../lambda/jobs/
+      Handler: archive_job.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: DELETE
+            Path: /jobs/{jobId}
+            Auth:
+              Authorizer: CognitoJwt
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Lambda Functions — Candidates
+  # ─────────────────────────────────────────────────────────────────────────
+  ListCandidatesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-list-candidates
+      CodeUri: ../lambda/candidates/
+      Handler: list_candidates.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /candidates
+            Auth:
+              Authorizer: CognitoJwt
+
+  GetCandidateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-get-candidate
+      CodeUri: ../lambda/candidates/
+      Handler: get_candidate.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /candidates/{candidateId}
+            Auth:
+              Authorizer: CognitoJwt
+
+  CreateCandidateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-create-candidate
+      CodeUri: ../lambda/candidates/
+      Handler: create_candidate.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /candidates
+            Auth:
+              Authorizer: NONE
+
+  UpdateCandidateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-update-candidate
+      CodeUri: ../lambda/candidates/
+      Handler: update_candidate.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: PUT
+            Path: /candidates/{candidateId}
+            Auth:
+              Authorizer: CognitoJwt
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Lambda Functions — Applications
+  # ─────────────────────────────────────────────────────────────────────────
+  ListApplicationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-list-applications
+      CodeUri: ../lambda/applications/
+      Handler: list_applications.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /applications
+            Auth:
+              Authorizer: CognitoJwt
+
+  GetApplicationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-get-application
+      CodeUri: ../lambda/applications/
+      Handler: get_application.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /applications/{applicationId}
+            Auth:
+              Authorizer: CognitoJwt
+
+  CreateApplicationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-create-application
+      CodeUri: ../lambda/applications/
+      Handler: create_application.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /applications
+            Auth:
+              Authorizer: NONE
+
+  MoveStageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-move-stage
+      CodeUri: ../lambda/applications/
+      Handler: move_stage.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /applications/{applicationId}/move
+            Auth:
+              Authorizer: CognitoJwt
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Lambda Functions — Pipeline
+  # ─────────────────────────────────────────────────────────────────────────
+  GetPipelineFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-get-pipeline
+      CodeUri: ../lambda/pipeline/
+      Handler: get_pipeline.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 29
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /pipeline
+            Auth:
+              Authorizer: CognitoJwt
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Lambda Functions — Interviews
+  # ─────────────────────────────────────────────────────────────────────────
+  ListInterviewsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-list-interviews
+      CodeUri: ../lambda/interviews/
+      Handler: list_interviews.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /interviews
+            Auth:
+              Authorizer: CognitoJwt
+
+  CreateInterviewFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-create-interview
+      CodeUri: ../lambda/interviews/
+      Handler: create_interview.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /interviews
+            Auth:
+              Authorizer: CognitoJwt
+
+  UpdateInterviewFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-update-interview
+      CodeUri: ../lambda/interviews/
+      Handler: update_interview.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: PUT
+            Path: /interviews/{interviewId}
+            Auth:
+              Authorizer: CognitoJwt
+
+  SubmitFeedbackFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-submit-feedback
+      CodeUri: ../lambda/interviews/
+      Handler: submit_feedback.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /interviews/{interviewId}/feedback
+            Auth:
+              Authorizer: CognitoJwt
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Lambda Functions — Users
+  # ─────────────────────────────────────────────────────────────────────────
+  GetMeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-get-me
+      CodeUri: ../lambda/users/
+      Handler: get_me.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /users/me
+            Auth:
+              Authorizer: CognitoJwt
+
+  ListUsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-list-users
+      CodeUri: ../lambda/users/
+      Handler: list_users.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /users
+            Auth:
+              Authorizer: CognitoJwt
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Lambda Functions — Reports & Audit
+  # ─────────────────────────────────────────────────────────────────────────
+  GetMetricsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-get-metrics
+      CodeUri: ../lambda/reports/
+      Handler: get_metrics.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 29
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /reports/metrics
+            Auth:
+              Authorizer: CognitoJwt
+
+  GetAuditTrailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-get-audit-trail
+      CodeUri: ../lambda/audit/
+      Handler: get_audit_trail.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /audit/{entityId}
+            Auth:
+              Authorizer: CognitoJwt
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Lambda Functions — Resumes & Notifications
+  # ─────────────────────────────────────────────────────────────────────────
+  GetUploadUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-get-upload-url
+      CodeUri: ../lambda/resumes/
+      Handler: get_upload_url.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /resumes/upload-url
+            Auth:
+              Authorizer: NONE
+
+  SendEmailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-send-email
+      CodeUri: ../lambda/notifications/
+      Handler: send_email.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      # Invoked directly (async) by other functions — no API route
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Outputs
+# ─────────────────────────────────────────────────────────────────────────────
+Outputs:
+  ApiUrl:
+    Description: HTTP API endpoint
+    Value: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com/prod
+
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool
+
+  UserPoolClientId:
+    Description: Cognito App Client ID
+    Value: !Ref UserPoolClient
+
+  TableName:
+    Description: DynamoDB table name
+    Value: !Ref AtsTable
+
+  ResumePrefix:
+    Description: S3 path for resume uploads (in shared advicelab bucket)
+    Value: s3://advicelab/ats/resumes/prod/
+
+  WebPrefix:
+    Description: S3 path for frontend web artifacts (in shared advicelab bucket)
+    Value: s3://advicelab/ats/web/prod/

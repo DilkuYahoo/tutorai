@@ -2,14 +2,15 @@ import { useState } from 'react'
 import KanbanBoard from '@/components/pipeline/KanbanBoard'
 import CandidateDrawer from '@/components/candidates/CandidateDrawer'
 import BaseSelect from '@/components/ui/BaseSelect'
-import { MOCK_JOBS } from '@/data/mockData'
+import { useJobs } from '@/hooks/useJobs'
 
 export default function PipelinePage() {
   const [jobFilter, setJobFilter] = useState('')
+  const { openJobs } = useJobs()
 
   const jobOptions = [
     { value: '', label: 'All Jobs' },
-    ...MOCK_JOBS.filter(j => j.status === 'Open').map(j => ({ value: j.id, label: j.title })),
+    ...openJobs.map(j => ({ value: j.id, label: j.title })),
   ]
 
   return (

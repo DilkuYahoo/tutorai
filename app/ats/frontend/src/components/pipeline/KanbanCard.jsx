@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { useCandidates } from '@/hooks/useCandidates'
-import { PIPELINE_STAGES, MOCK_JOBS } from '@/data/mockData'
+import { PIPELINE_STAGES } from '@/data/mockData'
 
 export default function KanbanCard({ application, candidate }) {
   const { moveStage, openDrawer } = useCandidates()
   const [showMove, setShowMove] = useState(false)
-
-  const job = MOCK_JOBS.find(j => j.id === application.jobId)
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900 p-3 space-y-2.5 hover:border-indigo-500/40 transition-colors cursor-pointer group">
@@ -17,7 +15,7 @@ export default function KanbanCard({ application, candidate }) {
         </div>
         <div className="min-w-0">
           <p className="text-sm font-medium text-white truncate">{candidate.firstName} {candidate.lastName}</p>
-          <p className="text-xs text-slate-500 truncate">{job?.title ?? '—'}</p>
+          <p className="text-xs text-slate-500 truncate">{application.jobTitle ?? '—'}</p>
         </div>
       </div>
 

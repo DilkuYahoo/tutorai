@@ -14,17 +14,29 @@ const EMPTY = {
 
 export default function JobModal() {
   const { isModalOpen, activeJob, closeModal, saveJob } = useJobs()
-  const [form, setForm] = useState(EMPTY)
+  const [form, setForm]       = useState(EMPTY)
+  const [saving, setSaving]   = useState(false)
+  const [error, setError]     = useState('')
 
   useEffect(() => {
     setForm(activeJob ? { ...activeJob } : EMPTY)
+    setError('')
   }, [activeJob, isModalOpen])
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }))
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    saveJob(form)
+    setSaving(true)
+    setError('')
+    try {
+      await saveJob(form)
+      closeModal()
+    } catch (err) {
+      setError(err.message || 'Failed to save job')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -35,14 +47,19 @@ export default function JobModal() {
       onClose={closeModal}
       footer={
         <>
-          <BaseButton variant="secondary" onClick={closeModal}>Cancel</BaseButton>
-          <BaseButton variant="primary" type="submit" form="job-form">
-            {activeJob ? 'Save Changes' : 'Create Job'}
+          <BaseButton variant="secondary" onClick={closeModal} disabled={saving}>Cancel</BaseButton>
+          <BaseButton variant="primary" type="submit" form="job-form" disabled={saving}>
+            {saving ? 'Saving...' : activeJob ? 'Save Changes' : 'Create Job'}
           </BaseButton>
         </>
       }
     >
       <form id="job-form" onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
         <BaseInput
           label="Job Title"
           id="title"

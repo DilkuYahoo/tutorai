@@ -4,12 +4,14 @@ import CandidateDrawer from '@/components/candidates/CandidateDrawer'
 import BaseInput from '@/components/ui/BaseInput'
 import BaseSelect from '@/components/ui/BaseSelect'
 import EmptyState from '@/components/ui/EmptyState'
-import { PIPELINE_STAGES, MOCK_JOBS } from '@/data/mockData'
+import { PIPELINE_STAGES } from '@/data/mockData'
+import { useJobs } from '@/hooks/useJobs'
 
 export default function CandidatesPage() {
   const { filteredApplications, applications, searchQuery, stageFilter, jobFilter, setFilter } = useCandidates()
+  const { jobs } = useJobs()
 
-  const jobOptions = [{ value: '', label: 'All Jobs' }, ...MOCK_JOBS.map(j => ({ value: j.id, label: j.title }))]
+  const jobOptions = [{ value: '', label: 'All Jobs' }, ...jobs.map(j => ({ value: j.id, label: j.title }))]
   const stageOptions = [{ value: '', label: 'All Stages' }, ...PIPELINE_STAGES.map(s => ({ value: s, label: s }))]
 
   return (

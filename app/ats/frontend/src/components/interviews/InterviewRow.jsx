@@ -1,7 +1,8 @@
 import BaseBadge from '@/components/ui/BaseBadge'
 import BaseButton from '@/components/ui/BaseButton'
 import { useInterviews } from '@/hooks/useInterviews'
-import { MOCK_CANDIDATES, MOCK_JOBS, MOCK_USERS } from '@/data/mockData'
+import { useCandidates } from '@/hooks/useCandidates'
+import { useJobs } from '@/hooks/useJobs'
 
 const STATUS_VARIANT = {
   Scheduled: 'indigo',
@@ -12,9 +13,11 @@ const STATUS_VARIANT = {
 
 export default function InterviewRow({ interview }) {
   const { openFeedbackModal } = useInterviews()
-  const candidate = MOCK_CANDIDATES.find(c => c.id === interview.candidateId)
-  const job = MOCK_JOBS.find(j => j.id === interview.jobId)
-  const panel = interview.panelIds.map(id => MOCK_USERS.find(u => u.id === id)?.name ?? id).join(', ')
+  const { candidates } = useCandidates()
+  const { jobs } = useJobs()
+  const candidate = candidates.find(c => c.id === interview.candidateId)
+  const job = jobs.find(j => j.id === interview.jobId)
+  const panel = (interview.panelIds ?? []).join(', ')
 
   const dt = new Date(interview.scheduledAt)
   const dateStr = dt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })

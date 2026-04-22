@@ -1,0 +1,113 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ATS — CloudFront distribution + Route 53 record for ats.advicelab.com.au
+
+# Deploy this stack to us-east-1 (required for CloudFront + ACM).
+# aws cloudformation deploy --template-file iac/cloudfront.yaml \
+#   --stack-name ats-cloudfront --region us-east-1 --capabilities CAPABILITY_IAM
+
+Parameters:
+  CertArn:
+    Type: String
+    Default: arn:aws:acm:us-east-1:724772096157:certificate/779f833d-9f09-4dbd-8898-99e4a245209f
+    Description: Wildcard *.advicelab.com.au cert (already issued in us-east-1)
+  HostedZoneId:
+    Type: String
+    Default: Z0015604O8Z36ZXYJGP0
+  S3BucketDomain:
+    Type: String
+    Default: advicelab.s3.ap-southeast-2.amazonaws.com
+    Description: Regional S3 endpoint for the advicelab bucket
+
+Resources:
+
+  # ── CloudFront Function — SPA fallback ────────────────────────────────────
+  SpaFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: ats-spa-router
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Prefixes /ats/web/prod/ and serves index.html for extensionless paths
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+            var uri = event.request.uri;
+            if (!uri.match(/\.[a-zA-Z0-9]+$/)) {
+                uri = '/index.html';
+            }
+            event.request.uri = '/ats/web/prod' + (uri.startsWith('/') ? uri : '/' + uri);
+            return event.request;
+        }
+
+  # ── CloudFront Distribution ───────────────────────────────────────────────
+  AtsDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: ATS — ats.advicelab.com.au
+        Enabled: true
+        HttpVersion: http2and3
+        PriceClass: PriceClass_All
+        Aliases:
+          - ats.advicelab.com.au
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Origins:
+          - Id: S3-advicelab-ats
+            DomainName: !Ref S3BucketDomain
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+            OriginAccessControlId: !GetAtt AtsOAC.Id
+        DefaultCacheBehavior:
+          TargetOriginId: S3-advicelab-ats
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # CachingOptimized (managed)
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt SpaFunction.FunctionMetadata.FunctionARN
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponsePagePath: /index.html
+            ResponseCode: "200"
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponsePagePath: /index.html
+            ResponseCode: "200"
+            ErrorCachingMinTTL: 0
+
+  # ── Origin Access Control (OAC) for private S3 ───────────────────────────
+  AtsOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: ats-advicelab-oac
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # ── Route 53 Alias Record ─────────────────────────────────────────────────
+  DnsProd:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: ats.advicelab.com.au
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt AtsDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2   # CloudFront hosted zone (always this value)
+        EvaluateTargetHealth: false
+
+Outputs:
+  DistributionId:
+    Description: ATS CloudFront distribution ID — use this for cache invalidations
+    Value: !Ref AtsDistribution
+
+  DistributionDomain:
+    Description: CloudFront domain name
+    Value: !GetAtt AtsDistribution.DomainName
+
+  Url:
+    Value: https://ats.advicelab.com.au

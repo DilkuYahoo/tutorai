@@ -1,11 +1,9 @@
 import StageBadge from './StageBadge'
 import { useCandidates } from '@/hooks/useCandidates'
-import { MOCK_JOBS } from '@/data/mockData'
 
 export default function CandidateRow({ application }) {
   const { candidates, openDrawer } = useCandidates()
   const candidate = candidates.find(c => c.id === application.candidateId)
-  const job = MOCK_JOBS.find(j => j.id === application.jobId)
 
   if (!candidate) return null
 
@@ -25,7 +23,7 @@ export default function CandidateRow({ application }) {
           </div>
         </div>
       </td>
-      <td className="px-4 py-3 text-slate-400 text-sm hidden md:table-cell">{job?.title ?? '—'}</td>
+      <td className="px-4 py-3 text-slate-400 text-sm hidden md:table-cell">{application.jobTitle ?? '—'}</td>
       <td className="px-4 py-3 hidden sm:table-cell">
         <StageBadge stage={application.stage} />
       </td>

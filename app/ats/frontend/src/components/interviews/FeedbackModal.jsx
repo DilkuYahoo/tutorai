@@ -4,27 +4,41 @@ import BaseButton from '@/components/ui/BaseButton'
 import BaseTextarea from '@/components/ui/BaseTextarea'
 import BaseSelect from '@/components/ui/BaseSelect'
 import { useInterviews } from '@/hooks/useInterviews'
-import { MOCK_CANDIDATES, MOCK_JOBS } from '@/data/mockData'
+import { useCandidates } from '@/hooks/useCandidates'
+import { useJobs } from '@/hooks/useJobs'
 
 const STARS = [1, 2, 3, 4, 5]
 
 export default function FeedbackModal() {
   const { isFeedbackModalOpen, activeFeedbackInterview, closeFeedbackModal, submitFeedback } = useInterviews()
-  const [rating, setRating] = useState(0)
-  const [strengths, setStrengths] = useState('')
-  const [concerns, setConcerns] = useState('')
+  const [rating, setRating]           = useState(0)
+  const [strengths, setStrengths]     = useState('')
+  const [concerns, setConcerns]       = useState('')
   const [recommendation, setRecommendation] = useState('')
+  const [saving, setSaving]           = useState(false)
+  const [error, setError]             = useState('')
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    submitFeedback(activeFeedbackInterview.id, { rating, strengths, concerns, recommendation, submittedBy: 'u1' })
-    setRating(0); setStrengths(''); setConcerns(''); setRecommendation('')
+    setSaving(true)
+    setError('')
+    try {
+      await submitFeedback(activeFeedbackInterview.id, { rating, strengths, concerns, recommendation })
+      setRating(0); setStrengths(''); setConcerns(''); setRecommendation('')
+    } catch (err) {
+      setError(err.message || 'Failed to submit feedback')
+    } finally {
+      setSaving(false)
+    }
   }
+
+  const { candidates } = useCandidates()
+  const { jobs } = useJobs()
 
   if (!activeFeedbackInterview) return null
 
-  const candidate = MOCK_CANDIDATES.find(c => c.id === activeFeedbackInterview.candidateId)
-  const job = MOCK_JOBS.find(j => j.id === activeFeedbackInterview.jobId)
+  const candidate = candidates.find(c => c.id === activeFeedbackInterview.candidateId)
+  const job = jobs.find(j => j.id === activeFeedbackInterview.jobId)
 
   return (
     <BaseModal
@@ -33,14 +47,19 @@ export default function FeedbackModal() {
       onClose={closeFeedbackModal}
       footer={
         <>
-          <BaseButton variant="secondary" onClick={closeFeedbackModal}>Cancel</BaseButton>
-          <BaseButton type="submit" form="feedback-form" disabled={!rating || !recommendation}>
-            Submit Feedback
+          <BaseButton variant="secondary" onClick={closeFeedbackModal} disabled={saving}>Cancel</BaseButton>
+          <BaseButton type="submit" form="feedback-form" disabled={!rating || !recommendation || saving}>
+            {saving ? 'Submitting...' : 'Submit Feedback'}
           </BaseButton>
         </>
       }
     >
       <form id="feedback-form" onSubmit={handleSubmit} className="space-y-5">
+        {error && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
         <div className="rounded-xl bg-slate-800/50 border border-slate-800 px-4 py-3 text-sm">
           <p className="font-medium text-white">{candidate?.firstName} {candidate?.lastName}</p>
           <p className="text-slate-400 text-xs mt-0.5">{job?.title} · {activeFeedbackInterview.type}</p>

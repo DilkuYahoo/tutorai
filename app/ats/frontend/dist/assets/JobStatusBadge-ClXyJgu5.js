@@ -1,1 +1,0 @@
-import{j as a}from"./index-B6jaueEG.js";import{B as r}from"./BaseBadge-e_kau_LU.js";const t={Open:"emerald",Draft:"slate",Closed:"red","On Hold":"amber",Archived:"slate"};function l({status:e}){return a.jsx(r,{label:e,variant:t[e]??"slate"})}export{l as J};

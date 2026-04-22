@@ -1,6 +1,8 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import AppSidebar from './AppSidebar'
 import AppTopbar from './AppTopbar'
+import FeedbackModal from '@/components/interviews/FeedbackModal'
+import ScheduleInterviewModal from '@/components/interviews/ScheduleInterviewModal'
 
 const PAGE_TITLES = {
   '/dashboard':  'Dashboard',
@@ -25,6 +27,8 @@ export default function AppLayout() {
           <Outlet />
         </div>
       </main>
+      <FeedbackModal />
+      <ScheduleInterviewModal />
     </div>
   )
 }

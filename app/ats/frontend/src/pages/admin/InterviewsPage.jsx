@@ -1,6 +1,5 @@
 import { useInterviews } from '@/hooks/useInterviews'
 import InterviewRow from '@/components/interviews/InterviewRow'
-import FeedbackModal from '@/components/interviews/FeedbackModal'
 import EmptyState from '@/components/ui/EmptyState'
 
 export default function InterviewsPage() {
@@ -49,7 +48,6 @@ export default function InterviewsPage() {
         }
       </section>
 
-      <FeedbackModal />
     </div>
   )
 }

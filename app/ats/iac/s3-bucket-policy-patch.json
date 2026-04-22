@@ -1,0 +1,16 @@
+{
+  "_note": "This statement has already been applied to the advicelab bucket policy on 2026-04-22.",
+  "_distribution": "E29KA1PXOT2G91 (d3ofehpqyo939c.cloudfront.net)",
+  "Sid": "AllowCloudFrontOACReadAts",
+  "Effect": "Allow",
+  "Principal": {
+    "Service": "cloudfront.amazonaws.com"
+  },
+  "Action": "s3:GetObject",
+  "Resource": "arn:aws:s3:::advicelab/ats/web/*",
+  "Condition": {
+    "StringEquals": {
+      "AWS:SourceArn": "arn:aws:cloudfront::724772096157:distribution/E29KA1PXOT2G91"
+    }
+  }
+}

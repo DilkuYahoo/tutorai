@@ -12,6 +12,7 @@ const InterviewsPage  = lazy(() => import('@/pages/admin/InterviewsPage'))
 const ReportsPage     = lazy(() => import('@/pages/admin/ReportsPage'))
 const CareersPage     = lazy(() => import('@/pages/public/CareersPage'))
 const ApplicationPage = lazy(() => import('@/pages/public/ApplicationPage'))
+const LoginPage       = lazy(() => import('@/pages/public/LoginPage'))
 const NotFoundPage    = lazy(() => import('@/pages/shared/NotFoundPage'))
 
 const Loader = () => (
@@ -28,9 +29,13 @@ export const router = createBrowserRouter([
     element: <Navigate to="/careers" replace />,
   },
   {
+    path: 'login',
+    element: wrap(<LoginPage />),
+  },
+  {
     element: <PublicLayout />,
     children: [
-      { path: 'careers',             element: wrap(<CareersPage />) },
+      { path: 'careers',              element: wrap(<CareersPage />) },
       { path: 'careers/:jobId/apply', element: wrap(<ApplicationPage />) },
     ],
   },

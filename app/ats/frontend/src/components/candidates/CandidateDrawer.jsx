@@ -5,16 +5,16 @@ import BaseButton from '@/components/ui/BaseButton'
 import StageBadge from './StageBadge'
 import CandidateTagList from './CandidateTagList'
 import { useCandidates } from '@/hooks/useCandidates'
-import { PIPELINE_STAGES, MOCK_JOBS } from '@/data/mockData'
+import { useInterviews } from '@/hooks/useInterviews'
+import { PIPELINE_STAGES } from '@/data/mockData'
 
 export default function CandidateDrawer() {
   const { isDrawerOpen, activeApplication, activeCandidate, closeDrawer, moveStage, addNote } = useCandidates()
+  const { openScheduleModal } = useInterviews()
   const [noteInput, setNoteInput] = useState('')
   const [newStage, setNewStage] = useState('')
 
   if (!activeApplication || !activeCandidate) return null
-
-  const job = MOCK_JOBS.find(j => j.id === activeApplication.jobId)
 
   const handleMoveStage = () => {
     if (newStage && newStage !== activeApplication.stage) {
@@ -43,7 +43,7 @@ export default function CandidateDrawer() {
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <StageBadge stage={activeApplication.stage} />
-            <span className="text-xs text-slate-500">· {job?.title ?? '—'}</span>
+            <span className="text-xs text-slate-500">· {activeApplication.jobTitle ?? '—'}</span>
           </div>
           <p className="text-sm text-slate-400">{activeCandidate.email}</p>
           <p className="text-sm text-slate-400">{activeCandidate.phone}</p>
@@ -82,6 +82,27 @@ export default function CandidateDrawer() {
               Move
             </BaseButton>
           </div>
+        </div>
+
+        {/* Schedule Interview */}
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2">Interview</p>
+          <BaseButton
+            variant="secondary"
+            size="sm"
+            onClick={() => openScheduleModal({
+              applicationId: activeApplication.id,
+              candidateId:   activeCandidate.id,
+              jobId:         activeApplication.jobId,
+              candidateName: `${activeCandidate.firstName} ${activeCandidate.lastName}`,
+              jobTitle:      activeApplication.jobTitle ?? '—',
+            })}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Schedule Interview
+          </BaseButton>
         </div>
 
         {/* Stage history */}

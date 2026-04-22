@@ -1,20 +1,37 @@
-import { createContext, useReducer } from 'react'
+import { createContext, useReducer, useEffect } from 'react'
 import { MOCK_INTERVIEWS } from '@/data/mockData'
+import { USE_API, api } from '@/services/api'
 
 export const InterviewsContext = createContext(null)
 
 const initialState = {
-  interviews: MOCK_INTERVIEWS,
-  isFeedbackModalOpen: false,
-  activeFeedbackId: null,
+  interviews:            USE_API ? [] : MOCK_INTERVIEWS,
+  loading:               USE_API,
+  isFeedbackModalOpen:   false,
+  activeFeedbackId:      null,
+  isScheduleModalOpen:   false,
+  scheduleContext:       null, // { applicationId, candidateId, jobId, candidateName, jobTitle }
 }
 
 function interviewsReducer(state, action) {
   switch (action.type) {
+    case 'SET_INTERVIEWS':
+      return { ...state, interviews: action.interviews, loading: false }
+    case 'UPSERT_INTERVIEW': {
+      const exists = state.interviews.find(i => i.id === action.interview.id)
+      const interviews = exists
+        ? state.interviews.map(i => i.id === action.interview.id ? action.interview : i)
+        : [action.interview, ...state.interviews]
+      return { ...state, interviews }
+    }
     case 'OPEN_FEEDBACK':
       return { ...state, activeFeedbackId: action.interviewId, isFeedbackModalOpen: true }
     case 'CLOSE_FEEDBACK':
       return { ...state, activeFeedbackId: null, isFeedbackModalOpen: false }
+    case 'OPEN_SCHEDULE':
+      return { ...state, scheduleContext: action.context, isScheduleModalOpen: true }
+    case 'CLOSE_SCHEDULE':
+      return { ...state, scheduleContext: null, isScheduleModalOpen: false }
     case 'SUBMIT_FEEDBACK':
       return {
         ...state,
@@ -26,14 +43,6 @@ function interviewsReducer(state, action) {
         isFeedbackModalOpen: false,
         activeFeedbackId: null,
       }
-    case 'SCHEDULE_INTERVIEW':
-      return {
-        ...state,
-        interviews: [
-          { ...action.interview, id: `i${Date.now()}`, status: 'Scheduled', feedback: null },
-          ...state.interviews,
-        ],
-      }
     default:
       return state
   }
@@ -41,6 +50,13 @@ function interviewsReducer(state, action) {
 
 export function InterviewsProvider({ children }) {
   const [state, dispatch] = useReducer(interviewsReducer, initialState)
+
+  useEffect(() => {
+    if (!USE_API) return
+    api.get('/interviews')
+      .then(interviews => dispatch({ type: 'SET_INTERVIEWS', interviews }))
+      .catch(console.error)
+  }, [])
 
   const upcomingInterviews = state.interviews
     .filter(i => i.status === 'Scheduled')
@@ -52,10 +68,30 @@ export function InterviewsProvider({ children }) {
 
   const activeFeedbackInterview = state.interviews.find(i => i.id === state.activeFeedbackId) ?? null
 
-  const openFeedbackModal    = (interviewId) => dispatch({ type: 'OPEN_FEEDBACK', interviewId })
-  const closeFeedbackModal   = ()            => dispatch({ type: 'CLOSE_FEEDBACK' })
-  const submitFeedback       = (interviewId, feedback) => dispatch({ type: 'SUBMIT_FEEDBACK', interviewId, feedback })
-  const scheduleInterview    = (interview)  => dispatch({ type: 'SCHEDULE_INTERVIEW', interview })
+  const openFeedbackModal  = (interviewId) => dispatch({ type: 'OPEN_FEEDBACK', interviewId })
+  const closeFeedbackModal = ()            => dispatch({ type: 'CLOSE_FEEDBACK' })
+
+  const openScheduleModal  = (context) => dispatch({ type: 'OPEN_SCHEDULE', context })
+  const closeScheduleModal = ()        => dispatch({ type: 'CLOSE_SCHEDULE' })
+
+  const scheduleInterview = async (interview) => {
+    if (!USE_API) {
+      dispatch({ type: 'UPSERT_INTERVIEW', interview: { ...interview, id: `i${Date.now()}`, status: 'Scheduled', feedback: null } })
+      return
+    }
+    const created = await api.post('/interviews', interview)
+    dispatch({ type: 'UPSERT_INTERVIEW', interview: created })
+  }
+
+  const submitFeedback = async (interviewId, feedback) => {
+    if (!USE_API) {
+      dispatch({ type: 'SUBMIT_FEEDBACK', interviewId, feedback })
+      return
+    }
+    const updated = await api.post(`/interviews/${interviewId}/feedback`, feedback)
+    dispatch({ type: 'UPSERT_INTERVIEW', interview: updated })
+    dispatch({ type: 'CLOSE_FEEDBACK' })
+  }
 
   return (
     <InterviewsContext.Provider value={{
@@ -67,6 +103,8 @@ export function InterviewsProvider({ children }) {
       closeFeedbackModal,
       submitFeedback,
       scheduleInterview,
+      openScheduleModal,
+      closeScheduleModal,
     }}>
       {children}
     </InterviewsContext.Provider>

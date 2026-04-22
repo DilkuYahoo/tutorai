@@ -10,3 +10,8 @@ app/ratescan/frontend/dist
 app/ratescan/.aws-sam
 app/ratescan/data-pipeline/.aws-sam
 app/ratescan/iac/.aws-sam
+
+app/ats/frontend/.env.local
+app/ats/frontend/.env.production
+app/ats/frontend/dist
+app/ats/iac/.aws-sam

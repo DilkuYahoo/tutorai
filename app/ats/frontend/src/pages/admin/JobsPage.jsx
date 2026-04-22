@@ -5,12 +5,14 @@ import JobModal from '@/components/jobs/JobModal'
 import BaseButton from '@/components/ui/BaseButton'
 import BaseInput from '@/components/ui/BaseInput'
 import EmptyState from '@/components/ui/EmptyState'
-import { JOB_STATUSES, MOCK_USERS } from '@/data/mockData'
+import { JOB_STATUSES } from '@/data/mockData'
+import { useUsers } from '@/hooks/useUsers'
 
 const STATUS_TABS = ['All', ...JOB_STATUSES]
 
 export default function JobsPage() {
   const { jobs, openCreateModal, openEditModal, setStatus } = useJobs()
+  const { userById } = useUsers()
   const [tab, setTab] = useState('All')
   const [search, setSearch] = useState('')
 
@@ -22,7 +24,7 @@ export default function JobsPage() {
     })
   }, [jobs, tab, search])
 
-  const hiringManager = (hmId) => MOCK_USERS.find(u => u.id === hmId)?.name ?? '—'
+  const hiringManager = (hmId) => userById(hmId)?.name ?? '—'
 
   const fmt = (n) => n ? `$${Number(n).toLocaleString()}` : '—'
 

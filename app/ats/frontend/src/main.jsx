@@ -7,19 +7,34 @@ import { UIProvider } from '@/context/UIContext'
 import { JobsProvider } from '@/context/JobsContext'
 import { CandidatesProvider } from '@/context/CandidatesContext'
 import { InterviewsProvider } from '@/context/InterviewsContext'
+import { UsersProvider } from '@/context/UsersContext'
+import { useAuth } from '@/hooks/useAuth'
 import './index.css'
+
+// Only mount data providers once auth has resolved — prevents 401s on initial load
+function DataProviders({ children }) {
+  const { authState } = useAuth()
+  if (authState === 'loading') return null
+  return (
+    <JobsProvider>
+      <CandidatesProvider>
+        <InterviewsProvider>
+          <UsersProvider>
+            {children}
+          </UsersProvider>
+        </InterviewsProvider>
+      </CandidatesProvider>
+    </JobsProvider>
+  )
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
       <UIProvider>
-        <JobsProvider>
-          <CandidatesProvider>
-            <InterviewsProvider>
-              <RouterProvider router={router} />
-            </InterviewsProvider>
-          </CandidatesProvider>
-        </JobsProvider>
+        <DataProviders>
+          <RouterProvider router={router} />
+        </DataProviders>
       </UIProvider>
     </AuthProvider>
   </React.StrictMode>

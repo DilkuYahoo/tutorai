@@ -19,12 +19,14 @@ export default function BaseButton({
   disabled = false,
   onClick,
   className = '',
+  ...rest
 }) {
   return (
     <button
       type={type}
       disabled={disabled}
       onClick={onClick}
+      {...rest}
       className={`
         inline-flex items-center justify-center gap-2 rounded-full font-semibold
         transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed
