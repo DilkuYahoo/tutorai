@@ -71,7 +71,7 @@ export function InterviewsProvider({ children }) {
     .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))
 
   const pastInterviews = state.interviews
-    .filter(i => i.status === 'Completed' || i.status === 'Cancelled' || i.status === 'No-show')
+    .filter(i => i.status === 'Completed' || i.status === 'No-show')
     .sort((a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt))
 
   const activeFeedbackInterview = state.interviews.find(i => i.id === state.activeFeedbackId) ?? null

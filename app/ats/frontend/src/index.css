@@ -98,3 +98,95 @@ html.light .backdrop-blur-md { backdrop-filter: blur(12px); }
 /* Hero sections with dark gradient backgrounds — keep text white regardless of theme */
 html.light .hero-bg .text-white   { color: #ffffff; }
 html.light .hero-bg .text-slate-400 { color: #94a3b8; }
+
+/* ─── react-big-calendar dark theme ──────────────────────────────────────── */
+.rbc-dark .rbc-calendar {
+  background: transparent;
+  color: #cbd5e1;
+  font-family: inherit;
+}
+.rbc-dark .rbc-toolbar {
+  margin-bottom: 12px;
+}
+.rbc-dark .rbc-toolbar button {
+  color: #94a3b8;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 13px;
+}
+.rbc-dark .rbc-toolbar button:hover,
+.rbc-dark .rbc-toolbar button.rbc-active {
+  color: #fff;
+  background: #6366f1;
+  border-color: #6366f1;
+}
+.rbc-dark .rbc-toolbar .rbc-toolbar-label {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+.rbc-dark .rbc-header {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #64748b;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 4px;
+}
+.rbc-dark .rbc-month-view,
+.rbc-dark .rbc-time-view {
+  border-color: #1e293b;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.rbc-dark .rbc-day-bg,
+.rbc-dark .rbc-time-slot {
+  background: #020617;
+}
+.rbc-dark .rbc-off-range-bg {
+  background: #0a0f1e;
+}
+.rbc-dark .rbc-today {
+  background: rgba(99, 102, 241, 0.08);
+}
+.rbc-dark .rbc-month-row,
+.rbc-dark .rbc-day-slot .rbc-time-slot,
+.rbc-dark .rbc-timeslot-group {
+  border-color: #1e293b;
+}
+.rbc-dark .rbc-event {
+  background: #6366f1;
+  border-radius: 6px;
+  border: none;
+  font-size: 12px;
+  padding: 2px 6px;
+}
+.rbc-dark .rbc-event.rbc-selected {
+  background: #4f46e5;
+}
+.rbc-dark .rbc-show-more {
+  color: #818cf8;
+  background: transparent;
+}
+.rbc-dark .rbc-date-cell {
+  color: #94a3b8;
+  font-size: 12px;
+}
+.rbc-dark .rbc-date-cell.rbc-now {
+  color: #818cf8;
+  font-weight: 700;
+}
+.rbc-dark .rbc-time-content {
+  border-color: #1e293b;
+}
+.rbc-dark .rbc-time-gutter .rbc-timeslot-group,
+.rbc-dark .rbc-time-header-gutter {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+.rbc-dark .rbc-label {
+  color: #64748b;
+  font-size: 11px;
+}

@@ -32,6 +32,10 @@ export default function ScheduleInterviewModal() {
   const editInterview = interviews.find(i => i.id === activeInterviewId) ?? null
   const isEdit = Boolean(editInterview)
 
+  const alreadyScheduled = !isEdit && interviews.some(
+    i => i.applicationId === scheduleContext?.applicationId && i.status === 'Scheduled'
+  )
+
   const [form, setForm]   = useState(EMPTY)
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
@@ -106,13 +110,18 @@ export default function ScheduleInterviewModal() {
       footer={
         <>
           <BaseButton variant="secondary" onClick={closeScheduleModal} disabled={saving}>Cancel</BaseButton>
-          <BaseButton type="submit" form="schedule-interview-form" disabled={saving}>
+          <BaseButton type="submit" form="schedule-interview-form" disabled={saving || alreadyScheduled}>
             {saving ? (isEdit ? 'Saving...' : 'Scheduling...') : (isEdit ? 'Save Changes' : 'Schedule Interview')}
           </BaseButton>
         </>
       }
     >
       <form id="schedule-interview-form" onSubmit={handleSubmit} className="space-y-4">
+        {alreadyScheduled && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+            This candidate already has a scheduled interview. Reschedule or cancel the existing one before creating a new one.
+          </div>
+        )}
         {error && (
           <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
             {error}

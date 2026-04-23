@@ -11,10 +11,12 @@ const PipelinePage    = lazy(() => import('@/pages/admin/PipelinePage'))
 const InterviewsPage  = lazy(() => import('@/pages/admin/InterviewsPage'))
 const ReportsPage     = lazy(() => import('@/pages/admin/ReportsPage'))
 const UsersPage       = lazy(() => import('@/pages/admin/UsersPage'))
-const CareersPage     = lazy(() => import('@/pages/public/CareersPage'))
-const ApplicationPage = lazy(() => import('@/pages/public/ApplicationPage'))
-const JobDetailPage   = lazy(() => import('@/pages/public/JobDetailPage'))
-const LoginPage       = lazy(() => import('@/pages/public/LoginPage'))
+const CareersPage        = lazy(() => import('@/pages/public/CareersPage'))
+const ApplicationPage    = lazy(() => import('@/pages/public/ApplicationPage'))
+const JobDetailPage      = lazy(() => import('@/pages/public/JobDetailPage'))
+const LoginPage          = lazy(() => import('@/pages/public/LoginPage'))
+const PrivacyPolicyPage  = lazy(() => import('@/pages/public/PrivacyPolicyPage'))
+const TermsOfUsePage     = lazy(() => import('@/pages/public/TermsOfUsePage'))
 const NotFoundPage    = lazy(() => import('@/pages/shared/NotFoundPage'))
 
 const Loader = () => (
@@ -40,6 +42,8 @@ export const router = createBrowserRouter([
       { path: 'careers',              element: wrap(<CareersPage />) },
       { path: 'careers/:jobId',       element: wrap(<JobDetailPage />) },
       { path: 'careers/:jobId/apply', element: wrap(<ApplicationPage />) },
+      { path: 'privacy',              element: wrap(<PrivacyPolicyPage />) },
+      { path: 'terms',                element: wrap(<TermsOfUsePage />) },
     ],
   },
   {

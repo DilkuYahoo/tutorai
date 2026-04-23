@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import BaseBadge from '@/components/ui/BaseBadge'
 import BaseButton from '@/components/ui/BaseButton'
 import { useInterviews } from '@/hooks/useInterviews'
@@ -13,7 +14,8 @@ const STATUS_VARIANT = {
 }
 
 export default function InterviewRow({ interview }) {
-  const { openFeedbackModal, openScheduleModal } = useInterviews()
+  const { openFeedbackModal, openScheduleModal, updateInterview } = useInterviews()
+  const [confirmCancel, setConfirmCancel] = useState(false)
   const { candidates } = useCandidates()
   const { jobs } = useJobs()
   const { userById } = useUsers()
@@ -56,6 +58,27 @@ export default function InterviewRow({ interview }) {
               <BaseButton size="sm" variant="secondary" onClick={() => openFeedbackModal(interview.id)}>
                 Feedback
               </BaseButton>
+              {confirmCancel ? (
+                <span className="flex items-center gap-1 text-xs">
+                  <button
+                    onClick={() => { updateInterview(interview.id, { status: 'Cancelled' }); setConfirmCancel(false) }}
+                    className="text-red-400 hover:text-red-300 font-medium"
+                  >
+                    Confirm
+                  </button>
+                  <span className="text-slate-600">·</span>
+                  <button onClick={() => setConfirmCancel(false)} className="text-slate-500 hover:text-slate-300">
+                    Keep
+                  </button>
+                </span>
+              ) : (
+                <button
+                  onClick={() => setConfirmCancel(true)}
+                  className="text-xs text-slate-400 hover:text-red-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
             </>
           )}
           {interview.status === 'Completed' && interview.feedback && (

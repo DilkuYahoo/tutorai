@@ -1,8 +1,9 @@
 import { Outlet, Link } from 'react-router-dom'
+import AppFooter from './AppFooter'
 
 export default function PublicLayout() {
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-slate-950 flex flex-col">
       {/* Minimal public header */}
       <header className="fixed top-0 left-0 right-0 z-30 h-14 flex items-center justify-between px-6 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
         <Link to="/careers" className="flex items-center gap-2.5">
@@ -20,9 +21,10 @@ export default function PublicLayout() {
           Sign in →
         </Link>
       </header>
-      <main className="pt-14">
+      <main className="pt-14 flex-1">
         <Outlet />
       </main>
+      <AppFooter variant="public" />
     </div>
   )
 }

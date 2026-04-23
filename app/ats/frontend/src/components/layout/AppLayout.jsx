@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import AppSidebar from './AppSidebar'
 import AppTopbar from './AppTopbar'
+import AppFooter from './AppFooter'
 import FeedbackModal from '@/components/interviews/FeedbackModal'
 import ScheduleInterviewModal from '@/components/interviews/ScheduleInterviewModal'
 
@@ -27,6 +28,7 @@ export default function AppLayout() {
           <Outlet />
         </div>
       </main>
+      <AppFooter variant="admin" />
       <FeedbackModal />
       <ScheduleInterviewModal />
     </div>

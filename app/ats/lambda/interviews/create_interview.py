@@ -6,7 +6,7 @@ sys.path.insert(0, "/opt/python")
 import boto3
 from datetime import datetime, timezone
 
-from shared.response import created, bad_request, not_found, preflight
+from shared.response import created, bad_request, not_found, conflict, preflight
 from shared.auth import require_role, get_user_id
 from shared.ids import generate_id, utc_now
 from shared.validation import ValidationError, require_fields, require_enum, INTERVIEW_TYPES
@@ -48,6 +48,17 @@ def lambda_handler(event, context):
     app = db.get_item(f"APPLICATION#{application_id}", "#META")
     if not app:
         return not_found(f"Application {application_id} not found")
+
+    existing_interviews = db.query_gsi(
+        index="GSI1",
+        pk_name="GSI1PK",
+        pk_value=f"APPLICATION#{application_id}",
+        sk_name="GSI1SK",
+        sk_prefix="INTERVIEW#",
+    )
+    active = [i for i in existing_interviews if i.get("status") == "Scheduled"]
+    if active:
+        return conflict("This candidate already has a scheduled interview. Reschedule or cancel the existing one first.")
 
     interview_id = generate_id()
     scheduled_at = body["scheduledAt"]
