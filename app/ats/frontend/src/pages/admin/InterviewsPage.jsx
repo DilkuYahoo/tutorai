@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay } from 'date-fns'
-import { enAU } from 'date-fns/locale'
+import enAU from 'date-fns/locale/en-AU'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 
 import { useInterviews } from '@/hooks/useInterviews'

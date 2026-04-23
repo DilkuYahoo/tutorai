@@ -16,7 +16,7 @@ const PAGE_TITLES = {
 
 export default function AppLayout() {
   const location = useLocation()
-  const title = PAGE_TITLES[location.pathname] ?? 'Recruit'
+  const title = PAGE_TITLES[location.pathname] ?? 'Advice Lab'
 
   return (
     <div className="min-h-screen bg-slate-950">

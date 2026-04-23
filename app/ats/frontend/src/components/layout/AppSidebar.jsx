@@ -116,7 +116,7 @@ export default function AppSidebar() {
                 <path d="M9 12l-4-4 1.5-1.5L9 9l4.5-4.5L15 6z" />
               </svg>
             </div>
-            <span className="text-sm font-bold text-white tracking-tight">Recruit</span>
+            <span className="text-sm font-bold text-white tracking-tight">Advice Lab</span>
           </div>
         </div>
 
