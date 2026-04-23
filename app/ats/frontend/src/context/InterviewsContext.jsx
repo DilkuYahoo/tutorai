@@ -12,6 +12,7 @@ const initialState = {
   activeFeedbackId:      null,
   isScheduleModalOpen:   false,
   scheduleContext:       null, // { applicationId, candidateId, jobId, candidateName, jobTitle }
+  activeInterviewId:     null, // set when rescheduling an existing interview
 }
 
 function interviewsReducer(state, action) {
@@ -30,9 +31,14 @@ function interviewsReducer(state, action) {
     case 'CLOSE_FEEDBACK':
       return { ...state, activeFeedbackId: null, isFeedbackModalOpen: false }
     case 'OPEN_SCHEDULE':
-      return { ...state, scheduleContext: action.context, isScheduleModalOpen: true }
+      return { ...state, scheduleContext: action.context, activeInterviewId: action.interviewId ?? null, isScheduleModalOpen: true }
     case 'CLOSE_SCHEDULE':
-      return { ...state, scheduleContext: null, isScheduleModalOpen: false }
+      return { ...state, scheduleContext: null, activeInterviewId: null, isScheduleModalOpen: false }
+    case 'UPDATE_INTERVIEW':
+      return {
+        ...state,
+        interviews: state.interviews.map(i => i.id === action.interview.id ? action.interview : i),
+      }
     case 'SUBMIT_FEEDBACK':
       return {
         ...state,
@@ -73,8 +79,8 @@ export function InterviewsProvider({ children }) {
   const openFeedbackModal  = (interviewId) => dispatch({ type: 'OPEN_FEEDBACK', interviewId })
   const closeFeedbackModal = ()            => dispatch({ type: 'CLOSE_FEEDBACK' })
 
-  const openScheduleModal  = (context) => dispatch({ type: 'OPEN_SCHEDULE', context })
-  const closeScheduleModal = ()        => dispatch({ type: 'CLOSE_SCHEDULE' })
+  const openScheduleModal  = (context, interviewId = null) => dispatch({ type: 'OPEN_SCHEDULE', context, interviewId })
+  const closeScheduleModal = () => dispatch({ type: 'CLOSE_SCHEDULE' })
 
   const scheduleInterview = async (interview) => {
     if (!USE_API) {
@@ -83,6 +89,16 @@ export function InterviewsProvider({ children }) {
     }
     const created = await api.post('/interviews', interview)
     dispatch({ type: 'UPSERT_INTERVIEW', interview: created })
+  }
+
+  const updateInterview = async (interviewId, updates) => {
+    if (!USE_API) {
+      const existing = state.interviews.find(i => i.id === interviewId)
+      dispatch({ type: 'UPDATE_INTERVIEW', interview: { ...existing, ...updates } })
+      return
+    }
+    const updated = await api.put(`/interviews/${interviewId}`, updates)
+    dispatch({ type: 'UPDATE_INTERVIEW', interview: updated })
   }
 
   const submitFeedback = async (interviewId, feedback) => {

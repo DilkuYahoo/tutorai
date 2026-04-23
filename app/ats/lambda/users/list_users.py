@@ -32,6 +32,7 @@ def lambda_handler(event, context):
             "role": u.get("role"),
             "department": u.get("department", ""),
             "avatarInitials": u.get("avatarInitials", ""),
+            "status": u.get("status", "active"),
         }
         for u in items
     ]

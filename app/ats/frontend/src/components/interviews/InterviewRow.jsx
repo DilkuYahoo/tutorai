@@ -12,7 +12,7 @@ const STATUS_VARIANT = {
 }
 
 export default function InterviewRow({ interview }) {
-  const { openFeedbackModal } = useInterviews()
+  const { openFeedbackModal, openScheduleModal } = useInterviews()
   const { candidates } = useCandidates()
   const { jobs } = useJobs()
   const candidate = candidates.find(c => c.id === interview.candidateId)
@@ -39,14 +39,25 @@ export default function InterviewRow({ interview }) {
         <BaseBadge label={interview.status} variant={STATUS_VARIANT[interview.status] ?? 'slate'} />
       </td>
       <td className="px-4 py-3">
-        {interview.status === 'Scheduled' && (
-          <BaseButton size="sm" variant="secondary" onClick={() => openFeedbackModal(interview.id)}>
-            Feedback
-          </BaseButton>
-        )}
-        {interview.status === 'Completed' && interview.feedback && (
-          <span className="text-xs text-emerald-400">{'★'.repeat(interview.feedback.rating)} {interview.feedback.recommendation}</span>
-        )}
+        <div className="flex items-center gap-2">
+          {interview.status === 'Scheduled' && (
+            <>
+              <BaseButton size="sm" variant="secondary" onClick={() => openScheduleModal(
+                { applicationId: interview.applicationId, candidateId: interview.candidateId,
+                  jobId: interview.jobId, candidateName: `${candidate?.firstName ?? ''} ${candidate?.lastName ?? ''}`.trim(), jobTitle: job?.title ?? '' },
+                interview.id
+              )}>
+                Reschedule
+              </BaseButton>
+              <BaseButton size="sm" variant="secondary" onClick={() => openFeedbackModal(interview.id)}>
+                Feedback
+              </BaseButton>
+            </>
+          )}
+          {interview.status === 'Completed' && interview.feedback && (
+            <span className="text-xs text-emerald-400">{'★'.repeat(interview.feedback.rating)} {interview.feedback.recommendation}</span>
+          )}
+        </div>
       </td>
     </tr>
   )

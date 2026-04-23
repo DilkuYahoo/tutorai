@@ -96,20 +96,27 @@ def lambda_handler(event, context):
     # Async notification (fire-and-forget)
     if NOTIFICATION_LAMBDA_ARN:
         candidate = db.get_item(f"CANDIDATE#{existing.get('candidateId')}", "#META")
+        job       = db.get_item(f"JOB#{job_id}", "#META") if job_id else None
+        job_title = job.get("title", "") if job else ""
         if candidate:
-            payload = {
-                "template": "stage_change",
-                "recipientEmail": candidate.get("email"),
-                "recipientName": f"{candidate.get('firstName')} {candidate.get('lastName')}",
-                "variables": {
-                    "stage": new_stage,
-                    "jobId": job_id,
-                },
-            }
+            if new_stage == "Offer":
+                template  = "offer"
+                variables = {"jobTitle": job_title}
+            elif new_stage == "Rejected":
+                template  = "rejection"
+                variables = {"jobTitle": job_title}
+            else:
+                template  = "stage_change"
+                variables = {"stage": new_stage, "jobTitle": job_title}
             _get_lambda().invoke(
                 FunctionName=NOTIFICATION_LAMBDA_ARN,
                 InvocationType="Event",
-                Payload=json.dumps(payload).encode(),
+                Payload=json.dumps({
+                    "template":       template,
+                    "recipientEmail": candidate.get("email"),
+                    "recipientName":  f"{candidate.get('firstName')} {candidate.get('lastName')}",
+                    "variables":      variables,
+                }).encode(),
             )
 
     return ok({"stage": new_stage, "movedAt": now})

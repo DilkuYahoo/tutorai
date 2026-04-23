@@ -36,6 +36,7 @@ Globals:
         SEND_EMAIL_API_URL: !Ref SendEmailApiUrl
         NOTIFICATION_LAMBDA_ARN: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:ats-send-email"
         CORS_ORIGIN: !Ref CorsOrigin
+        USER_POOL_ID: !Ref UserPool
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Resources
@@ -215,6 +216,15 @@ Resources:
                 Action:
                   - lambda:InvokeFunction
                 Resource: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:ats-send-email"
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminUpdateUserAttributes
+                  - cognito-idp:AdminEnableUser
+                  - cognito-idp:AdminDisableUser
+                  - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminGetUser
+                Resource: !GetAtt UserPool.Arn
 
   # ─────────────────────────────────────────────────────────────────────────
   # Lambda Functions — Jobs
@@ -604,6 +614,91 @@ Resources:
             ApiId: !Ref Api
             Method: GET
             Path: /users
+            Auth:
+              Authorizer: CognitoJwt
+
+  InviteUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-invite-user
+      CodeUri: ../lambda/users/
+      Handler: invite_user.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /users
+            Auth:
+              Authorizer: CognitoJwt
+
+  UpdateUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-update-user
+      CodeUri: ../lambda/users/
+      Handler: update_user.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: PUT
+            Path: /users/{userId}
+            Auth:
+              Authorizer: CognitoJwt
+
+  EnableUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-enable-user
+      CodeUri: ../lambda/users/
+      Handler: enable_user.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /users/{userId}/enable
+            Auth:
+              Authorizer: CognitoJwt
+
+  DisableUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-disable-user
+      CodeUri: ../lambda/users/
+      Handler: disable_user.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /users/{userId}/disable
+            Auth:
+              Authorizer: CognitoJwt
+
+  DeleteUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-delete-user
+      CodeUri: ../lambda/users/
+      Handler: delete_user.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: DELETE
+            Path: /users/{userId}
             Auth:
               Authorizer: CognitoJwt
 

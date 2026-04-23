@@ -10,6 +10,7 @@ const CandidatesPage  = lazy(() => import('@/pages/admin/CandidatesPage'))
 const PipelinePage    = lazy(() => import('@/pages/admin/PipelinePage'))
 const InterviewsPage  = lazy(() => import('@/pages/admin/InterviewsPage'))
 const ReportsPage     = lazy(() => import('@/pages/admin/ReportsPage'))
+const UsersPage       = lazy(() => import('@/pages/admin/UsersPage'))
 const CareersPage     = lazy(() => import('@/pages/public/CareersPage'))
 const ApplicationPage = lazy(() => import('@/pages/public/ApplicationPage'))
 const LoginPage       = lazy(() => import('@/pages/public/LoginPage'))
@@ -56,6 +57,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireRole allowed={['admin']}>
             {wrap(<ReportsPage />)}
+          </RequireRole>
+        ),
+      },
+      {
+        path: 'users',
+        element: (
+          <RequireRole allowed={['admin']}>
+            {wrap(<UsersPage />)}
           </RequireRole>
         ),
       },

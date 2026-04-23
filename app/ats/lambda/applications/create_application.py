@@ -1,6 +1,9 @@
 import json
+import os
 import sys
 sys.path.insert(0, "/opt/python")
+
+import boto3
 
 from shared.response import created, bad_request, not_found, conflict, preflight
 from shared.ids import generate_id, utc_now, today
@@ -8,6 +11,15 @@ from shared.validation import ValidationError, require_fields
 from shared import db
 
 REQUIRED = ["candidateId", "jobId"]
+NOTIFICATION_LAMBDA_ARN = os.environ.get("NOTIFICATION_LAMBDA_ARN", "")
+
+_lambda_client = None
+
+def _get_lambda():
+    global _lambda_client
+    if _lambda_client is None:
+        _lambda_client = boto3.client("lambda")
+    return _lambda_client
 
 
 def lambda_handler(event, context):
@@ -104,5 +116,18 @@ def lambda_handler(event, context):
 
     # Increment applicantCount on the job (outside transaction — ADD is safe)
     db.increment(f"JOB#{job_id}", "#META", "applicantCount")
+
+    # Async notification — fire and forget
+    if NOTIFICATION_LAMBDA_ARN:
+        _get_lambda().invoke(
+            FunctionName=NOTIFICATION_LAMBDA_ARN,
+            InvocationType="Event",
+            Payload=json.dumps({
+                "template":       "application_received",
+                "recipientEmail": candidate.get("email"),
+                "recipientName":  f"{candidate.get('firstName')} {candidate.get('lastName')}",
+                "variables":      {"jobTitle": job.get("title", "")},
+            }).encode(),
+        )
 
     return created({"id": app_id})

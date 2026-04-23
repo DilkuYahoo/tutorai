@@ -25,15 +25,31 @@ const EMPTY = {
 }
 
 export default function ScheduleInterviewModal() {
-  const { isScheduleModalOpen, scheduleContext, closeScheduleModal, scheduleInterview } = useInterviews()
+  const { isScheduleModalOpen, scheduleContext, closeScheduleModal, scheduleInterview,
+          interviews, activeInterviewId, updateInterview } = useInterviews()
   const { users } = useUsers()
+
+  const editInterview = interviews.find(i => i.id === activeInterviewId) ?? null
+  const isEdit = Boolean(editInterview)
 
   const [form, setForm]   = useState(EMPTY)
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
 
   useEffect(() => {
-    if (isScheduleModalOpen) { setForm(EMPTY); setError('') }
+    if (!isScheduleModalOpen) return
+    setError('')
+    if (editInterview) {
+      setForm({
+        type:            editInterview.type,
+        scheduledAt:     editInterview.scheduledAt.slice(0, 16),
+        durationMinutes: String(editInterview.durationMinutes),
+        meetingLink:     editInterview.meetingLink ?? '',
+        panelIds:        editInterview.panelIds ?? [],
+      })
+    } else {
+      setForm(EMPTY)
+    }
   }, [isScheduleModalOpen])
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }))
@@ -54,17 +70,27 @@ export default function ScheduleInterviewModal() {
     setSaving(true)
     setError('')
     try {
-      await scheduleInterview({
-        applicationId:   scheduleContext.applicationId,
-        type:            form.type,
-        scheduledAt:     new Date(form.scheduledAt).toISOString(),
-        durationMinutes: parseInt(form.durationMinutes, 10),
-        panelIds:        form.panelIds,
-        ...(form.meetingLink ? { meetingLink: form.meetingLink } : {}),
-      })
+      if (isEdit) {
+        await updateInterview(editInterview.id, {
+          type:            form.type,
+          scheduledAt:     new Date(form.scheduledAt).toISOString(),
+          durationMinutes: parseInt(form.durationMinutes, 10),
+          panelIds:        form.panelIds,
+          ...(form.meetingLink ? { meetingLink: form.meetingLink } : {}),
+        })
+      } else {
+        await scheduleInterview({
+          applicationId:   scheduleContext.applicationId,
+          type:            form.type,
+          scheduledAt:     new Date(form.scheduledAt).toISOString(),
+          durationMinutes: parseInt(form.durationMinutes, 10),
+          panelIds:        form.panelIds,
+          ...(form.meetingLink ? { meetingLink: form.meetingLink } : {}),
+        })
+      }
       closeScheduleModal()
     } catch (err) {
-      setError(err.message || 'Failed to schedule interview.')
+      setError(err.message || (isEdit ? 'Failed to reschedule interview.' : 'Failed to schedule interview.'))
     } finally {
       setSaving(false)
     }
@@ -75,13 +101,13 @@ export default function ScheduleInterviewModal() {
   return (
     <BaseModal
       open={isScheduleModalOpen}
-      title="Schedule Interview"
+      title={isEdit ? 'Reschedule Interview' : 'Schedule Interview'}
       onClose={closeScheduleModal}
       footer={
         <>
           <BaseButton variant="secondary" onClick={closeScheduleModal} disabled={saving}>Cancel</BaseButton>
           <BaseButton type="submit" form="schedule-interview-form" disabled={saving}>
-            {saving ? 'Scheduling...' : 'Schedule Interview'}
+            {saving ? (isEdit ? 'Saving...' : 'Scheduling...') : (isEdit ? 'Save Changes' : 'Schedule Interview')}
           </BaseButton>
         </>
       }

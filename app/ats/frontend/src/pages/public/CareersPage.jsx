@@ -34,7 +34,7 @@ export default function CareersPage() {
   return (
     <div className="animate-fade-in">
       {/* Hero */}
-      <div className="bg-gradient-to-br from-indigo-950 via-slate-950 to-indigo-950 px-6 py-20 text-center relative">
+      <div className="hero-bg bg-gradient-to-br from-indigo-950 via-slate-950 to-indigo-950 px-6 py-20 text-center relative">
         <button
           onClick={toggleTheme}
           className="absolute top-6 right-6 p-2 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors"

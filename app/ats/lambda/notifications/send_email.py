@@ -32,10 +32,10 @@ TEMPLATES = {
         ),
     },
     "stage_change": {
-        "subject": "Update on your application",
+        "subject": "Update on your application — {jobTitle}",
         "body": (
             "Hi {recipientName},\n\n"
-            "Your application has moved to the next stage: {stage}.\n\n"
+            "Your application for {jobTitle} has moved to the next stage: {stage}.\n\n"
             "We'll be in touch with further details.\n\n"
             "Recruit Team"
         ),

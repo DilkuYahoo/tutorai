@@ -28,6 +28,7 @@ export const MOCK_USERS = [
     role: 'admin',
     avatarInitials: 'SC',
     department: 'Human Resources',
+    status: 'active',
   },
   {
     id: 'u2',
@@ -36,6 +37,7 @@ export const MOCK_USERS = [
     role: 'hiring_manager',
     avatarInitials: 'JO',
     department: 'Engineering',
+    status: 'active',
   },
   {
     id: 'u3',
@@ -44,6 +46,7 @@ export const MOCK_USERS = [
     role: 'hiring_manager',
     avatarInitials: 'PN',
     department: 'Product',
+    status: 'disabled',
   },
   {
     id: 'u4',
@@ -52,6 +55,7 @@ export const MOCK_USERS = [
     role: 'candidate',
     avatarInitials: 'TW',
     department: null,
+    status: 'active',
   },
 ]
 

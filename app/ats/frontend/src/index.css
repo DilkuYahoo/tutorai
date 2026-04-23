@@ -94,3 +94,7 @@ html.light .divide-slate-800 > :not([hidden]) ~ :not([hidden]) { border-color: #
 
 /* Topbar backdrop */
 html.light .backdrop-blur-md { backdrop-filter: blur(12px); }
+
+/* Hero sections with dark gradient backgrounds — keep text white regardless of theme */
+html.light .hero-bg .text-white   { color: #ffffff; }
+html.light .hero-bg .text-slate-400 { color: #94a3b8; }
