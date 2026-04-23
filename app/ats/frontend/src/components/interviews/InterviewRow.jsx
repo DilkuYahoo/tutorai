@@ -3,6 +3,7 @@ import BaseButton from '@/components/ui/BaseButton'
 import { useInterviews } from '@/hooks/useInterviews'
 import { useCandidates } from '@/hooks/useCandidates'
 import { useJobs } from '@/hooks/useJobs'
+import { useUsers } from '@/hooks/useUsers'
 
 const STATUS_VARIANT = {
   Scheduled: 'indigo',
@@ -15,9 +16,12 @@ export default function InterviewRow({ interview }) {
   const { openFeedbackModal, openScheduleModal } = useInterviews()
   const { candidates } = useCandidates()
   const { jobs } = useJobs()
+  const { userById } = useUsers()
   const candidate = candidates.find(c => c.id === interview.candidateId)
   const job = jobs.find(j => j.id === interview.jobId)
-  const panel = (interview.panelIds ?? []).join(', ')
+  const panel = (interview.panelIds ?? [])
+    .map(id => userById(id)?.name ?? id)
+    .join(', ')
 
   const dt = new Date(interview.scheduledAt)
   const dateStr = dt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })

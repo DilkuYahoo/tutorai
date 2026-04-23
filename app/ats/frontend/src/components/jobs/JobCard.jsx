@@ -33,13 +33,21 @@ export default function JobCard({ job }) {
 
       <p className="text-sm text-slate-400 line-clamp-2">{job.description}</p>
 
-      <button
-        onClick={() => navigate(`/careers/${job.id}/apply`)}
-        disabled={job.status !== 'Open'}
-        className="mt-auto w-full py-2.5 rounded-xl text-sm font-semibold transition-colors bg-indigo-500 hover:bg-indigo-400 text-white disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        Apply Now
-      </button>
+      <div className="mt-auto flex gap-2">
+        <button
+          onClick={() => navigate(`/careers/${job.id}`)}
+          className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors bg-slate-800 hover:bg-slate-700 text-slate-300"
+        >
+          View Details
+        </button>
+        <button
+          onClick={() => navigate(`/careers/${job.id}/apply`)}
+          disabled={job.status !== 'Open'}
+          className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors bg-indigo-500 hover:bg-indigo-400 text-white disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Apply Now
+        </button>
+      </div>
     </div>
   )
 }

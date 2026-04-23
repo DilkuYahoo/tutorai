@@ -11,7 +11,7 @@ def lambda_handler(event, context):
     if event.get("requestContext", {}).get("http", {}).get("method") == "OPTIONS":
         return preflight()
 
-    denied = require_role(event, "admin")
+    denied = require_role(event, "admin", "hiring_manager")
     if denied:
         return denied
 

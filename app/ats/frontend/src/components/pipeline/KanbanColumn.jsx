@@ -1,6 +1,9 @@
+import { useDroppable } from '@dnd-kit/core'
 import KanbanCard from './KanbanCard'
 
 export default function KanbanColumn({ stage, applications, candidates }) {
+  const { setNodeRef, isOver } = useDroppable({ id: stage })
+
   return (
     <div className="flex flex-col w-64 shrink-0">
       {/* Column header */}
@@ -12,10 +15,17 @@ export default function KanbanColumn({ stage, applications, candidates }) {
       </div>
 
       {/* Cards */}
-      <div className="flex flex-col gap-2 min-h-[120px] p-2 rounded-xl bg-slate-900/40 border border-slate-800/60">
+      <div
+        ref={setNodeRef}
+        className={`flex flex-col gap-2 min-h-[120px] p-2 rounded-xl border transition-colors
+          ${isOver
+            ? 'bg-indigo-500/5 border-indigo-500/30 ring-1 ring-inset ring-indigo-500/20'
+            : 'bg-slate-900/40 border-slate-800/60'
+          }`}
+      >
         {applications.length === 0 ? (
           <div className="flex items-center justify-center h-20">
-            <p className="text-xs text-slate-700">Empty</p>
+            <p className="text-xs text-slate-700">{isOver ? 'Drop here' : 'Empty'}</p>
           </div>
         ) : (
           applications.map(app => {

@@ -121,6 +121,7 @@ export function InterviewsProvider({ children }) {
       closeFeedbackModal,
       submitFeedback,
       scheduleInterview,
+      updateInterview,
       openScheduleModal,
       closeScheduleModal,
     }}>

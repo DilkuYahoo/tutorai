@@ -75,31 +75,34 @@ def lambda_handler(event, context):
 
     db.put_item(item)
 
-    # Async notification — fire and forget
+    # Async notification — fire and forget (must never raise)
     if NOTIFICATION_LAMBDA_ARN:
-        candidate = db.get_item(f"CANDIDATE#{app.get('candidateId')}", "#META")
-        job       = db.get_item(f"JOB#{app.get('jobId')}", "#META")
-        if candidate:
-            # Format scheduled time for display: "Mon 12 May 2025 at 2:00 PM"
-            try:
-                dt = datetime.fromisoformat(scheduled_at.replace("Z", "+00:00"))
-                dt_str = dt.strftime("%-d %B %Y at %-I:%M %p")
-            except Exception:
-                dt_str = scheduled_at
-            _get_lambda().invoke(
-                FunctionName=NOTIFICATION_LAMBDA_ARN,
-                InvocationType="Event",
-                Payload=json.dumps({
-                    "template":       "interview_invite",
-                    "recipientEmail": candidate.get("email"),
-                    "recipientName":  f"{candidate.get('firstName')} {candidate.get('lastName')}",
-                    "variables": {
-                        "jobTitle":      job.get("title", "") if job else "",
-                        "interviewType": body["type"],
-                        "scheduledAt":   dt_str,
-                        "meetingLink":   body.get("meetingLink", ""),
-                    },
-                }).encode(),
-            )
+        try:
+            candidate = db.get_item(f"CANDIDATE#{app.get('candidateId')}", "#META")
+            job       = db.get_item(f"JOB#{app.get('jobId')}", "#META")
+            if candidate:
+                # Format scheduled time for display: "12 May 2025 at 2:00 PM"
+                try:
+                    dt = datetime.fromisoformat(scheduled_at.replace("Z", "+00:00"))
+                    dt_str = dt.strftime("%-d %B %Y at %-I:%M %p")
+                except Exception:
+                    dt_str = scheduled_at
+                _get_lambda().invoke(
+                    FunctionName=NOTIFICATION_LAMBDA_ARN,
+                    InvocationType="Event",
+                    Payload=json.dumps({
+                        "template":       "interview_invite",
+                        "recipientEmail": candidate.get("email"),
+                        "recipientName":  f"{candidate.get('firstName')} {candidate.get('lastName')}",
+                        "variables": {
+                            "jobTitle":      job.get("title", "") if job else "",
+                            "interviewType": body["type"],
+                            "scheduledAt":   dt_str,
+                            "meetingLink":   body.get("meetingLink", ""),
+                        },
+                    }).encode(),
+                )
+        except Exception:
+            pass
 
     return created({"id": interview_id})

@@ -93,30 +93,33 @@ def lambda_handler(event, context):
         {"Put": {"Item": audit_item}},
     ])
 
-    # Async notification (fire-and-forget)
+    # Async notification (fire-and-forget — must never raise)
     if NOTIFICATION_LAMBDA_ARN:
-        candidate = db.get_item(f"CANDIDATE#{existing.get('candidateId')}", "#META")
-        job       = db.get_item(f"JOB#{job_id}", "#META") if job_id else None
-        job_title = job.get("title", "") if job else ""
-        if candidate:
-            if new_stage == "Offer":
-                template  = "offer"
-                variables = {"jobTitle": job_title}
-            elif new_stage == "Rejected":
-                template  = "rejection"
-                variables = {"jobTitle": job_title}
-            else:
-                template  = "stage_change"
-                variables = {"stage": new_stage, "jobTitle": job_title}
-            _get_lambda().invoke(
-                FunctionName=NOTIFICATION_LAMBDA_ARN,
-                InvocationType="Event",
-                Payload=json.dumps({
-                    "template":       template,
-                    "recipientEmail": candidate.get("email"),
-                    "recipientName":  f"{candidate.get('firstName')} {candidate.get('lastName')}",
-                    "variables":      variables,
-                }).encode(),
-            )
+        try:
+            candidate = db.get_item(f"CANDIDATE#{existing.get('candidateId')}", "#META")
+            job       = db.get_item(f"JOB#{job_id}", "#META") if job_id else None
+            job_title = job.get("title", "") if job else ""
+            if candidate:
+                if new_stage == "Offer":
+                    template  = "offer"
+                    variables = {"jobTitle": job_title}
+                elif new_stage == "Rejected":
+                    template  = "rejection"
+                    variables = {"jobTitle": job_title}
+                else:
+                    template  = "stage_change"
+                    variables = {"stage": new_stage, "jobTitle": job_title}
+                _get_lambda().invoke(
+                    FunctionName=NOTIFICATION_LAMBDA_ARN,
+                    InvocationType="Event",
+                    Payload=json.dumps({
+                        "template":       template,
+                        "recipientEmail": candidate.get("email"),
+                        "recipientName":  f"{candidate.get('firstName')} {candidate.get('lastName')}",
+                        "variables":      variables,
+                    }).encode(),
+                )
+        except Exception:
+            pass
 
     return ok({"stage": new_stage, "movedAt": now})

@@ -117,17 +117,20 @@ def lambda_handler(event, context):
     # Increment applicantCount on the job (outside transaction — ADD is safe)
     db.increment(f"JOB#{job_id}", "#META", "applicantCount")
 
-    # Async notification — fire and forget
+    # Async notification — fire and forget (must never raise)
     if NOTIFICATION_LAMBDA_ARN:
-        _get_lambda().invoke(
-            FunctionName=NOTIFICATION_LAMBDA_ARN,
-            InvocationType="Event",
-            Payload=json.dumps({
-                "template":       "application_received",
-                "recipientEmail": candidate.get("email"),
-                "recipientName":  f"{candidate.get('firstName')} {candidate.get('lastName')}",
-                "variables":      {"jobTitle": job.get("title", "")},
-            }).encode(),
-        )
+        try:
+            _get_lambda().invoke(
+                FunctionName=NOTIFICATION_LAMBDA_ARN,
+                InvocationType="Event",
+                Payload=json.dumps({
+                    "template":       "application_received",
+                    "recipientEmail": candidate.get("email"),
+                    "recipientName":  f"{candidate.get('firstName')} {candidate.get('lastName')}",
+                    "variables":      {"jobTitle": job.get("title", "")},
+                }).encode(),
+            )
+        except Exception:
+            pass
 
     return created({"id": app_id})

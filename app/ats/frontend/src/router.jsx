@@ -13,6 +13,7 @@ const ReportsPage     = lazy(() => import('@/pages/admin/ReportsPage'))
 const UsersPage       = lazy(() => import('@/pages/admin/UsersPage'))
 const CareersPage     = lazy(() => import('@/pages/public/CareersPage'))
 const ApplicationPage = lazy(() => import('@/pages/public/ApplicationPage'))
+const JobDetailPage   = lazy(() => import('@/pages/public/JobDetailPage'))
 const LoginPage       = lazy(() => import('@/pages/public/LoginPage'))
 const NotFoundPage    = lazy(() => import('@/pages/shared/NotFoundPage'))
 
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
     element: <PublicLayout />,
     children: [
       { path: 'careers',              element: wrap(<CareersPage />) },
+      { path: 'careers/:jobId',       element: wrap(<JobDetailPage />) },
       { path: 'careers/:jobId/apply', element: wrap(<ApplicationPage />) },
     ],
   },
