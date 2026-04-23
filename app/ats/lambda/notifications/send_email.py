@@ -1,22 +1,13 @@
 import json
 import os
 import sys
-import boto3
+import urllib.request
 sys.path.insert(0, "/opt/python")
 
 from shared.response import ok, bad_request
 
-SES_FROM = os.environ.get("SES_FROM_ADDRESS", "noreply@recruit.example.com")
-SES_REGION = os.environ.get("SES_REGION", "ap-southeast-2")
-
-_ses = None
-
-
-def _get_ses():
-    global _ses
-    if _ses is None:
-        _ses = boto3.client("ses", region_name=SES_REGION)
-    return _ses
+SEND_EMAIL_API_URL = os.environ.get("SEND_EMAIL_API_URL", "")
+SENDER_ADDRESS     = os.environ.get("SES_FROM_ADDRESS", "noreply@advicelab.com.au")
 
 
 TEMPLATES = {
@@ -103,13 +94,24 @@ def lambda_handler(event, context):
     except KeyError as e:
         return bad_request(f"Missing template variable: {e}")
 
-    _get_ses().send_email(
-        Source=SES_FROM,
-        Destination={"ToAddresses": [recipient_email]},
-        Message={
-            "Subject": {"Data": subject, "Charset": "UTF-8"},
-            "Body": {"Text": {"Data": body, "Charset": "UTF-8"}},
-        },
+    if not SEND_EMAIL_API_URL:
+        return ok({"sent": False, "reason": "SEND_EMAIL_API_URL not configured"})
+
+    payload = json.dumps({
+        "sender":    SENDER_ADDRESS,
+        "recipient": recipient_email,
+        "subject":   subject,
+        "body":      body,
+        "is_html":   False,
+    }).encode()
+
+    req = urllib.request.Request(
+        SEND_EMAIL_API_URL,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
     )
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        pass
 
     return ok({"sent": True, "to": recipient_email, "template": template_key})

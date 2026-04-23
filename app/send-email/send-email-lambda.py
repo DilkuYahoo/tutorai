@@ -244,20 +244,6 @@ def lambda_handler(event, context):
             })
         }
 
-    # Validate recipient domain
-    is_valid, error_message = validate_email_domain(recipient)
-    if not is_valid:
-        return {
-            "statusCode": 400,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Content-Type": "application/json"
-            },
-            "body": json.dumps({
-                "error": f"Recipient {error_message}"
-            })
-        }
-
     # Validate attachments if provided
     if attachments:
         is_valid, error_message = validate_attachments(attachments)

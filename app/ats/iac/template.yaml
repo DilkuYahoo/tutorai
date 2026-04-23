@@ -8,10 +8,10 @@ Description: ATS — Applicant Tracking System (SAM template)
 Parameters:
   SesFromAddress:
     Type: String
-    Default: noreply@recruit.example.com
-  SesRegion:
+    Default: noreply@advicelab.com.au
+  SendEmailApiUrl:
     Type: String
-    Default: ap-southeast-2
+    Default: ""
   CorsOrigin:
     Type: String
     Default: "*"
@@ -33,7 +33,7 @@ Globals:
         RESUME_BUCKET: advicelab
         RESUME_PREFIX: ats/resumes/prod
         SES_FROM_ADDRESS: !Ref SesFromAddress
-        SES_REGION: !Ref SesRegion
+        SEND_EMAIL_API_URL: !Ref SendEmailApiUrl
         NOTIFICATION_LAMBDA_ARN: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:ats-send-email"
         CORS_ORIGIN: !Ref CorsOrigin
 
@@ -211,10 +211,6 @@ Resources:
                   - s3:DeleteObject
                 Resource:
                   - arn:aws:s3:::advicelab/ats/resumes/prod/*
-              - Effect: Allow
-                Action:
-                  - ses:SendEmail
-                Resource: "*"
               - Effect: Allow
                 Action:
                   - lambda:InvokeFunction
@@ -669,14 +665,6 @@ Resources:
             Auth:
               Authorizer: NONE
 
-  SendEmailFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: ats-send-email
-      CodeUri: ../lambda/notifications/
-      Handler: send_email.lambda_handler
-      Role: !GetAtt LambdaExecutionRole.Arn
-      # Invoked directly (async) by other functions — no API route
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Outputs

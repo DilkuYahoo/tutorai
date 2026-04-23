@@ -12,18 +12,57 @@ const EMPTY = {
   salaryMin: '', salaryMax: '', salaryCurrency: 'AUD', status: 'Draft', description: '',
 }
 
+// Format number with thousand separators
+const formatNumber = (value) => {
+  if (!value && value !== 0) return ''
+  const num = Number(value)
+  return isNaN(num) ? '' : num.toLocaleString('en-AU')
+}
+
+// Parse formatted number string back to raw value
+const parseFormattedNumber = (value) => {
+  const cleaned = value.replace(/[,$\s]/g, '')
+  const num = parseFloat(cleaned)
+  return isNaN(num) ? '' : num
+}
+
 export default function JobModal() {
   const { isModalOpen, activeJob, closeModal, saveJob } = useJobs()
   const [form, setForm]       = useState(EMPTY)
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
+  const [salaryInputs, setSalaryInputs] = useState({ salaryMin: '', salaryMax: '' })
 
   useEffect(() => {
-    setForm(activeJob ? { ...activeJob } : EMPTY)
+    if (activeJob) {
+      setForm({ ...activeJob })
+      setSalaryInputs({
+        salaryMin: activeJob.salaryMin ? String(activeJob.salaryMin) : '',
+        salaryMax: activeJob.salaryMax ? String(activeJob.salaryMax) : '',
+      })
+    } else {
+      setForm(EMPTY)
+      setSalaryInputs({ salaryMin: '', salaryMax: '' })
+    }
     setError('')
   }, [activeJob, isModalOpen])
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }))
+
+  const handleSalaryChange = (field, value) => {
+    // Store raw input string (without formatting while typing)
+    setSalaryInputs(prev => ({ ...prev, [field]: value }))
+    // Parse to number for form state
+    const rawValue = parseFormattedNumber(value)
+    setForm(f => ({ ...f, [field]: rawValue }))
+  }
+
+  const handleSalaryBlur = (field) => {
+    // Format on blur with thousand separators
+    const rawValue = form[field]
+    const formatted = formatNumber(rawValue)
+    setSalaryInputs(prev => ({ ...prev, [field]: formatted }))
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -100,23 +139,27 @@ export default function JobModal() {
             onChange={e => set('status', e.target.value)}
           />
         </div>
-        <div className="grid grid-cols-3 gap-4">
-          <BaseInput
-            label="Salary Min (AUD)"
-            id="salaryMin"
-            type="number"
-            value={form.salaryMin}
-            onChange={e => set('salaryMin', e.target.value)}
-            placeholder="120000"
-          />
-          <BaseInput
-            label="Salary Max (AUD)"
-            id="salaryMax"
-            type="number"
-            value={form.salaryMax}
-            onChange={e => set('salaryMax', e.target.value)}
-            placeholder="150000"
-          />
+         <div className="grid grid-cols-3 gap-4">
+           <BaseInput
+             label="Salary Min (AUD)"
+             id="salaryMin"
+             type="text"
+             inputMode="numeric"
+             value={salaryInputs.salaryMin}
+             onChange={e => handleSalaryChange('salaryMin', e.target.value)}
+             onBlur={() => handleSalaryBlur('salaryMin')}
+             placeholder="e.g. 120,000"
+           />
+           <BaseInput
+             label="Salary Max (AUD)"
+             id="salaryMax"
+             type="text"
+             inputMode="numeric"
+             value={salaryInputs.salaryMax}
+             onChange={e => handleSalaryChange('salaryMax', e.target.value)}
+             onBlur={() => handleSalaryBlur('salaryMax')}
+             placeholder="e.g. 150,000"
+           />
           <BaseInput
             label="Currency"
             id="salaryCurrency"

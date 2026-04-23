@@ -176,7 +176,7 @@ export default function ApplicationPage() {
             <BaseInput label="Last Name"  value={form.lastName}  onChange={e => set('lastName',  e.target.value)} placeholder="Smith" required />
           </div>
           <BaseInput label="Email"    type="email" value={form.email}      onChange={e => set('email',      e.target.value)} placeholder="alex@email.com" required />
-          <BaseInput label="Phone"    type="tel"   value={form.phone}      onChange={e => set('phone',      e.target.value)} placeholder="+61 412 000 000" required />
+          <BaseInput label="Phone"    type="tel"   value={form.phone}      onChange={e => set('phone',      e.target.value)} placeholder="+63 917 123 4567" required />
           <BaseInput label="Location"              value={form.location}   onChange={e => set('location',   e.target.value)} placeholder="Sydney, NSW" />
           <BaseInput label="LinkedIn URL (optional)" value={form.linkedinUrl} onChange={e => set('linkedinUrl', e.target.value)} placeholder="https://linkedin.com/in/..." />
         </div>

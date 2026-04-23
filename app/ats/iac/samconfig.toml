@@ -9,8 +9,9 @@ cached   = true
 parallel = true
 
 [default.deploy.parameters]
-region            = "ap-southeast-2"
-confirm_changeset = true
-resolve_s3        = true
-capabilities      = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
-s3_prefix         = "ats"
+region              = "ap-southeast-2"
+confirm_changeset   = true
+resolve_s3          = true
+capabilities        = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+s3_prefix           = "ats"
+parameter_overrides = "SesFromAddress=\"noreply@advicelab.com.au\" SendEmailApiUrl=\"https://oxch4uog7g.execute-api.ap-southeast-2.amazonaws.com/prod/send-email\""
