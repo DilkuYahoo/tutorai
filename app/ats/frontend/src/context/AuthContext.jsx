@@ -1,7 +1,7 @@
 import { createContext, useReducer, useEffect } from 'react'
 import { MOCK_USERS } from '@/data/mockData'
 import { USE_API, api, setAuthToken } from '@/services/api'
-import { getSession, cognitoLogin, cognitoLogout } from '@/services/cognito'
+import { getSession, cognitoLogin, cognitoLogout, completeNewPassword } from '@/services/cognito'
 
 export const AuthContext = createContext(null)
 
@@ -35,15 +35,16 @@ function MockProvider({ children }) {
 
 function apiReducer(state, action) {
   switch (action.type) {
-    case 'LOADING':       return { authState: 'loading',         currentUser: null }
-    case 'AUTHENTICATED': return { authState: 'authenticated',   currentUser: action.user }
-    case 'UNAUTHENTICATED': return { authState: 'unauthenticated', currentUser: null }
-    default:              return state
+    case 'LOADING':         return { authState: 'loading',          currentUser: null, cognitoUser: null }
+    case 'AUTHENTICATED':   return { authState: 'authenticated',    currentUser: action.user, cognitoUser: null }
+    case 'UNAUTHENTICATED': return { authState: 'unauthenticated',  currentUser: null, cognitoUser: null }
+    case 'PASSWORD_CHANGE': return { authState: 'password_change',  currentUser: null, cognitoUser: action.cognitoUser }
+    default:                return state
   }
 }
 
 function ApiProvider({ children }) {
-  const [state, dispatch] = useReducer(apiReducer, { authState: 'loading', currentUser: null })
+  const [state, dispatch] = useReducer(apiReducer, { authState: 'loading', currentUser: null, cognitoUser: null })
 
   useEffect(() => {
     getSession()
@@ -56,7 +57,18 @@ function ApiProvider({ children }) {
   }, [])
 
   const login = async (email, password) => {
-    const session = await cognitoLogin(email, password)
+    const result = await cognitoLogin(email, password)
+    if (result.type === 'new_password_required') {
+      dispatch({ type: 'PASSWORD_CHANGE', cognitoUser: result.cognitoUser })
+      return
+    }
+    setAuthToken(result.session.getIdToken().getJwtToken())
+    const user = await api.get('/users/me')
+    dispatch({ type: 'AUTHENTICATED', user })
+  }
+
+  const setNewPassword = async (newPassword, name) => {
+    const session = await completeNewPassword(state.cognitoUser, newPassword, { name })
     setAuthToken(session.getIdToken().getJwtToken())
     const user = await api.get('/users/me')
     dispatch({ type: 'AUTHENTICATED', user })
@@ -69,7 +81,7 @@ function ApiProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, setRole: () => {} }}>
+    <AuthContext.Provider value={{ ...state, login, logout, setNewPassword, setRole: () => {} }}>
       {children}
     </AuthContext.Provider>
   )

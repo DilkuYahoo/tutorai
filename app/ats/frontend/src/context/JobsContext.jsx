@@ -1,6 +1,7 @@
-import { createContext, useReducer, useEffect } from 'react'
+import { createContext, useReducer, useEffect, useContext } from 'react'
 import { MOCK_JOBS } from '@/data/mockData'
 import { USE_API, api } from '@/services/api'
+import { AuthContext } from '@/context/AuthContext'
 
 export const JobsContext = createContext(null)
 
@@ -42,13 +43,14 @@ function jobsReducer(state, action) {
 
 export function JobsProvider({ children }) {
   const [state, dispatch] = useReducer(jobsReducer, initialState)
+  const { authState } = useContext(AuthContext)
 
   useEffect(() => {
-    if (!USE_API) return
+    if (!USE_API || authState !== 'authenticated') return
     api.get('/jobs')
       .then(jobs => dispatch({ type: 'SET_JOBS', jobs }))
       .catch(console.error)
-  }, [])
+  }, [authState])
 
   const openCreateModal = () => dispatch({ type: 'OPEN_CREATE_MODAL' })
   const openEditModal   = (jobId) => dispatch({ type: 'OPEN_EDIT_MODAL', jobId })

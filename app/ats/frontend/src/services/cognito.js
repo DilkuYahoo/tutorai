@@ -29,9 +29,18 @@ export function cognitoLogin(email, password) {
     const user = new CognitoUser({ Username: email, Pool: userPool })
     const authDetails = new AuthenticationDetails({ Username: email, Password: password })
     user.authenticateUser(authDetails, {
+      onSuccess: (session) => resolve({ type: 'authenticated', session }),
+      onFailure: (err) => reject(err),
+      newPasswordRequired: () => resolve({ type: 'new_password_required', cognitoUser: user }),
+    })
+  })
+}
+
+export function completeNewPassword(cognitoUser, newPassword, requiredAttributes = {}) {
+  return new Promise((resolve, reject) => {
+    cognitoUser.completeNewPasswordChallenge(newPassword, requiredAttributes, {
       onSuccess: (session) => resolve(session),
       onFailure: (err) => reject(err),
-      newPasswordRequired: () => reject(new Error('Password change required — use the AWS Console to set a permanent password.')),
     })
   })
 }

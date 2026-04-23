@@ -11,7 +11,7 @@ import { UsersProvider } from '@/context/UsersContext'
 import { useAuth } from '@/hooks/useAuth'
 import './index.css'
 
-// Only mount data providers once auth has resolved — prevents 401s on initial load
+// Providers always mount in the same tree position — each context gates its own fetch on authState
 function DataProviders({ children }) {
   const { authState } = useAuth()
   if (authState === 'loading') return null

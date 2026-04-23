@@ -1,6 +1,7 @@
-import { createContext, useReducer, useEffect } from 'react'
+import { createContext, useReducer, useEffect, useContext } from 'react'
 import { MOCK_INTERVIEWS } from '@/data/mockData'
 import { USE_API, api } from '@/services/api'
+import { AuthContext } from '@/context/AuthContext'
 
 export const InterviewsContext = createContext(null)
 
@@ -50,13 +51,14 @@ function interviewsReducer(state, action) {
 
 export function InterviewsProvider({ children }) {
   const [state, dispatch] = useReducer(interviewsReducer, initialState)
+  const { authState } = useContext(AuthContext)
 
   useEffect(() => {
-    if (!USE_API) return
+    if (!USE_API || authState !== 'authenticated') return
     api.get('/interviews')
       .then(interviews => dispatch({ type: 'SET_INTERVIEWS', interviews }))
       .catch(console.error)
-  }, [])
+  }, [authState])
 
   const upcomingInterviews = state.interviews
     .filter(i => i.status === 'Scheduled')

@@ -1,6 +1,7 @@
-import { createContext, useReducer, useEffect, useMemo } from 'react'
+import { createContext, useReducer, useEffect, useMemo, useContext } from 'react'
 import { MOCK_CANDIDATES, MOCK_APPLICATIONS } from '@/data/mockData'
 import { USE_API, api } from '@/services/api'
+import { AuthContext } from '@/context/AuthContext'
 
 export const CandidatesContext = createContext(null)
 
@@ -62,15 +63,16 @@ function flattenBoard(board) {
 
 export function CandidatesProvider({ children }) {
   const [state, dispatch] = useReducer(candidatesReducer, initialState)
+  const { authState } = useContext(AuthContext)
 
   useEffect(() => {
-    if (!USE_API) return
+    if (!USE_API || authState !== 'authenticated') return
     Promise.all([api.get('/pipeline'), api.get('/candidates')])
       .then(([board, candidates]) => {
         dispatch({ type: 'SET_DATA', candidates, applications: flattenBoard(board) })
       })
       .catch(console.error)
-  }, [])
+  }, [authState])
 
   const filteredApplications = useMemo(() => {
     return state.applications.filter(app => {
