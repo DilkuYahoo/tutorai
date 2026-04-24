@@ -1,99 +1,109 @@
-# Project Scope: Recruitment Platform (ATS)
+# Project Scope: Advice Lab ATS
 
 ## Overview
 
-A web-based Applicant Tracking System (ATS) that enables HR teams and hiring managers to manage the full recruitment lifecycle — from job creation through to candidate hire. The platform is built in phases, with an MVP focused on replacing manual spreadsheet-based workflows.
+A web-based Applicant Tracking System (ATS) that enables HR teams and hiring managers to manage the full recruitment lifecycle — from job creation through to candidate hire. Built and maintained by CognifyLabs.ai. Hosted at ats.advicelab.com.au.
+
+The platform is built in phases, with the MVP focused on replacing manual spreadsheet-based workflows.
 
 ---
 
-## Phase 1 — MVP
+## Phase 1 — MVP ✅ Delivered
 
-**Target delivery: 6–8 weeks**
+### 1. User & Access Management ✅
 
-The MVP delivers the core hiring workflow sufficient to onboard real users and replace spreadsheets.
+- User roles: Admin, Hiring Manager (role stored as `custom:role` in Cognito)
+- Role-based access control (RBAC) on all routes — frontend and backend enforced
+- Email authentication via AWS Cognito (JWT)
+- First-login password reset flow: Cognito `NEW_PASSWORD_REQUIRED` challenge handled in `LoginPage`
+- Admin user management: invite, enable/disable, delete, role update via `/users` routes
+- Email is case-insensitive at login (normalised to lowercase before Cognito auth)
+- Password minimum length: 8 characters
 
-### 1. User & Access Management
+### 2. Job Requisition Management ✅
 
-- User roles: Admin (HR), Hiring Manager, Candidate
-- Role-based access control (RBAC)
-- Email authentication (SSO optional in a later phase)
-- Activity and audit logs for candidate actions and status changes
-
-### 2. Job Requisition Management
-
-- Create and manage job requisitions with the following details:
-  - Title, description, location, salary range
-  - Employment type (full-time, part-time, contract, etc.)
+- Create and manage job requisitions: title, description, location, salary range, employment type
 - Job status lifecycle: Draft → Open → Closed → On Hold → Archived
-- Approval workflow: Hiring Manager → HR → Approval
-- Versioning of job descriptions
+- Approval workflow and versioning: out of scope for Phase 1
 
-### 3. Job Posting & Distribution
+### 3. Job Posting & Distribution ✅
 
-- Publish jobs internally and to external job boards (manual in Phase 1, API-based in Phase 2)
-- Basic employer branding: company logo and description
+- Jobs published to the public careers page immediately on status → Open
+- External job board integrations (Seek, LinkedIn, JORA): Phase 2
 
-### 4. Candidate Application Portal
+### 4. Candidate Application Portal ✅
 
-- Public-facing application form per role:
-  - Personal details
-  - Resume upload
-  - Optional cover letter
-- Apply via shareable link
-- Confirmation email sent on submission
+- Public-facing application form per role: personal details, resume upload, optional cover letter
+- Apply via shareable link (`/careers/:jobId/apply`)
+- Confirmation email sent on submission via async Lambda notification
 
-### 5. Candidate Management
+### 5. Candidate Management ✅
 
-- Candidate profile containing:
-  - Personal information
-  - Uploaded resume and supporting documents
-  - Full application history
-  - Tags (skills, role fit, priority)
-  - Recruiter notes and comments
-- Candidate search and filtering
+- Candidate profile: personal info, resume, application history, tags, recruiter notes
+- Candidate search and filtering on the Candidates page
+- **Communication Score**: manual 1–10 rating set by recruiters in the Candidate Drawer; auto-saved on click; specific to each candidate (resets on drawer switch)
+- Tags: add/remove inline in the Candidate Drawer
 
-### 6. Hiring Pipeline
+### 6. Hiring Pipeline ✅
 
-- Customisable pipeline stages:
-  - Applied → Screening → Interview → Final Interview → Offer → Hired / Rejected
-- Status change history log per candidate
+- Kanban board view: Applied → Screening → Interview → Final Interview → Offer → Hired / Rejected
+- Drag-and-drop stage moves via `@dnd-kit/core` with optimistic UI (instant move, reverts on API error)
+- Stage move also available from inline card dropdown and Candidate Drawer
+- Stage change history log per application (displayed in Candidate Drawer)
+- **Fit Score**: manual 1–10 rating set per application; displayed as a progress bar on Kanban cards; auto-saved on click in the Candidate Drawer; audited on every change
 
-### 7. Resume Handling
+### 7. Resume Handling ✅
 
-- Resume upload and secure storage
-- Manual review in Phase 1; automated parsing in Phase 2
+- Resume upload to S3 via pre-signed URL (`POST /resumes/upload-url`)
+- Secure storage in `s3://advicelab/ats/resumes/{env}/`
+- Automated parsing: Phase 2
 
-### 8. Interview Management
+### 8. Interview Management ✅
 
-- Manual interview scheduling
+- Manual interview scheduling with date/time, type, duration, panel members, location/link
 - Interview types: Phone, Video, In-person
-- Interview feedback forms with ratings and comments
-- Interview panel assignment
+- Interview feedback forms with ratings, recommendation, and comments
+- **One active interview per application**: creating a second Scheduled interview returns a 409 conflict; frontend shows a warning banner and disables submit
+- **Cancel with reason**: admins and hiring managers can cancel a scheduled interview with a mandatory reason; cancellation is logged in the audit trail
+- **Cancelled interviews are hidden**: excluded from all UI views (upcoming list, past list, calendar) but retained in DynamoDB for audit purposes
+- **Calendar view**: `react-big-calendar` week view with clickable event panel (reschedule, cancel, feedback)
+- **List view**: Upcoming (Scheduled) and Past (Completed, No-show) sections
+- **Filters**: search by candidate name or job title; filter by position, panel member, date
+- **Time-based row differentiation**: interviews currently in progress are highlighted with a green background and "Ongoing" pill badge
 
-### 9. Communication & Notifications
+### 9. Communication & Notifications ✅
 
-- Email templates for: application received, interview invite, rejection, offer
-- Bulk email capability
-- Automated notifications for stage changes and interview reminders
-- Per-candidate communication history
+- Email templates: application received, interview invite, stage change, offer, rejection
+- Async Lambda notifications (fire-and-forget, wrapped in `try/except` — email failures never affect API responses)
+- Per-candidate communication history: Phase 2
 
-### 10. Audit Trail
+### 10. Audit Trail ✅
 
-- Full candidate journey tracking: Application → Screening → HR Review → HM Review → Interview → Offer
-- Action-level visibility: who performed each action (HR, Hiring Manager, or system)
-- Each entry captures: timestamp, reviewer name, and feedback
+- Audit items stored in DynamoDB: `PK=AUDIT#{entityId}`, `SK={timestamp}#{action}`
+- Each entry captures: timestamp, action type, actor ID, actor name, detail text
+- Actions audited: fit score updates, stage moves, interview cancellations (with reason)
+- **Audit trail displayed in the Candidate Drawer** under the "Activity" section — lazy-loaded from `GET /audit/{applicationId}` when the drawer opens
+- Query API: `GET /audit/{entityId}` (admin-only)
 
-### 11. Reporting & Analytics
+### 11. Reporting & Analytics ✅
 
 - Hiring metrics: time-to-hire, time-in-stage, stage conversion rates
-- Source tracking (where candidates originated)
-- Recruiter performance metrics
+- Source tracking, recruiter performance metrics
+- Dashboard with summary stat cards and ECharts visualisations
 
-### 12. Careers Page
+### 12. Careers Page ✅
 
-- Public job listings page with apply button per role
-- Basic branding: logo and company description
+- Public job listings at `/careers` with apply button per role
+- Individual job detail page at `/careers/:jobId`
 - Mobile responsive
+
+### 13. Legal & Branding ✅
+
+- Application name: **Advice Lab** (previously "Recruit" — fully replaced)
+- Footer on all pages: copyright "AdviceLab Pty Ltd", built by CognifyLabs.ai with link
+- Privacy Policy page (`/privacy`): covers Australian Privacy Act 1988, APPs, AWS Sydney storage, OAIC complaint pathway
+- Terms of Use page (`/terms`): covers authorised use, candidate submissions, prohibited conduct, NSW law
+- Both pages are placeholders and must be reviewed by a lawyer before going live with real candidates
 
 ---
 
@@ -102,6 +112,8 @@ The MVP delivers the core hiring workflow sufficient to onboard real users and r
 - Calendar integration: Google Calendar, Outlook
 - Job board integrations: Seek, LinkedIn, JORA
 - Automated resume parsing (name, experience, skills extraction)
+- Per-candidate communication history log
+- Bulk email capability
 
 ---
 

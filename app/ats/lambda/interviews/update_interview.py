@@ -3,11 +3,12 @@ import sys
 sys.path.insert(0, "/opt/python")
 
 from shared.response import ok, bad_request, not_found, preflight
-from shared.auth import require_role
+from shared.auth import require_role, get_user_id, get_user_name
+from shared.ids import utc_now
 from shared.validation import ValidationError, require_enum, INTERVIEW_STATUSES
 from shared import db
 
-ALLOWED_FIELDS = {"scheduledAt", "durationMinutes", "panelIds", "meetingLink", "status"}
+ALLOWED_FIELDS = {"scheduledAt", "durationMinutes", "panelIds", "meetingLink", "status", "cancellationReason"}
 
 
 def lambda_handler(event, context):
@@ -38,6 +39,10 @@ def lambda_handler(event, context):
     except ValidationError as e:
         return bad_request(str(e))
 
+    # Require a reason when cancelling
+    if updates.get("status") == "Cancelled" and not updates.get("cancellationReason", "").strip():
+        return bad_request("cancellationReason is required when cancelling an interview")
+
     # Update GSI2SK if status or scheduledAt changes
     if "status" in updates or "scheduledAt" in updates:
         new_status = updates.get("status", existing.get("status"))
@@ -46,6 +51,24 @@ def lambda_handler(event, context):
         if "scheduledAt" in updates:
             updates["GSI1SK"] = f"INTERVIEW#{new_scheduled}"
 
+    now       = utc_now()
+    actor_id  = get_user_id(event)
+    actor_name = get_user_name(event)
+
     updated = db.update_item(f"INTERVIEW#{interview_id}", "#META", updates)
+
+    # Write audit item for cancellations
+    if updates.get("status") == "Cancelled":
+        db.put_item({
+            "PK":        f"AUDIT#{interview_id}",
+            "SK":        f"{now}#INTERVIEW_CANCELLED",
+            "entityId":  interview_id,
+            "action":    "INTERVIEW_CANCELLED",
+            "actorId":   actor_id,
+            "actorName": actor_name,
+            "timestamp": now,
+            "detail":    updates.get("cancellationReason", ""),
+        })
+
     interview = {k: v for k, v in updated.items() if not k.startswith(("PK", "SK", "GSI"))}
     return ok(interview)

@@ -25,9 +25,10 @@ export function getSession() {
 }
 
 export function cognitoLogin(email, password) {
+  const normEmail = email.trim().toLowerCase()
   return new Promise((resolve, reject) => {
-    const user = new CognitoUser({ Username: email, Pool: userPool })
-    const authDetails = new AuthenticationDetails({ Username: email, Password: password })
+    const user = new CognitoUser({ Username: normEmail, Pool: userPool })
+    const authDetails = new AuthenticationDetails({ Username: normEmail, Password: password })
     user.authenticateUser(authDetails, {
       onSuccess: (session) => resolve({ type: 'authenticated', session }),
       onFailure: (err) => reject(err),

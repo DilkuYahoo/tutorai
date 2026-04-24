@@ -24,20 +24,22 @@ const STATUS_VARIANT = { Scheduled: 'indigo', Completed: 'emerald', Cancelled: '
 
 export default function InterviewsPage() {
   const { upcomingInterviews, pastInterviews, openScheduleModal, updateInterview } = useInterviews()
-  const [confirmCancel, setConfirmCancel] = useState(false)
   const { candidates } = useCandidates()
   const { users, userById } = useUsers()
   const { jobs } = useJobs()
+
   const [view, setView] = useState('list')
   const [search, setSearch] = useState('')
+  const [filterJobId, setFilterJobId] = useState('')
+  const [filterPanelId, setFilterPanelId] = useState('')
+  const [filterDate, setFilterDate] = useState('')
   const [selectedEvent, setSelectedEvent] = useState(null)
+  const [calendarCancelOpen, setCalendarCancelOpen] = useState(false)
+  const [calendarCancelReason, setCalendarCancelReason] = useState('')
+  const [calendarCancelSaving, setCalendarCancelSaving] = useState(false)
+  const [expandedId, setExpandedId] = useState(null)
 
-  const handleSelectEvent = (e) => { setSelectedEvent(e.resource); setConfirmCancel(false) }
-
-  const allInterviews = useMemo(
-    () => [...upcomingInterviews, ...pastInterviews],
-    [upcomingInterviews, pastInterviews]
-  )
+  const handleSelectEvent = (e) => { setSelectedEvent(e.resource); setCalendarCancelOpen(false); setCalendarCancelReason('') }
 
   const candidateById = useMemo(() => {
     const m = {}
@@ -56,29 +58,43 @@ export default function InterviewsPage() {
     return c ? `${c.firstName} ${c.lastName}` : ''
   }
 
-  const getJobTitle = (interview) => {
-    const j = jobById[interview.jobId]
-    return j?.title ?? interview.jobTitle ?? ''
-  }
+  const getJobTitle = (interview) => jobById[interview.jobId]?.title ?? interview.jobTitle ?? ''
+
+  const allInterviews = useMemo(
+    () => [...upcomingInterviews, ...pastInterviews],
+    [upcomingInterviews, pastInterviews]
+  )
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return allInterviews
-    const q = search.toLowerCase()
     return allInterviews.filter(i => {
-      const name = getName(i).toLowerCase()
-      const title = getJobTitle(i).toLowerCase()
-      return name.includes(q) || title.includes(q)
+      if (search.trim()) {
+        const q = search.toLowerCase()
+        const name = getName(i).toLowerCase()
+        const title = getJobTitle(i).toLowerCase()
+        if (!name.includes(q) && !title.includes(q)) return false
+      }
+      if (filterJobId && i.jobId !== filterJobId) return false
+      if (filterPanelId && !(i.panelIds ?? []).includes(filterPanelId)) return false
+      if (filterDate) {
+        const iDate = new Date(i.scheduledAt).toISOString().slice(0, 10)
+        if (iDate !== filterDate) return false
+      }
+      return true
     })
-  }, [allInterviews, search, candidateById, jobById])
+  }, [allInterviews, search, filterJobId, filterPanelId, filterDate, candidateById, jobById])
 
+  // Past: interviews with feedback go to bottom
   const filteredUpcoming = useMemo(
     () => filtered.filter(i => upcomingInterviews.some(u => u.id === i.id)),
     [filtered, upcomingInterviews]
   )
-  const filteredPast = useMemo(
-    () => filtered.filter(i => pastInterviews.some(p => p.id === i.id)),
-    [filtered, pastInterviews]
-  )
+  const filteredPast = useMemo(() => {
+    const past = filtered.filter(i => pastInterviews.some(p => p.id === i.id))
+    return [
+      ...past.filter(i => !i.feedback),
+      ...past.filter(i => i.feedback),
+    ]
+  }, [filtered, pastInterviews])
 
   const calendarEvents = useMemo(() =>
     filtered.map(i => ({
@@ -90,6 +106,18 @@ export default function InterviewsPage() {
     })),
     [filtered, candidateById, jobById]
   )
+
+  const handleCalendarCancel = async () => {
+    if (!calendarCancelReason.trim()) return
+    setCalendarCancelSaving(true)
+    try {
+      await updateInterview(selectedEvent.id, { status: 'Cancelled', cancellationReason: calendarCancelReason.trim() })
+      setSelectedEvent(null)
+      setCalendarCancelOpen(false)
+    } finally {
+      setCalendarCancelSaving(false)
+    }
+  }
 
   const Table = ({ interviews }) => (
     <div className="rounded-2xl border border-slate-800 overflow-hidden">
@@ -105,11 +133,21 @@ export default function InterviewsPage() {
           </tr>
         </thead>
         <tbody>
-          {interviews.map(i => <InterviewRow key={i.id} interview={i} />)}
+          {interviews.map(i => (
+            <InterviewRow
+              key={i.id}
+              interview={i}
+              expanded={expandedId === i.id}
+              onExpand={(id) => setExpandedId(expandedId === id ? null : id)}
+            />
+          ))}
         </tbody>
       </table>
     </div>
   )
+
+  const hasFilters = search || filterJobId || filterPanelId || filterDate
+  const clearFilters = () => { setSearch(''); setFilterJobId(''); setFilterPanelId(''); setFilterDate('') }
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -119,31 +157,58 @@ export default function InterviewsPage() {
           <h1 className="text-xl font-bold text-white">Interviews</h1>
           <p className="text-sm text-slate-400 mt-0.5">{upcomingInterviews.length} upcoming</p>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Search */}
-          <input
-            type="text"
-            placeholder="Search candidate or role..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-56 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors"
-          />
-          {/* View toggle */}
-          <div className="flex rounded-xl border border-slate-700 overflow-hidden">
-            <button
-              onClick={() => setView('list')}
-              className={`px-3 py-2 text-xs font-medium transition-colors ${view === 'list' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-            >
-              List
-            </button>
-            <button
-              onClick={() => setView('calendar')}
-              className={`px-3 py-2 text-xs font-medium transition-colors ${view === 'calendar' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-            >
-              Calendar
-            </button>
-          </div>
+        <div className="flex rounded-xl border border-slate-700 overflow-hidden">
+          <button
+            onClick={() => setView('list')}
+            className={`px-3 py-2 text-xs font-medium transition-colors ${view === 'list' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+          >
+            List
+          </button>
+          <button
+            onClick={() => setView('calendar')}
+            className={`px-3 py-2 text-xs font-medium transition-colors ${view === 'calendar' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+          >
+            Calendar
+          </button>
         </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <input
+          type="text"
+          placeholder="Search candidate or role…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-52 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors"
+        />
+        <select
+          value={filterJobId}
+          onChange={e => setFilterJobId(e.target.value)}
+          className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 transition-colors"
+        >
+          <option value="">All positions</option>
+          {jobs.map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
+        </select>
+        <select
+          value={filterPanelId}
+          onChange={e => setFilterPanelId(e.target.value)}
+          className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 transition-colors"
+        >
+          <option value="">All panel members</option>
+          {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+        </select>
+        <input
+          type="date"
+          value={filterDate}
+          onChange={e => setFilterDate(e.target.value)}
+          className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 transition-colors"
+        />
+        {hasFilters && (
+          <button onClick={clearFilters} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+            Clear filters ×
+          </button>
+        )}
       </div>
 
       {view === 'list' ? (
@@ -151,7 +216,7 @@ export default function InterviewsPage() {
           <section>
             <h2 className="text-sm font-semibold text-slate-300 mb-3">Upcoming</h2>
             {filteredUpcoming.length === 0
-              ? <EmptyState heading="No upcoming interviews" subtext={search ? 'No matches for your search.' : 'Schedule interviews from the Candidates page.'} />
+              ? <EmptyState heading="No upcoming interviews" subtext={hasFilters ? 'No matches for your filters.' : 'Schedule interviews from the Candidates page.'} />
               : <Table interviews={filteredUpcoming} />
             }
           </section>
@@ -165,7 +230,6 @@ export default function InterviewsPage() {
         </>
       ) : (
         <div className="flex gap-6">
-          {/* Calendar */}
           <div className="flex-1 min-w-0 rbc-dark">
             <Calendar
               localizer={localizer}
@@ -179,7 +243,6 @@ export default function InterviewsPage() {
             />
           </div>
 
-          {/* Right panel */}
           {selectedEvent && (
             <div className="w-72 shrink-0 rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-4 animate-slide-in-right">
               <div className="flex items-start justify-between gap-2">
@@ -211,55 +274,73 @@ export default function InterviewsPage() {
                   <p className="text-slate-500 text-xs mb-1">Panel</p>
                   {(selectedEvent.panelIds ?? []).length === 0
                     ? <p className="text-slate-600 text-xs">—</p>
-                    : (selectedEvent.panelIds).map(id => (
+                    : selectedEvent.panelIds.map(id => (
                         <p key={id} className="text-slate-300 text-xs">{userById(id)?.name ?? id}</p>
                       ))
                   }
                 </div>
-              </div>
-
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={() => {
-                    const c = candidateById[selectedEvent.candidateId]
-                    openScheduleModal({
-                      applicationId: selectedEvent.applicationId,
-                      candidateName: c ? `${c.firstName} ${c.lastName}` : '',
-                      jobTitle: getJobTitle(selectedEvent),
-                    }, selectedEvent.id)
-                    setSelectedEvent(null)
-                  }}
-                  className="flex-1 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-300 hover:text-white hover:border-indigo-500/50 transition-colors"
-                >
-                  Reschedule
-                </button>
-                {selectedEvent.status === 'Scheduled' && (
-                  confirmCancel ? (
-                    <span className="flex items-center gap-2 text-xs">
-                      <button
-                        onClick={() => {
-                          updateInterview(selectedEvent.id, { status: 'Cancelled' })
-                          setSelectedEvent(null)
-                          setConfirmCancel(false)
-                        }}
-                        className="text-red-400 hover:text-red-300 font-medium"
-                      >
-                        Confirm cancel
-                      </button>
-                      <button onClick={() => setConfirmCancel(false)} className="text-slate-500 hover:text-slate-300">
-                        Keep
-                      </button>
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmCancel(true)}
-                      className="flex-1 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-500/20 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  )
+                {selectedEvent.feedback && (
+                  <div className="pt-1 border-t border-slate-800">
+                    <p className="text-slate-500 text-xs mb-1">Feedback</p>
+                    <p className="text-emerald-400 text-xs">{'★'.repeat(selectedEvent.feedback.rating)} {selectedEvent.feedback.recommendation}</p>
+                    {selectedEvent.feedback.notes && <p className="text-slate-400 text-xs mt-1">{selectedEvent.feedback.notes}</p>}
+                  </div>
                 )}
               </div>
+
+              {selectedEvent.status === 'Scheduled' && (
+                <div className="space-y-2 pt-1">
+                  <button
+                    onClick={() => {
+                      const c = candidateById[selectedEvent.candidateId]
+                      openScheduleModal({
+                        applicationId: selectedEvent.applicationId,
+                        candidateName: c ? `${c.firstName} ${c.lastName}` : '',
+                        jobTitle: getJobTitle(selectedEvent),
+                      }, selectedEvent.id)
+                      setSelectedEvent(null)
+                    }}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-300 hover:text-white hover:border-indigo-500/50 transition-colors"
+                  >
+                    Reschedule
+                  </button>
+
+                  {calendarCancelOpen ? (
+                    <div className="space-y-2">
+                      <textarea
+                        autoFocus
+                        className="w-full rounded-xl border border-red-500/30 bg-slate-800 px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-red-500/50 resize-none"
+                        rows={3}
+                        placeholder="Reason for cancellation (required)…"
+                        value={calendarCancelReason}
+                        onChange={e => setCalendarCancelReason(e.target.value)}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleCalendarCancel}
+                          disabled={!calendarCancelReason.trim() || calendarCancelSaving}
+                          className="flex-1 rounded-xl bg-red-600 hover:bg-red-500 px-3 py-2 text-xs font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {calendarCancelSaving ? 'Cancelling…' : 'Confirm Cancel'}
+                        </button>
+                        <button
+                          onClick={() => setCalendarCancelOpen(false)}
+                          className="px-3 py-2 text-xs text-slate-400 hover:text-white transition-colors"
+                        >
+                          Keep
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setCalendarCancelOpen(true); setCalendarCancelReason('') }}
+                      className="w-full rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-500/20 transition-colors"
+                    >
+                      Cancel Interview
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -6,7 +6,7 @@ from shared.response import ok, bad_request, not_found, preflight
 from shared.auth import require_role
 from shared import db
 
-ALLOWED_FIELDS = {"tags", "notes", "linkedinUrl", "phone", "location", "resumeUrl"}
+ALLOWED_FIELDS = {"tags", "notes", "linkedinUrl", "phone", "location", "resumeUrl", "communicationScore"}
 
 
 def lambda_handler(event, context):

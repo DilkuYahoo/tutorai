@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import BaseDrawer from '@/components/ui/BaseDrawer'
 import BaseSelect from '@/components/ui/BaseSelect'
 import BaseButton from '@/components/ui/BaseButton'
@@ -7,12 +7,68 @@ import CandidateTagList from './CandidateTagList'
 import { useCandidates } from '@/hooks/useCandidates'
 import { useInterviews } from '@/hooks/useInterviews'
 import { PIPELINE_STAGES } from '@/data/mockData'
+import { USE_API, api } from '@/services/api'
+
+const ACTION_LABELS = {
+  FIT_SCORE_UPDATED:     'Fit score updated',
+  STAGE_MOVED:           'Stage moved',
+  INTERVIEW_CANCELLED:   'Interview cancelled',
+  INTERVIEW_SCHEDULED:   'Interview scheduled',
+  FEEDBACK_SUBMITTED:    'Feedback submitted',
+}
+
+function AuditTimeline({ appId }) {
+  const [entries, setEntries] = useState(null)
+  const [error, setError]     = useState(false)
+
+  useEffect(() => {
+    if (!appId) return
+    setEntries(null)
+    setError(false)
+    if (!USE_API) { setEntries([]); return }
+    api.get(`/audit/${appId}`)
+      .then(data => setEntries(data ?? []))
+      .catch(() => setError(true))
+  }, [appId])
+
+  if (error) return <p className="text-xs text-red-400">Could not load activity.</p>
+  if (entries === null) return <p className="text-xs text-slate-500 animate-pulse">Loading…</p>
+  if (entries.length === 0) return <p className="text-xs text-slate-600">No activity recorded yet.</p>
+
+  return (
+    <ol className="space-y-3">
+      {entries.map((e, i) => (
+        <li key={i} className="flex gap-3">
+          <div className="mt-1 w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0" />
+          <div>
+            <p className="text-xs text-slate-300">{ACTION_LABELS[e.action] ?? e.action}</p>
+            {e.detail && <p className="text-xs text-slate-500 mt-0.5">{e.detail}</p>}
+            <p className="text-xs text-slate-600 mt-0.5">
+              {e.actorName || 'System'} · {e.timestamp ? new Date(e.timestamp).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+            </p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  )
+}
 
 export default function CandidateDrawer() {
-  const { isDrawerOpen, activeApplication, activeCandidate, closeDrawer, moveStage, addNote } = useCandidates()
+  const { isDrawerOpen, activeApplication, activeCandidate, closeDrawer, moveStage, updateApplication, addNote, _updateCandidate } = useCandidates()
   const { openScheduleModal } = useInterviews()
   const [noteInput, setNoteInput] = useState('')
   const [newStage, setNewStage] = useState('')
+  const [commScore, setCommScore] = useState(null)
+  const [commSaved, setCommSaved] = useState(false)
+  const [fitScore, setFitScore] = useState(null)
+  const [fitSaved, setFitSaved] = useState(false)
+
+  useEffect(() => {
+    setCommScore(null)
+    setCommSaved(false)
+    setFitScore(null)
+    setFitSaved(false)
+  }, [activeCandidate?.id])
 
   if (!activeApplication || !activeCandidate) return null
 
@@ -52,13 +108,84 @@ export default function CandidateDrawer() {
 
         {/* Fit score */}
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2">Fit Score</p>
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-2 rounded-full bg-slate-800 overflow-hidden">
-              <div className="h-full rounded-full bg-indigo-500 transition-all" style={{ width: `${activeApplication.fitScore}%` }} />
-            </div>
-            <span className="text-sm font-semibold text-white">{activeApplication.fitScore}%</span>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Fit Score</p>
+            {fitSaved && <span className="text-xs text-emerald-400 animate-fade-in">Saved ✓</span>}
           </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {[1,2,3,4,5,6,7,8,9,10].map(n => {
+              const current = fitScore !== null ? fitScore : activeApplication?.fitScore
+              const selected = current === n
+              return (
+                <button
+                  key={n}
+                  onClick={async () => {
+                    setFitScore(n)
+                    setFitSaved(false)
+                    await updateApplication(activeApplication.id, { fitScore: n })
+                    setFitSaved(true)
+                    setTimeout(() => setFitSaved(false), 2000)
+                  }}
+                  className={`w-8 h-8 rounded-lg text-xs font-semibold border transition-colors
+                    ${selected
+                      ? 'bg-indigo-600 border-indigo-500 text-white'
+                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-indigo-500/50 hover:text-white'
+                    }`}
+                >
+                  {n}
+                </button>
+              )
+            })}
+            {(fitScore !== null || activeApplication?.fitScore) && (
+              <span className="text-xs text-slate-500 ml-1">
+                {(fitScore ?? activeApplication?.fitScore)}/10
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-slate-600 mt-1.5">Tap a score to save — auto-saved immediately</p>
+        </div>
+
+        {/* Communication Score */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Communication Score</p>
+            {commSaved && (
+              <span className="text-xs text-emerald-400 animate-fade-in">Saved ✓</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {[1,2,3,4,5,6,7,8,9,10].map(n => {
+              const currentScore = commScore !== null ? commScore : activeCandidate.communicationScore
+              const selected = currentScore === n
+              return (
+                <button
+                  key={n}
+                  onClick={async () => {
+                    setCommScore(n)
+                    setCommSaved(false)
+                    if (_updateCandidate) {
+                      await _updateCandidate(activeCandidate.id, { communicationScore: n })
+                      setCommSaved(true)
+                      setTimeout(() => setCommSaved(false), 2000)
+                    }
+                  }}
+                  className={`w-8 h-8 rounded-lg text-xs font-semibold border transition-colors
+                    ${selected
+                      ? 'bg-indigo-600 border-indigo-500 text-white'
+                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-indigo-500/50 hover:text-white'
+                    }`}
+                >
+                  {n}
+                </button>
+              )
+            })}
+            {(commScore !== null || activeCandidate.communicationScore) && (
+              <span className="text-xs text-slate-500 ml-1">
+                {(commScore ?? activeCandidate.communicationScore)}/10
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-slate-600 mt-1.5">Tap a score to save — auto-saved immediately</p>
         </div>
 
         {/* Tags */}
@@ -159,6 +286,12 @@ export default function CandidateDrawer() {
             />
             <BaseButton type="submit" size="sm" disabled={!noteInput.trim()}>Add</BaseButton>
           </form>
+        </div>
+
+        {/* Activity / Audit trail */}
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">Activity</p>
+          <AuditTimeline appId={activeApplication.id} />
         </div>
 
         {/* LinkedIn */}

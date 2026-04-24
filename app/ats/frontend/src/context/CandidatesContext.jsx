@@ -40,6 +40,13 @@ function candidatesReducer(state, action) {
           c.id === action.candidate.id ? action.candidate : c
         ),
       }
+    case 'UPDATE_APPLICATION':
+      return {
+        ...state,
+        applications: state.applications.map(a =>
+          a.id === action.appId ? { ...a, ...action.patch } : a
+        ),
+      }
     default:
       return state
   }
@@ -96,12 +103,16 @@ export function CandidatesProvider({ children }) {
   const setFilter   = (key, value)     => dispatch({ type: 'SET_FILTER', key, value })
 
   const moveStage = async (appId, stage, note) => {
-    if (!USE_API) {
-      dispatch({ type: 'MOVE_STAGE', appId, stage })
-      return
-    }
-    await api.post(`/applications/${appId}/move`, { stage, note: note ?? '' })
     dispatch({ type: 'MOVE_STAGE', appId, stage })
+    if (!USE_API) return
+    try {
+      await api.post(`/applications/${appId}/move`, { stage, note: note ?? '' })
+    } catch (err) {
+      // revert on failure
+      const prev = state.applications.find(a => a.id === appId)
+      if (prev) dispatch({ type: 'MOVE_STAGE', appId, stage: prev.stage })
+      console.error('moveStage failed:', err)
+    }
   }
 
   const _updateCandidate = async (candidateId, patch) => {
@@ -111,6 +122,19 @@ export function CandidatesProvider({ children }) {
     }
     const updated = await api.put(`/candidates/${candidateId}`, patch)
     dispatch({ type: 'UPDATE_CANDIDATE', candidate: updated })
+  }
+
+  const updateApplication = async (appId, patch) => {
+    dispatch({ type: 'UPDATE_APPLICATION', appId, patch })
+    if (!USE_API) return
+    try {
+      await api.put(`/applications/${appId}`, patch)
+    } catch (err) {
+      // revert on failure
+      const prev = state.applications.find(a => a.id === appId)
+      if (prev) dispatch({ type: 'UPDATE_APPLICATION', appId, patch: { fitScore: prev.fitScore } })
+      console.error('updateApplication failed:', err)
+    }
   }
 
   const addNote = (candidateId, text) => {
@@ -142,9 +166,11 @@ export function CandidatesProvider({ children }) {
       closeDrawer,
       setFilter,
       moveStage,
+      updateApplication,
       addNote,
       addTag,
       removeTag,
+      _updateCandidate,
     }}>
       {children}
     </CandidatesContext.Provider>

@@ -110,7 +110,7 @@ Resources:
       AutoVerifiedAttributes: [email]
       Policies:
         PasswordPolicy:
-          MinimumLength: 12
+          MinimumLength: 8
           RequireUppercase: true
           RequireLowercase: true
           RequireNumbers: true
@@ -485,6 +485,23 @@ Resources:
             ApiId: !Ref Api
             Method: POST
             Path: /applications/{applicationId}/move
+            Auth:
+              Authorizer: CognitoJwt
+
+  UpdateApplicationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ats-update-application
+      CodeUri: ../lambda/applications/
+      Handler: update_application.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: PUT
+            Path: /applications/{applicationId}
             Auth:
               Authorizer: CognitoJwt
 

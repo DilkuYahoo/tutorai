@@ -43,12 +43,14 @@ export default function KanbanCard({ application, candidate, isDragOverlay = fal
       </div>
 
       {/* Fit score bar */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1 h-1 rounded-full bg-slate-800 overflow-hidden">
-          <div className="h-full rounded-full bg-indigo-500" style={{ width: `${application.fitScore}%` }} />
+      {application.fitScore != null && (
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1 rounded-full bg-slate-800 overflow-hidden">
+            <div className="h-full rounded-full bg-indigo-500" style={{ width: `${application.fitScore * 10}%` }} />
+          </div>
+          <span className="text-xs text-slate-500">{application.fitScore}/10</span>
         </div>
-        <span className="text-xs text-slate-500">{application.fitScore}%</span>
-      </div>
+      )}
 
       {/* Move select — hidden during drag overlay */}
       {!isDragOverlay && (
