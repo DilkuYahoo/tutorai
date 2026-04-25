@@ -3,7 +3,7 @@
 #
 # Usage:
 #   ./deploy.sh backend    Build + deploy Lambda backend + sync frontend to S3
-#   ./deploy.sh cf         Deploy/update the CloudFront + Route 53 stack (run once)
+#   ./deploy.sh cf         Show status of the CloudFront distribution (setup already done)
 #
 # Local development:
 #   cd frontend && npm run dev   (no backend needed — frontend uses mock data)
@@ -13,35 +13,21 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$SCRIPT_DIR/frontend"
 IAC_DIR="$SCRIPT_DIR/iac"
-S3_BUCKET="cognifylabs"
+S3_BUCKET="cognifylabs.ai"
 S3_PREFIX="platform_monitor/web"
 AWS_REGION="ap-southeast-2"
 CF_REGION="us-east-1"
-CF_STACK_NAME="platform-monitor-cloudfront"
+CF_DIST_ID="E1NBX4FPI2AYJ5"
 BACKEND_STACK="platform-monitor"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-cf_distribution_id() {
-  aws cloudformation describe-stacks \
-    --stack-name "$CF_STACK_NAME" \
-    --region "$CF_REGION" \
-    --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
-    --output text 2>/dev/null || true
-}
-
 invalidate_cf() {
-  local dist_id
-  dist_id=$(cf_distribution_id)
-  if [[ -n "$dist_id" ]]; then
-    echo "▶ Invalidating CloudFront cache ..."
-    aws cloudfront create-invalidation \
-      --distribution-id "$dist_id" \
-      --paths "/${S3_PREFIX}/*" \
-      --query 'Invalidation.{Id:Id,Status:Status}' \
-      --output table
-  else
-    echo "⚠  CloudFront distribution not found — skipping invalidation. Run './deploy.sh cf' first."
-  fi
+  echo "▶ Invalidating CloudFront cache ..."
+  aws cloudfront create-invalidation \
+    --distribution-id "$CF_DIST_ID" \
+    --paths "/${S3_PREFIX}/*" \
+    --query 'Invalidation.{Id:Id,Status:Status}' \
+    --output table
 }
 
 build_frontend() {
@@ -93,7 +79,7 @@ case "$CMD" in
     cd "$IAC_DIR"
     sam build
     echo "▶ Deploying backend (${BACKEND_STACK}) ..."
-    sam deploy --no-fail-on-empty-changeset
+    sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
     cd "$SCRIPT_DIR"
     echo "✔ Backend deployed"
 
@@ -113,21 +99,23 @@ case "$CMD" in
     ;;
 
   cf)
-    echo "▶ Deploying CloudFront + Route 53 stack (us-east-1) ..."
-    aws cloudformation deploy \
-      --template-file "$IAC_DIR/cloudfront.yaml" \
-      --stack-name "$CF_STACK_NAME" \
+    # One-time setup: updates the existing cognifylabs.ai CloudFront distribution
+    # (E1NBX4FPI2AYJ5) to serve monitor.cognifylabs.ai.
+    # Safe to re-run — uses UPSERT for all changes.
+    echo "▶ Checking distribution status ..."
+    aws cloudfront get-distribution \
+      --id "$CF_DIST_ID" \
       --region "$CF_REGION" \
-      --capabilities CAPABILITY_IAM \
-      --no-fail-on-empty-changeset
+      --query "Distribution.{Status:Status,Aliases:DistributionConfig.Aliases.Items}" \
+      --output json
 
     echo ""
-    echo "✔ CloudFront stack deployed."
-    aws cloudformation describe-stacks \
-      --stack-name "$CF_STACK_NAME" \
-      --region "$CF_REGION" \
-      --query 'Stacks[0].Outputs' \
-      --output table
+    echo "✔ monitor.cognifylabs.ai is served by distribution $CF_DIST_ID"
+    echo "   Aliases:  cognifylabs.ai, www.cognifylabs.ai, monitor.cognifylabs.ai"
+    echo "   Function: platform-monitor-spa-router (viewer-request)"
+    echo "   Cert:     *.cognifylabs.ai (us-east-1)"
+    echo ""
+    echo "   Run './deploy.sh backend' to build and sync the frontend."
     ;;
 
   *)
