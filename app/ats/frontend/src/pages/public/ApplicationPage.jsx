@@ -11,6 +11,7 @@ const STEPS = ['Personal Details', 'Resume Upload', 'Cover Letter']
 const EMPTY_FORM = {
   firstName: '', lastName: '', email: '', phone: '', location: '',
   linkedinUrl: '', resumeFile: null, coverLetter: '',
+  _hp: '',  // honeypot — must stay empty
 }
 
 function formReducer(state, action) {
@@ -90,6 +91,9 @@ export default function ApplicationPage() {
   }
 
   const handleSubmit = async () => {
+    // Honeypot — bots fill hidden fields, humans don't
+    if (form._hp) return
+
     setSubmitting(true)
     setSubmitError('')
     try {
@@ -171,6 +175,17 @@ export default function ApplicationPage() {
       {/* Step 0: Personal Details */}
       {step === 0 && (
         <div className="space-y-4 animate-fade-in">
+          {/* Honeypot — visually hidden, must remain empty; bots fill it, humans don't */}
+          <input
+            type="text"
+            name="website"
+            value={form._hp}
+            onChange={e => set('_hp', e.target.value)}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
+          />
           <div className="grid grid-cols-2 gap-4">
             <BaseInput label="First Name" value={form.firstName} onChange={e => set('firstName', e.target.value)} placeholder="Alex" required />
             <BaseInput label="Last Name"  value={form.lastName}  onChange={e => set('lastName',  e.target.value)} placeholder="Smith" required />

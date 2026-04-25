@@ -1,29 +1,24 @@
-import { useState, useMemo } from 'react'
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
-import { format, parse, startOfWeek, getDay } from 'date-fns'
-import enAU from 'date-fns/locale/en-AU'
-import 'react-big-calendar/lib/css/react-big-calendar.css'
+import { useState, useMemo, useCallback } from 'react'
+import FullCalendar from '@fullcalendar/react'
+import timeGridPlugin from '@fullcalendar/timegrid'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import interactionPlugin from '@fullcalendar/interaction'
+import { format } from 'date-fns'
 
 import { useInterviews } from '@/hooks/useInterviews'
 import { useCandidates } from '@/hooks/useCandidates'
 import { useUsers } from '@/hooks/useUsers'
 import { useJobs } from '@/hooks/useJobs'
+import { useUI } from '@/hooks/useUI'
 import InterviewRow from '@/components/interviews/InterviewRow'
 import EmptyState from '@/components/ui/EmptyState'
 import BaseBadge from '@/components/ui/BaseBadge'
-
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
-  getDay,
-  locales: { 'en-AU': enAU },
-})
 
 const STATUS_VARIANT = { Scheduled: 'indigo', Completed: 'emerald', Cancelled: 'red' }
 
 export default function InterviewsPage() {
   const { upcomingInterviews, pastInterviews, openScheduleModal, updateInterview } = useInterviews()
+  const { theme } = useUI()
   const { candidates } = useCandidates()
   const { users, userById } = useUsers()
   const { jobs } = useJobs()
@@ -38,8 +33,6 @@ export default function InterviewsPage() {
   const [calendarCancelReason, setCalendarCancelReason] = useState('')
   const [calendarCancelSaving, setCalendarCancelSaving] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
-
-  const handleSelectEvent = (e) => { setSelectedEvent(e.resource); setCalendarCancelOpen(false); setCalendarCancelReason('') }
 
   const candidateById = useMemo(() => {
     const m = {}
@@ -83,7 +76,6 @@ export default function InterviewsPage() {
     })
   }, [allInterviews, search, filterJobId, filterPanelId, filterDate, candidateById, jobById])
 
-  // Past: interviews with feedback go to bottom
   const filteredUpcoming = useMemo(
     () => filtered.filter(i => upcomingInterviews.some(u => u.id === i.id)),
     [filtered, upcomingInterviews]
@@ -98,14 +90,57 @@ export default function InterviewsPage() {
 
   const calendarEvents = useMemo(() =>
     filtered.map(i => ({
-      id: i.id,
-      title: `${getName(i)} — ${getJobTitle(i)}`,
-      start: new Date(i.scheduledAt),
-      end: new Date(new Date(i.scheduledAt).getTime() + i.durationMinutes * 60000),
-      resource: i,
+      id:             i.id,
+      title:          `${getName(i)} — ${getJobTitle(i)}`,
+      start:          i.scheduledAt,
+      end:            new Date(new Date(i.scheduledAt).getTime() + i.durationMinutes * 60000).toISOString(),
+      editable:       i.status === 'Scheduled',
+      backgroundColor: i.status === 'Scheduled' ? '#6366f1' : i.status === 'Completed' ? '#10b981' : '#64748b',
+      borderColor:    i.status === 'Scheduled' ? '#4f46e5' : i.status === 'Completed' ? '#059669' : '#475569',
+      extendedProps:  { interview: i },
     })),
     [filtered, candidateById, jobById]
   )
+
+  const handleEventClick = useCallback(({ event }) => {
+    setSelectedEvent(event.extendedProps.interview)
+    setCalendarCancelOpen(false)
+    setCalendarCancelReason('')
+  }, [])
+
+  const handleEventDrop = useCallback(({ event, revert }) => {
+    const interview = event.extendedProps.interview
+    if (!interview || interview.status !== 'Scheduled') { revert(); return }
+    const newStart = event.start
+    const newEnd   = event.end
+    const durationMinutes = newEnd
+      ? Math.round((newEnd - newStart) / 60000)
+      : interview.durationMinutes ?? 60
+    updateInterview(interview.id, {
+      scheduledAt:    newStart.toISOString(),
+      durationMinutes,
+    }).catch(() => revert())
+    setSelectedEvent(prev => prev?.id === interview.id
+      ? { ...prev, scheduledAt: newStart.toISOString(), durationMinutes }
+      : prev
+    )
+  }, [updateInterview])
+
+  const handleEventResize = useCallback(({ event, revert }) => {
+    const interview = event.extendedProps.interview
+    if (!interview || interview.status !== 'Scheduled') { revert(); return }
+    const newStart = event.start
+    const newEnd   = event.end
+    const durationMinutes = Math.round((newEnd - newStart) / 60000)
+    updateInterview(interview.id, {
+      scheduledAt: newStart.toISOString(),
+      durationMinutes,
+    }).catch(() => revert())
+    setSelectedEvent(prev => prev?.id === interview.id
+      ? { ...prev, scheduledAt: newStart.toISOString(), durationMinutes }
+      : prev
+    )
+  }, [updateInterview])
 
   const handleCalendarCancel = async () => {
     if (!calendarCancelReason.trim()) return
@@ -230,16 +265,28 @@ export default function InterviewsPage() {
         </>
       ) : (
         <div className="flex gap-6">
-          <div className="flex-1 min-w-0 rbc-dark">
-            <Calendar
-              localizer={localizer}
+          <div className={`flex-1 min-w-0 ${theme === 'dark' ? 'fc-dark' : 'fc-light'}`}>
+            <FullCalendar
+              plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+              initialView="timeGridWeek"
+              headerToolbar={{
+                left:   'prev,next today',
+                center: 'title',
+                right:  'dayGridMonth,timeGridWeek,timeGridDay',
+              }}
               events={calendarEvents}
-              startAccessor="start"
-              endAccessor="end"
-              style={{ height: 600 }}
-              onSelectEvent={handleSelectEvent}
-              views={['month', 'week', 'day']}
-              defaultView="week"
+              editable
+              droppable
+              height={640}
+              firstDay={1}
+              slotMinTime="06:00:00"
+              slotMaxTime="22:00:00"
+              slotDuration="00:15:00"
+              snapDuration="00:15:00"
+              nowIndicator
+              eventClick={handleEventClick}
+              eventDrop={handleEventDrop}
+              eventResize={handleEventResize}
             />
           </div>
 
@@ -254,9 +301,9 @@ export default function InterviewsPage() {
               </div>
 
               <div className="space-y-2 text-sm">
-                <Row label="Type" value={selectedEvent.type} />
-                <Row label="Date" value={format(new Date(selectedEvent.scheduledAt), 'd MMM yyyy')} />
-                <Row label="Time" value={format(new Date(selectedEvent.scheduledAt), 'h:mm a')} />
+                <Row label="Type"     value={selectedEvent.type} />
+                <Row label="Date"     value={format(new Date(selectedEvent.scheduledAt), 'd MMM yyyy')} />
+                <Row label="Time"     value={format(new Date(selectedEvent.scheduledAt), 'h:mm a')} />
                 <Row label="Duration" value={`${selectedEvent.durationMinutes} min`} />
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Status</span>

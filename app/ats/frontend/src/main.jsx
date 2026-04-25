@@ -29,13 +29,11 @@ function DataProviders({ children }) {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <AuthProvider>
-      <UIProvider>
-        <DataProviders>
-          <RouterProvider router={router} />
-        </DataProviders>
-      </UIProvider>
-    </AuthProvider>
-  </React.StrictMode>
+  <AuthProvider>
+    <UIProvider>
+      <DataProviders>
+        <RouterProvider router={router} />
+      </DataProviders>
+    </UIProvider>
+  </AuthProvider>
 )

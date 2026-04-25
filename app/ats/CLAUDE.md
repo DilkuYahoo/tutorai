@@ -170,8 +170,11 @@ React 18 + Vite 5, Tailwind CSS 3 (dark mode `class` strategy), React Router v6,
 | `echarts`, `echarts-for-react` | Charts (dashboard/reports) |
 | `amazon-cognito-identity-js` | Cognito login, logout, new password challenge |
 | `@dnd-kit/core`, `@dnd-kit/utilities` | Drag-and-drop on the Kanban pipeline board |
-| `react-big-calendar` | Calendar view on the Interviews page |
-| `date-fns` | Date formatting (used by react-big-calendar localiser) |
+| `@fullcalendar/react` | Calendar view on the Interviews page |
+| `@fullcalendar/timegrid` | Week/day time-grid views |
+| `@fullcalendar/daygrid` | Month grid view |
+| `@fullcalendar/interaction` | Drag-and-drop and resize on calendar events |
+| `date-fns` | Date formatting utilities |
 
 **Important:** All of the above are in `dependencies` in `package.json`. Do not run bare `npm install <pkg>` — always use `--save` to keep `package.json` in sync. A plain `npm install` has previously wiped unlisted packages.
 
@@ -231,10 +234,12 @@ All providers are stacked in `src/main.jsx`. The pipeline page derives its Kanba
 
 ### InterviewsPage features
 - **List view** (default): Upcoming (Scheduled) and Past (Completed, No-show) sections with search filter.
-- **Calendar view**: `react-big-calendar` with week view default. Import locale as `import enAU from 'date-fns/locale/en-AU'` (direct subpath) — the barrel import `from 'date-fns/locale'` does not resolve under Vite.
+- **Calendar view**: **FullCalendar v6** (`@fullcalendar/react`) with `timeGridWeek` as the default view. Do NOT use `react-big-calendar` — it was replaced due to unreliable drag-and-drop under React 18.
+- **Drag-and-drop**: `editable={true}` + `interactionPlugin`. Only `Scheduled` interviews are draggable (set via `editable: i.status === 'Scheduled'` per event). `eventDrop` and `eventResize` callbacks call `updateInterview` optimistically and call `revert()` on API failure.
 - **Right-hand panel**: click any calendar event to open a details panel with Reschedule and Cancel actions.
-- **Search filter**: single input filters both views by candidate name or job title.
-- Calendar theme: `.rbc-dark` CSS class wraps the calendar; overrides are in `src/index.css` under the `.rbc-*` section.
+- **Filters**: search by candidate name or role; filter by position, panel member, date.
+- **Calendar theming**: the wrapper div uses `fc-dark` (dark mode) or `fc-light` (light mode) based on `theme` from `useUI()`. Both CSS classes are defined in `src/index.css`. **Always test calendar appearance in both light and dark mode after any CSS or calendar changes.**
+- FullCalendar packages must be listed in `vite.config.js` under `optimizeDeps.include` — required for Vite to pre-bundle them correctly.
 
 ### Pipeline (Kanban) — drag-and-drop
 - Uses `@dnd-kit/core` with `PointerSensor` (5 px activation threshold to prevent accidental drags).
@@ -411,5 +416,46 @@ Cancelled interviews are excluded from `upcomingInterviews`, `pastInterviews`, a
 ### USER# vs CANDIDATE# are separate entity types
 Platform users (staff with Cognito accounts) are stored under `PK=USER#{id}`. Candidates (job applicants) are stored under `PK=CANDIDATE#{id}`. An email address may appear in both. The duplicate-email check in `invite_user.py` must be scoped to `USER#` records only to avoid false positives.
 
-### date-fns locale import
-In `InterviewsPage.jsx`, import the en-AU locale as `import enAU from 'date-fns/locale/en-AU'` (direct subpath). The barrel import `import { enAU } from 'date-fns/locale'` does not resolve under Vite and causes a module load error.
+### Cognito login is case-insensitive
+Email addresses must be normalised to lowercase + trimmed before passing to Cognito in `cognitoLogin()`. Cognito usernames are case-sensitive by default — failing to normalise caused login failures when users typed mixed-case emails. Done in `cognito.js`: `const normEmail = email.trim().toLowerCase()`.
+
+### Cognito password minimum length is 8 characters
+The User Pool `PasswordPolicy.MinimumLength` is set to `8` in `template.yaml`. Do not raise it above 8 without notifying users — changing it in Cognito does not retroactively affect existing passwords and can cause confusion.
+
+### Optimistic UI for all state mutations
+Pipeline stage moves (`moveStage`) and application/interview updates dispatch the state change **before** the API call completes, then revert on failure. This makes the UI feel instant. Pattern: dispatch → await API → on catch: dispatch revert. Never wait for the API before updating local state for these operations.
+
+### Per-candidate state reset in CandidateDrawer
+`CandidateDrawer` is always-mounted (not remounted on candidate switch). All candidate-specific UI state (`fitScore`, `commScore`, `fitSaved`, `commSaved`) must be reset in a `useEffect` keyed on `activeCandidate?.id`. Without this, scores from one candidate bleed into the next candidate opened in the same drawer session.
+
+### Fit score and communication score are both manual 1–10 ratings
+Neither score is calculated automatically. Both use identical number-button UIs (1–10 grid), auto-save on click, and show a "Saved ✓" flash for 2s. `fitScore` lives on the application record; `communicationScore` lives on the candidate record. Do not add automated scoring without discussing it first.
+
+### Fit score changes are audited
+Every `PUT /applications/{id}` that updates `fitScore` writes a `FIT_SCORE_UPDATED` audit item to `PK=AUDIT#{applicationId}`. The audit trail is displayed in the Candidate Drawer under the "Activity" section (lazy-loaded from `GET /audit/{applicationId}`).
+
+### Interview cancellation requires a reason
+`update_interview.py` rejects a status change to `Cancelled` if `cancellationReason` is missing or blank. The reason is stored in the audit trail as `INTERVIEW_CANCELLED`. Both the list-view row and the calendar right-hand panel enforce this in the UI with a mandatory textarea before confirming.
+
+### Interviews cannot be marked Completed/No-show before they occur
+`update_interview.py` rejects status changes to `Completed` or `No-show` if `scheduledAt` is still in the future. Use `app/ats/scripts/fix_future_completed_interviews.py` to clean up any existing bad data in DynamoDB.
+
+### Public application form is protected against bots
+Three layers of protection on `POST /applications`:
+1. **Honeypot field** (`_hp`) — hidden input in the form; backend silently accepts but ignores submissions where `_hp` is non-empty
+2. **Origin check** — backend rejects requests from origins not in `ALLOWED_ORIGINS`
+3. **API Gateway throttling** — `ThrottlingRateLimit: 10`, `ThrottlingBurstLimit: 20` set in `template.yaml` `DefaultRouteSettings`
+
+### React StrictMode is disabled
+`<React.StrictMode>` has been removed from `main.jsx`. StrictMode in React 18 double-invokes class component lifecycle methods (`componentDidMount` / `componentWillUnmount`), which broke third-party class-based components. Do not re-add StrictMode without verifying all third-party libraries are compatible.
+
+### Change password uses Cognito client-side SDK
+Admins and hiring managers change their password via `cognitoChangePassword(oldPassword, newPassword)` in `cognito.js`, which calls `CognitoUser.changePassword()` directly from the browser using the active session. No Lambda or API route is needed. The UI is in `ChangePasswordModal.jsx`, accessible from the avatar dropdown in `AppTopbar`.
+
+### Calendar library — FullCalendar v6
+The Interviews calendar uses `@fullcalendar/react` v6 with `timeGridPlugin`, `dayGridPlugin`, and `interactionPlugin`. Do not switch back to `react-big-calendar` — its `withDragAndDrop` HOC is broken under React 18 (class component lifecycle conflict causes drag listeners to be torn down and never re-attached).
+
+Key implementation notes:
+- All four `@fullcalendar/*` packages must be in `optimizeDeps.include` in `vite.config.js`
+- Theme is toggled via `fc-dark` / `fc-light` class on the wrapper div — read `theme` from `useUI()` to select the class
+- **Always test in both light and dark mode** after any calendar or `index.css` changes — the wrapper class must be correct or the calendar renders with the wrong colour scheme

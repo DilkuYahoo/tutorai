@@ -46,6 +46,20 @@ export function completeNewPassword(cognitoUser, newPassword, requiredAttributes
   })
 }
 
+export function cognitoChangePassword(oldPassword, newPassword) {
+  return new Promise((resolve, reject) => {
+    const user = userPool.getCurrentUser()
+    if (!user) return reject(new Error('No current user'))
+    user.getSession((err, session) => {
+      if (err || !session?.isValid()) return reject(err || new Error('Invalid session'))
+      user.changePassword(oldPassword, newPassword, (err2, result) => {
+        if (err2) return reject(err2)
+        resolve(result)
+      })
+    })
+  })
+}
+
 export function cognitoLogout() {
   const user = userPool.getCurrentUser()
   if (user) user.signOut()

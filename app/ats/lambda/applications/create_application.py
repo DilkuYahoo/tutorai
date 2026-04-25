@@ -5,13 +5,17 @@ sys.path.insert(0, "/opt/python")
 
 import boto3
 
-from shared.response import created, bad_request, not_found, conflict, preflight
+from shared.response import created, bad_request, not_found, conflict, forbidden, preflight
 from shared.ids import generate_id, utc_now, today
 from shared.validation import ValidationError, require_fields
 from shared import db
 
 REQUIRED = ["candidateId", "jobId"]
 NOTIFICATION_LAMBDA_ARN = os.environ.get("NOTIFICATION_LAMBDA_ARN", "")
+ALLOWED_ORIGINS = {
+    "https://ats.advicelab.com.au",
+    "http://localhost:5173",
+}
 
 _lambda_client = None
 
@@ -26,10 +30,20 @@ def lambda_handler(event, context):
     if event.get("requestContext", {}).get("http", {}).get("method") == "OPTIONS":
         return preflight()
 
+    # Origin check — block direct API calls from unknown origins
+    headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
+    origin  = headers.get("origin", "")
+    if origin and origin not in ALLOWED_ORIGINS:
+        return forbidden("Origin not allowed")
+
     try:
         body = json.loads(event.get("body") or "{}")
     except json.JSONDecodeError:
         return bad_request("Invalid JSON")
+
+    # Honeypot — bots fill the "website" field, humans leave it blank
+    if body.get("_hp"):
+        return created({"id": "ignored"})
 
     try:
         require_fields(body, REQUIRED)

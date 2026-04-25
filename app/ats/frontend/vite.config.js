@@ -16,6 +16,15 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: { '@': resolve(__dirname, './src') },
     },
+    optimizeDeps: {
+      include: [
+        '@fullcalendar/react',
+        '@fullcalendar/core',
+        '@fullcalendar/daygrid',
+        '@fullcalendar/timegrid',
+        '@fullcalendar/interaction',
+      ],
+    },
     build: {
       rollupOptions: {
         output: {

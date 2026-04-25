@@ -92,13 +92,16 @@ export function InterviewsProvider({ children }) {
   }
 
   const updateInterview = async (interviewId, updates) => {
-    if (!USE_API) {
-      const existing = state.interviews.find(i => i.id === interviewId)
-      dispatch({ type: 'UPDATE_INTERVIEW', interview: { ...existing, ...updates } })
-      return
+    const existing = state.interviews.find(i => i.id === interviewId)
+    dispatch({ type: 'UPDATE_INTERVIEW', interview: { ...existing, ...updates } })
+    if (!USE_API) return
+    try {
+      const updated = await api.put(`/interviews/${interviewId}`, updates)
+      dispatch({ type: 'UPDATE_INTERVIEW', interview: updated })
+    } catch (err) {
+      if (existing) dispatch({ type: 'UPDATE_INTERVIEW', interview: existing })
+      throw err
     }
-    const updated = await api.put(`/interviews/${interviewId}`, updates)
-    dispatch({ type: 'UPDATE_INTERVIEW', interview: updated })
   }
 
   const submitFeedback = async (interviewId, feedback) => {

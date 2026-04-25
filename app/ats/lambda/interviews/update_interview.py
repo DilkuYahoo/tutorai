@@ -43,6 +43,12 @@ def lambda_handler(event, context):
     if updates.get("status") == "Cancelled" and not updates.get("cancellationReason", "").strip():
         return bad_request("cancellationReason is required when cancelling an interview")
 
+    # Cannot mark a future interview as Completed or No-show
+    if updates.get("status") in ("Completed", "No-show"):
+        scheduled = updates.get("scheduledAt", existing.get("scheduledAt", ""))
+        if scheduled and scheduled > utc_now():
+            return bad_request("Cannot mark an interview as completed before it has taken place")
+
     # Update GSI2SK if status or scheduledAt changes
     if "status" in updates or "scheduledAt" in updates:
         new_status = updates.get("status", existing.get("status"))
