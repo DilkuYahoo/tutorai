@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased bg-slate-950 text-white;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+}
+
+html.light .bg-slate-950         { background-color: #ffffff; }
+html.light .bg-slate-950\/90     { background-color: rgb(255 255 255 / 0.92); }
+html.light .bg-slate-900         { background-color: #f8fafc; }
+html.light .bg-slate-800         { background-color: #f1f5f9; }
+html.light .bg-slate-700         { background-color: #e2e8f0; }
+html.light .border-slate-800     { border-color: #e2e8f0; }
+html.light .border-slate-800\/60 { border-color: rgb(226 232 240 / 0.6); }
+html.light .border-slate-700     { border-color: #cbd5e1; }
+html.light .text-white           { color: #0f172a; }
+html.light .text-slate-200       { color: #334155; }
+html.light .text-slate-300       { color: #475569; }
+html.light .text-slate-400       { color: #64748b; }
+html.light .text-slate-500       { color: #64748b; }
+html.light .hover\:bg-slate-800:hover  { background-color: #f1f5f9; }
+html.light .hover\:text-slate-200:hover { color: #334155; }

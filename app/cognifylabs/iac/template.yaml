@@ -1,0 +1,224 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: CognifyLabs CloudFront Monitor
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Parameters
+# ─────────────────────────────────────────────────────────────────────────────
+Parameters:
+  CorsOrigin:
+    Type: String
+    Default: "*"
+  LogBucketName:
+    Type: String
+    Default: cognifylabs-cloudfront-logs
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Globals
+# ─────────────────────────────────────────────────────────────────────────────
+Globals:
+  Function:
+    Runtime: python3.13
+    MemorySize: 256
+    Timeout: 15
+    Architectures: [arm64]
+    Layers:
+      - !Ref SharedLayer
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref MonitorTable
+        CORS_ORIGIN: !Ref CorsOrigin
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Resources
+# ─────────────────────────────────────────────────────────────────────────────
+Resources:
+
+  # ── Shared Lambda Layer ───────────────────────────────────────────────────
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: platform-monitor-shared
+      Description: Shared Python utilities (db, response, ids)
+      ContentUri: ../lambda/
+      CompatibleRuntimes: [python3.13]
+      CompatibleArchitectures: [arm64, x86_64]
+    Metadata:
+      BuildMethod: python3.13
+
+  # ── DynamoDB Table ────────────────────────────────────────────────────────
+  MonitorTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: platform_monitor
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI2
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  # ── API Gateway ───────────────────────────────────────────────────────────
+  Api:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: prod
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 50
+        ThrottlingRateLimit: 20
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref CorsOrigin
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowMethods:
+          - GET
+          - OPTIONS
+        MaxAge: 600
+
+  # ── IAM Role ──────────────────────────────────────────────────────────────
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: platform-monitor-lambda
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CfMonitorAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt MonitorTable.Arn
+                  - !Sub "${MonitorTable.Arn}/index/*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${LogBucketName}/*"
+              - Effect: Allow
+                Action:
+                  - cloudfront:ListDistributions
+                Resource: "*"
+
+  # ── Lambda Functions ──────────────────────────────────────────────────────
+
+  IngestLogsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: platform-monitor-ingest-logs
+      CodeUri: ../lambda/logs/
+      Handler: ingest_logs.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+      MemorySize: 512
+
+  ListDistributionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: platform-monitor-list-distributions
+      CodeUri: ../lambda/distributions/
+      Handler: list_distributions.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /distributions
+
+  QueryLogsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: platform-monitor-query-logs
+      CodeUri: ../lambda/logs/
+      Handler: query_logs.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 29
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /logs/metrics
+
+  QueryGeoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: platform-monitor-query-geo
+      CodeUri: ../lambda/geo/
+      Handler: query_geo.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 29
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /logs/geo
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Outputs
+# ─────────────────────────────────────────────────────────────────────────────
+Outputs:
+  ApiUrl:
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  LogBucketName:
+    Value: !Ref LogBucketName
+  TableName:
+    Value: !Ref MonitorTable

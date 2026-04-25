@@ -15,3 +15,14 @@ app/ats/frontend/.env.local
 app/ats/frontend/.env.production
 app/ats/frontend/dist
 app/ats/iac/.aws-sam
+
+app/cognifylabs/frontend/.env.local
+app/cognifylabs/frontend/.env.production
+app/cognifylabs/frontend/dist
+app/cognifylabs/frontend/node_modules
+app/cognifylabs/iac/.aws-sam
+app/cognifylabs/lambda/__pycache__
+app/cognifylabs/lambda/shared/__pycache__
+app/cognifylabs/lambda/logs/__pycache__
+app/cognifylabs/lambda/distributions/__pycache__
+app/cognifylabs/lambda/geo/__pycache__
