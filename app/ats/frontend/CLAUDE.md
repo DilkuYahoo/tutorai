@@ -20,8 +20,11 @@ All dependencies are tracked in `package.json`. Always use `--save` when install
 | `echarts`, `echarts-for-react` | Charts (dashboard/reports) |
 | `amazon-cognito-identity-js` | Cognito login, logout, new password challenge |
 | `@dnd-kit/core`, `@dnd-kit/utilities` | Drag-and-drop on the Kanban pipeline board |
-| `react-big-calendar` | Calendar view on the Interviews page |
-| `date-fns` | Date formatting (localiser for react-big-calendar) |
+| `@fullcalendar/react` | Calendar view on the Interviews page |
+| `@fullcalendar/timegrid` | Week/day time-grid views |
+| `@fullcalendar/daygrid` | Month grid view |
+| `@fullcalendar/interaction` | Drag-and-drop and resize on calendar events |
+| `date-fns` | Date formatting utilities |
 
 ## Architecture
 
@@ -101,12 +104,15 @@ App name is **Advice Lab** everywhere. Do not use "Recruit" — it was the origi
 - `variant="public"` — full footer with Privacy/Terms/Careers links, used in `PublicLayout`.
 
 ### Calendar (InterviewsPage)
-`react-big-calendar` with `date-fns` localiser. Import the locale directly:
-```js
-import enAU from 'date-fns/locale/en-AU'  // ✓ correct
-import { enAU } from 'date-fns/locale'     // ✗ Vite cannot resolve this barrel export
-```
-Calendar dark theme is applied via the `.rbc-dark` wrapper class — overrides are in `src/index.css`.
+**FullCalendar v6** — do NOT use `react-big-calendar`. It was replaced because `withDragAndDrop` is broken under React 18.
+
+Packages: `@fullcalendar/react`, `@fullcalendar/timegrid`, `@fullcalendar/daygrid`, `@fullcalendar/interaction`. All four must be listed in `vite.config.js` under `optimizeDeps.include`.
+
+Drag-and-drop: set `editable={true}` on `<FullCalendar>` and `editable: i.status === 'Scheduled'` per event. Handle `eventDrop` and `eventResize` — both receive a `revert()` callback to undo on API failure.
+
+Theming: the wrapper div uses `fc-dark` or `fc-light` based on `theme` from `useUI()`. Both classes are defined in `src/index.css`.
+
+**Always test in both light and dark mode after any calendar or CSS changes.**
 
 ### Drag-and-drop (PipelinePage)
 `@dnd-kit/core` with `PointerSensor` (5 px activation threshold). `KanbanBoard` → `DndContext`, `KanbanColumn` → `useDroppable`, `KanbanCard` → `useDraggable`. Pass `isDragOverlay` to the ghost card rendered in `DragOverlay`.
@@ -119,3 +125,31 @@ Calendar dark theme is applied via the `.rbc-dark` wrapper class — overrides a
 
 ### Build output
 Vite manual chunks split `vendor-react` and `vendor-echarts` for long-term caching. The ECharts chunk exceeds 500 kB — expected.
+
+---
+
+## Known gotchas — do not repeat
+
+### React StrictMode is disabled
+`<React.StrictMode>` is removed from `main.jsx`. React 18 StrictMode double-invokes class component lifecycles, which breaks class-based third-party components. Do not re-add it.
+
+### Optimistic UI for pipeline and interview mutations
+`moveStage`, `updateApplication`, and `updateInterview` all dispatch state changes **before** the API call, then revert on failure. Never wait for the API response before updating local state for these operations — it makes the UI feel laggy.
+
+### CandidateDrawer state must reset on candidate switch
+The drawer is always-mounted. Any per-candidate UI state (`fitScore`, `commScore`, saved flags) must be reset in a `useEffect` keyed on `activeCandidate?.id`. Without this, values from one candidate bleed into the next.
+
+### Fit score and communication score are both manual 1–10 number buttons
+Neither is calculated automatically. Both auto-save on click with a "Saved ✓" flash. Use identical button grid UI for both — do not use sliders, stars, or progress bars for these scores.
+
+### Cognito login normalises email to lowercase
+`cognitoLogin()` in `cognito.js` always trims and lowercases the email before authenticating. Any new auth flow must do the same.
+
+### Change password is client-side Cognito only
+`cognitoChangePassword()` in `cognito.js` calls `CognitoUser.changePassword()` directly — no Lambda needed. Entry point is the avatar dropdown in `AppTopbar` → `ChangePasswordModal`.
+
+### Public application form has bot protection
+Three layers: honeypot field `_hp` (silently ignored on backend), origin check, and API Gateway throttling. Do not remove any of these layers. If adding new public forms, apply the same pattern.
+
+### Always test light and dark mode after CSS changes
+The app supports both themes via `html.dark` / `html.light` classes. Tailwind dark utilities and third-party component themes (FullCalendar uses `fc-dark` / `fc-light`) must both be verified when changing `index.css` or adding new UI components.
