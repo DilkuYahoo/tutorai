@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sI https://cognifylabs.com.au/bingo/)",
+      "Bash(curl -s https://cognifylabs.com.au/bingo/)",
+      "Bash(./deploy.sh)"
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+# Bingo Number Generator — Game Rules
+
+## Overview
+A React-based bingo number caller that simulates the ball-drawing process for a standard 75-ball bingo game.
+
+## Number Pool
+- Numbers range from 1 to 75 (inclusive).
+- Each number may only be called once per game session.
+- Numbers are drawn in a random, non-repeating order.
+
+## Display
+- The current called number is shown prominently on screen.
+- Previously called numbers are tracked and visible to players (e.g. as a list or board).
+- The total count of numbers called so far is displayed (e.g. "12 / 75 called").
+
+## Controls
+- A "Call Number" button draws the next random number from the remaining pool.
+- The button is disabled once all 75 numbers have been called.
+- A "New Game" (or "Reset") button clears all called numbers and starts a fresh session.
+
+## State
+- On initial load (or after reset), all 75 numbers are available.
+- Each press of "Call Number" removes one number from the available pool and adds it to the called list.
+- No number can appear in both the available pool and the called list at the same time.

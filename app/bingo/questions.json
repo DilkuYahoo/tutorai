@@ -1,0 +1,230 @@
+{
+  "title": "Chris's Quiz — 25 Questions",
+  "sections": [
+    {
+      "id": 1,
+      "title": "Sri Lankan Cricket",
+      "questions": [
+        {
+          "id": 1,
+          "question": "Murali took his 800th and final Test wicket in his farewell match in 2010 — against which country?",
+          "options": ["Pakistan", "England", "India", "South Africa"],
+          "answer_index": 2,
+          "answer": "India"
+        },
+        {
+          "id": 2,
+          "question": "What are the NRL Sea Eagles' home colours?",
+          "options": ["Green and gold", "Maroon and white", "Burgundy and white", "Blue and gold"],
+          "answer_index": 2,
+          "answer": "Burgundy and white"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Celebrity",
+      "questions": [
+        {
+          "id": 3,
+          "question": "Taylor Swift named her 2023 global tour after one of her albums. What was it called?",
+          "options": ["Fearless Tour", "The Eras Tour", "Red Tour", "Reputation Stadium Tour"],
+          "answer_index": 1,
+          "answer": "The Eras Tour"
+        },
+        {
+          "id": 4,
+          "question": "Which Australian actress played Barbie in the 2023 blockbuster film?",
+          "options": ["Nicole Kidman", "Cate Blanchett", "Margot Robbie", "Rose Byrne"],
+          "answer_index": 2,
+          "answer": "Margot Robbie"
+        },
+        {
+          "id": 5,
+          "question": "Australian actor Hugh Jackman is world-famous for playing which Marvel superhero?",
+          "options": ["Iron Man", "Thor", "Wolverine", "Captain America"],
+          "answer_index": 2,
+          "answer": "Wolverine"
+        },
+        {
+          "id": 6,
+          "question": "Which celebrity couple is known by the fan nickname 'Brangelina'?",
+          "options": ["Brad Pitt & Jennifer Aniston", "Brad Pitt & Angelina Jolie", "Ben Affleck & Jennifer Lopez", "Bradley Cooper & Lady Gaga"],
+          "answer_index": 1,
+          "answer": "Brad Pitt & Angelina Jolie"
+        },
+        {
+          "id": 7,
+          "question": "Before becoming a mega-star, Dwayne 'The Rock' Johnson was a professional what?",
+          "options": ["Basketball player", "Boxer", "Wrestler", "American Football player"],
+          "answer_index": 2,
+          "answer": "Wrestler"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Sport — NRL, Wallabies & Golf",
+      "questions": [
+        {
+          "id": 8,
+          "question": "The Manly Sea Eagles play their home games at which Sydney ground?",
+          "options": ["Allianz Stadium", "Accor Stadium", "4 Pines Park", "CommBank Stadium"],
+          "answer_index": 2,
+          "answer": "4 Pines Park"
+        },
+        {
+          "id": 9,
+          "question": "Which NRL team has won the most premierships of all time?",
+          "options": ["South Sydney Rabbitohs", "St George Dragons", "Melbourne Storm", "Brisbane Broncos"],
+          "answer_index": 1,
+          "answer": "St George Dragons"
+        },
+        {
+          "id": 10,
+          "question": "The Wallabies have won the Rugby World Cup twice. In which two years?",
+          "options": ["1987 and 1995", "1991 and 1995", "1991 and 1999", "1999 and 2003"],
+          "answer_index": 2,
+          "answer": "1991 and 1999"
+        },
+        {
+          "id": 11,
+          "question": "Australian golfer Greg Norman was world number one for a record 331 weeks. What was his famous nickname?",
+          "options": ["The Shark", "The Eagle", "The Fox", "The Bear"],
+          "answer_index": 0,
+          "answer": "The Shark"
+        },
+        {
+          "id": 12,
+          "question": "In golf, what is the term for completing a hole in one stroke under par?",
+          "options": ["Eagle", "Bogey", "Birdie", "Albatross"],
+          "answer_index": 2,
+          "answer": "Birdie"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Kids' Movies & Books",
+      "questions": [
+        {
+          "id": 13,
+          "question": "In Finding Nemo, what type of fish is Nemo?",
+          "options": ["Goldfish", "Clownfish", "Blue Tang", "Angelfish"],
+          "answer_index": 1,
+          "answer": "Clownfish"
+        },
+        {
+          "id": 14,
+          "question": "In The Lion King, what is the name of Simba's evil uncle?",
+          "options": ["Rafiki", "Mufasa", "Timon", "Scar"],
+          "answer_index": 3,
+          "answer": "Scar"
+        },
+        {
+          "id": 15,
+          "question": "In Harry Potter, what is the name of the bank run by goblins in Diagon Alley?",
+          "options": ["Gringotts", "Vault 713", "Flourish & Blotts", "The Leaky Cauldron"],
+          "answer_index": 0,
+          "answer": "Gringotts"
+        },
+        {
+          "id": 16,
+          "question": "Roald Dahl's BFG stands for what?",
+          "options": ["Big Friendly Goblin", "Big Friendly Giant", "Bold Funny Giant", "Big Furry Giant"],
+          "answer_index": 1,
+          "answer": "Big Friendly Giant"
+        },
+        {
+          "id": 17,
+          "question": "In Matilda (Roald Dahl), what is the name of Matilda's horrible headmistress?",
+          "options": ["Miss Honey", "Miss Trunchbull", "Mrs Wormwood", "Miss Hardbroom"],
+          "answer_index": 1,
+          "answer": "Miss Trunchbull"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Best of Sri Lanka & Australia",
+      "questions": [
+        {
+          "id": 18,
+          "question": "Sri Lanka made history in 1960 by electing the world's first female Prime Minister. What was her name?",
+          "options": ["Chandrika Kumaratunga", "Sirimavo Bandaranaike", "Indira Gandhi", "Vijaya Kumaratunga"],
+          "answer_index": 1,
+          "answer": "Sirimavo Bandaranaike"
+        },
+        {
+          "id": 19,
+          "question": "Which Australian tennis player won back-to-back US Open titles in 1997 and 1998?",
+          "options": ["Lleyton Hewitt", "John Newcombe", "Pat Rafter", "Mark Philippoussis"],
+          "answer_index": 2,
+          "answer": "Pat Rafter"
+        },
+        {
+          "id": 20,
+          "question": "Australian cricketer Don Bradman retired with a Test batting average widely considered the greatest in any sport. What was it?",
+          "options": ["79.78", "89.78", "99.94", "104.12"],
+          "answer_index": 2,
+          "answer": "99.94"
+        },
+        {
+          "id": 21,
+          "question": "Sri Lanka pulled off one of cricket's greatest upsets to win the 1996 World Cup. Which team did they beat in the final?",
+          "options": ["India", "Pakistan", "Australia", "West Indies"],
+          "answer_index": 2,
+          "answer": "Australia"
+        },
+        {
+          "id": 22,
+          "question": "Australian swimmer Ian Thorpe — nicknamed 'The Thorpedo' — dominated which event at the Sydney 2000 Olympics?",
+          "options": ["100m Butterfly", "200m Backstroke", "400m Freestyle", "1500m Freestyle"],
+          "answer_index": 2,
+          "answer": "400m Freestyle"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Australia & Sri Lanka — History",
+      "questions": [
+        {
+          "id": 26,
+          "question": "In what year did Australia become a federation of states and officially form the Commonwealth of Australia?",
+          "options": ["1888", "1901", "1914", "1927"],
+          "answer_index": 1,
+          "answer": "1901"
+        },
+        {
+          "id": 27,
+          "question": "Sri Lanka was known by a different name under British colonial rule until independence in 1948. What was it called?",
+          "options": ["Serendib", "Ceylon", "Taprobane", "Eelam"],
+          "answer_index": 1,
+          "answer": "Ceylon"
+        },
+        {
+          "id": 28,
+          "question": "The Sydney Harbour Bridge opened in 1932 — but workers gave it a nickname that stuck. What did they call it?",
+          "options": ["The Iron Lady", "The Big Arch", "The Coathanger", "The Steel Giant"],
+          "answer_index": 2,
+          "answer": "The Coathanger"
+        },
+        {
+          "id": 29,
+          "question": "The ancient city of Anuradhapura was Sri Lanka's first capital and one of the longest-ruling cities in history. For roughly how long was it the capital?",
+          "options": ["200 years", "500 years", "1,000 years", "1,400 years"],
+          "answer_index": 3,
+          "answer": "1,400 years"
+        },
+        {
+          "id": 30,
+          "question": "Australia held its first national referendum in 1967 to change the constitution. What did it achieve?",
+          "options": ["Give women the right to vote", "Allow Aboriginal Australians to be counted in the census", "Make Australia a republic", "Introduce decimal currency"],
+          "answer_index": 1,
+          "answer": "Allow Aboriginal Australians to be counted in the census"
+        }
+      ]
+    }
+  ]
+}
