@@ -3,7 +3,18 @@
     "allow": [
       "Bash(curl -sI https://cognifylabs.com.au/bingo/)",
       "Bash(curl -s https://cognifylabs.com.au/bingo/)",
-      "Bash(./deploy.sh)"
+      "Bash(./deploy.sh)",
+      "Bash(./node_modules/.bin/tailwindcss init *)",
+      "Bash(python3 -c \"import sys,json; events=json.load\\(sys.stdin\\); [print\\(e['type'], e.get\\('activityScheduledEventDetails',{}\\).get\\('resource',''\\), e.get\\('taskStateExitedEventDetails',{}\\).get\\('name',''\\), e.get\\('stateExitedEventDetails',{}\\).get\\('name',''\\)\\) for e in events]\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(f'Product count: {len\\(data\\)}'\\)\")",
+      "Bash(curl -s --max-time 10 \"https://ob-public.peopleschoice.com.au/cds-au/v1/banking/products\" -o /dev/null -w \"HTTP %{http_code} in %{time_total}s\")",
+      "Bash(open -a Docker)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('asOf:', d.get\\('asOf'\\)\\); cats=d.get\\('categories',{}\\); [print\\(k, '→', v.get\\('median'\\), 'trend:', v.get\\('trend'\\)\\) for k,v in cats.items\\(\\)]\")",
+      "Bash(aws sns *)",
+      "Bash(grep -E \"\\\\.jsx$\")",
+      "Bash(curl -s https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod/institutions)",
+      "Bash(curl -s https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod/rates/recent-changes)"
     ]
   }
 }

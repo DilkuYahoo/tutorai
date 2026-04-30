@@ -46,7 +46,10 @@ def fetch_openbanking_data(config, s3_client):
         logger.info(f"Processing bank: {bank}")
         try:
             base_url = bank_config["base_url"]
-            headers = bank_config["headers_products"]
+            headers = bank_config["headers_products"].copy()
+            # Ensure User-Agent is set for WAF compatibility
+            if "User-Agent" not in headers:
+                headers["User-Agent"] = "Mozilla/5.0 (compatible; RateScan/1.0)"
             all_products = []
             url = base_url
 

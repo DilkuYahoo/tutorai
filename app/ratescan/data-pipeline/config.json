@@ -69,26 +69,30 @@
       "base_url": "https://api.afg.app.bendigobank.com.au/cds-au/v1/banking/products",
       "headers_products": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       },
       "headers_prd_details": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       }
     },
     "Aussie_Elevate": {
       "base_url": "https://api.aussie.app.bendigobank.com.au/cds-au/v1/banking/products",
       "headers_products": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       },
       "headers_prd_details": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       }
     },
     "Aussie_Home_Loans": {
@@ -96,25 +100,29 @@
       "headers_products": {
         "Accept": "application/json",
         "x-v": "5",
-        "x-min-v": "3"
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       },
       "headers_prd_details": {
         "Accept": "application/json",
         "x-v": "5",
-        "x-min-v": "3"
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       }
     },
     "Connective_Select": {
       "base_url": "https://api.connective.app.bendigobank.com.au/cds-au/v1/banking/products",
       "headers_products": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       },
       "headers_prd_details": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       }
     },
     "Firefighters_Mutual_Bank": {
@@ -147,26 +155,30 @@
       "base_url": "https://api.nrma.app.bendigobank.com.au/cds-au/v1/banking/products",
       "headers_products": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       },
       "headers_prd_details": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       }
     },
     "Rabobank": {
       "base_url": "https://openbanking.api.rabobank.com.au/public/cds-au/v1/banking/products",
       "headers_products": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       },
       "headers_prd_details": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       }
     },
     "Teachers_Mutual_Bank": {
@@ -186,13 +198,15 @@
       "base_url": "https://api.tiimely.app.bendigobank.com.au/cds-au/v1/banking/products",
       "headers_products": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       },
       "headers_prd_details": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       }
     },
     "UniBank": {
@@ -1213,13 +1227,15 @@
       "base_url": "https://api.qantas.app.bendigobank.com.au/cds-au/v1/banking/products",
       "headers_products": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       },
       "headers_prd_details": {
         "Accept": "application/json",
-        "x-v": "5",
-        "x-min-v": "3"
+        "x-v": "4",
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       }
     },
     "Qudos_Bank": {

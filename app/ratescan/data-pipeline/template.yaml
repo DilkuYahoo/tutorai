@@ -37,10 +37,11 @@ Globals:
     MemorySize: 512
     Environment:
       Variables:
-        S3_BUCKET: !Ref DataBucketName
-        S3_PREFIX: products
-        CONFIG_S3_KEY: config.json
+        S3_BUCKET:      !Ref DataBucketName
+        S3_PREFIX:      products
+        CONFIG_S3_KEY:  config.json
         REQUEST_TIMEOUT: "30"
+        STATUS_PREFIX:  pipeline-run
 
 Resources:
 
@@ -162,12 +163,15 @@ Resources:
       Role: !GetAtt Stage5Role.Arn
       Environment:
         Variables:
-          S3_BUCKET:             !Ref DataBucketName
-          ATHENA_RESULTS_BUCKET: !Ref DataBucketName
-          ATHENA_RESULTS_PREFIX: athena-results
-          ATHENA_WORKGROUP:      !Ref AthenaWorkgroup
-          ATHENA_DATABASE:       !Ref AthenaDatabase
-          SUMMARIES_PREFIX:      summaries
+          S3_BUCKET:                !Ref DataBucketName
+          ATHENA_RESULTS_BUCKET:    !Ref DataBucketName
+          ATHENA_RESULTS_PREFIX:    athena-results
+          ATHENA_WORKGROUP:         !Ref AthenaWorkgroup
+          ATHENA_DATABASE:          !Ref AthenaDatabase
+          SUMMARIES_PREFIX:         summaries
+          CF_DISTRIBUTION_ID:       E1J06U2P33MLHN
+          STATUS_PREFIX:            pipeline-run
+          INSTITUTIONS_PREFIX:      institutions
 
   # ── Step Functions State Machine ───────────────────────────────────────────
   RatescanStateMachine:
@@ -286,7 +290,9 @@ Resources:
                   - !Sub "arn:aws:s3:::${DataBucketName}/products/*"
               - Effect: Allow
                 Action: s3:PutObject
-                Resource: !Sub "arn:aws:s3:::${DataBucketName}/products/*"
+                Resource:
+                  - !Sub "arn:aws:s3:::${DataBucketName}/products/*"
+                  - !Sub "arn:aws:s3:::${DataBucketName}/pipeline-run/*"
 
   Stage3Role:
     Type: AWS::IAM::Role
@@ -408,6 +414,27 @@ Resources:
               - Effect: Allow
                 Action: [s3:GetObject, s3:PutObject]
                 Resource: !Sub "arn:aws:s3:::${DataBucketName}/summaries/*"
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DataBucketName}/config.json"
+                  - !Sub "arn:aws:s3:::${DataBucketName}/pipeline-run/*"
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}"
+                Condition:
+                  StringLike:
+                    s3:prefix: "pipeline-run/*"
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/institutions/*"
+        - PolicyName: Stage5CloudFront
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: cloudfront:CreateInvalidation
+                Resource: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/E1J06U2P33MLHN"
         - PolicyName: Stage5Glue
           PolicyDocument:
             Version: "2012-10-17"

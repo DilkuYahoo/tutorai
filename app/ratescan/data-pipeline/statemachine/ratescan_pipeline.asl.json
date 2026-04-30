@@ -60,6 +60,13 @@
         }
       },
       "ResultPath": null,
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyOnFailure"
+        }
+      ],
       "Next": "Stage2_FetchProductDetails"
     },
 
@@ -98,6 +105,13 @@
         }
       },
       "ResultPath": null,
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "NotifyOnFailure"
+        }
+      ],
       "Next": "Stage3_FlattenToCSV"
     },
 
@@ -174,6 +188,36 @@
         {
           "ErrorEquals": ["States.ALL"],
           "ResultPath": "$.stage5Error",
+          "Next": "NotifyStage5Failure"
+        }
+      ],
+      "Next": "NotifySuccess"
+    },
+
+    "NotifyStage5Failure": {
+      "Type": "Task",
+      "Comment": "Notify on Stage 5 failure — non-critical (core data was ingested OK), so routes to NotifySuccess not PipelineFailed.",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Subject": "Ratescan pipeline — Stage 5 summary failed",
+        "Message.$": "States.Format('Ratescan Stage 5 (compute summary) failed. Core data ingestion completed successfully. Error: {}', States.JsonToString($.stage5Error))"
+      },
+      "Next": "NotifySuccess"
+    },
+
+    "NotifySuccess": {
+      "Type": "Task",
+      "Comment": "Send a completion email after every successful pipeline run.",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Subject": "Ratescan pipeline completed",
+        "Message": "Ratescan daily pipeline completed. Data is up to date. Check ratescan.com.au to confirm."
+      },
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
           "Next": "PipelineComplete"
         }
       ],

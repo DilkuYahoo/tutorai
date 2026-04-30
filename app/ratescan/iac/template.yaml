@@ -53,6 +53,11 @@ Resources:
       Name: ratescan-api
       StageName: !Ref StageName
       Description: RateScan REST API — application submission and rate queries
+      MethodSettings:
+        - ResourcePath: /contact
+          HttpMethod: POST
+          ThrottlingRateLimit: 2
+          ThrottlingBurstLimit: 5
 
   # ── Lambda: Submit Application ───────────────────────────────────────────────
   SubmitApplicationFunction:
@@ -131,6 +136,100 @@ Resources:
             RestApiId: !Ref RatescanApi
             Path: /rates/recent-changes
             Method: OPTIONS
+
+  # ── Lambda: GET /institutions ────────────────────────────────────────────────
+  GetInstitutionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ratescan-get-institutions
+      Handler: get_institutions.lambda_handler
+      CodeUri: ../lambda/
+      Timeout: 15
+      MemorySize: 256
+      Role: !GetAtt InstitutionsQueryRole.Arn
+      Environment:
+        Variables:
+          INSTITUTIONS_PREFIX: institutions
+          CACHE_PREFIX: cache
+      Events:
+        GetInstitutions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RatescanApi
+            Path: /institutions
+            Method: GET
+        OptionsInstitutions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RatescanApi
+            Path: /institutions
+            Method: OPTIONS
+
+  # ── Lambda: POST /contact ────────────────────────────────────────────────────
+  SendContactEmailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ratescan-send-contact-email
+      Handler: send_contact_email.lambda_handler
+      CodeUri: ../lambda/
+      Role: !GetAtt SendContactEmailRole.Arn
+      Environment:
+        Variables:
+          SEND_EMAIL_API_URL: https://oxch4uog7g.execute-api.ap-southeast-2.amazonaws.com/prod/send-email
+      Events:
+        PostContact:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RatescanApi
+            Path: /contact
+            Method: POST
+        OptionsContact:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RatescanApi
+            Path: /contact
+            Method: OPTIONS
+
+  # ── IAM: Send Contact Email ───────────────────────────────────────────────────
+  SendContactEmailRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ratescan-send-contact-email-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  # ── IAM: Institutions Query ──────────────────────────────────────────────────
+  InstitutionsQueryRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ratescan-institutions-query-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ReadInstitutionsData
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/institutions/*"
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject]
+                Resource: !Sub "arn:aws:s3:::${DataBucketName}/cache/institutions-*"
 
   # ── IAM: Submit Application ──────────────────────────────────────────────────
   SubmitApplicationRole:

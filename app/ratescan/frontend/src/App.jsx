@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard'
 import TermsPage from './pages/TermsPage'
 import PrivacyPage from './pages/PrivacyPage'
 import ContactPage from './pages/ContactPage'
+import LendersPage from './pages/LendersPage'
 import DashboardHeader from './components/DashboardHeader'
 import SiteFooter from './components/SiteFooter'
 
@@ -82,7 +83,7 @@ export default function App() {
   const { currentStep, direction, submitting, submitted, applicationId, formData } = state
 
   const [isDark, setIsDark] = useState(true)
-  const [page, setPage]     = useState('dashboard') // 'dashboard' | 'apply'
+  const [page, setPage]     = useState('dashboard') // 'dashboard' | 'apply' | 'terms' | 'privacy' | 'contact' | 'lenders'
   const [emailVerification, setEmailVerification] = useState({ isOpen: false, code: '' })
 
   const navigateHome = () => setPage('dashboard')
@@ -142,6 +143,7 @@ export default function App() {
         onMortgageRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('mortgage-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
         onOtherRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('other-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
         onRecentChanges={() => { setPage('dashboard'); setTimeout(() => document.getElementById('recent-changes')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+        onLenders={() => setPage('lenders')}
       >
         <TermsPage onBack={() => setPage('dashboard')} />
       </Layout>
@@ -161,6 +163,7 @@ export default function App() {
         onMortgageRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('mortgage-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
         onOtherRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('other-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
         onRecentChanges={() => { setPage('dashboard'); setTimeout(() => document.getElementById('recent-changes')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+        onLenders={() => setPage('lenders')}
       >
         <PrivacyPage onBack={() => setPage('dashboard')} />
       </Layout>
@@ -180,8 +183,29 @@ export default function App() {
         onMortgageRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('mortgage-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
         onOtherRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('other-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
         onRecentChanges={() => { setPage('dashboard'); setTimeout(() => document.getElementById('recent-changes')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+        onLenders={() => setPage('lenders')}
       >
         <ContactPage onBack={() => setPage('dashboard')} />
+      </Layout>
+    )
+  }
+
+  if (page === 'lenders') {
+    return (
+      <Layout
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onApply={() => { dispatch({ type: 'RESET' }); setPage('apply') }}
+        onTerms={() => setPage('terms')}
+        onPrivacy={() => setPage('privacy')}
+        onContact={() => setPage('contact')}
+        onHome={() => setPage('dashboard')}
+        onMortgageRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('mortgage-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+        onOtherRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('other-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+        onRecentChanges={() => { setPage('dashboard'); setTimeout(() => document.getElementById('recent-changes')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+        onLenders={() => setPage('lenders')}
+      >
+        <LendersPage onBack={() => setPage('dashboard')} />
       </Layout>
     )
   }
@@ -199,6 +223,7 @@ export default function App() {
         onMortgageRates={() => document.getElementById('mortgage-rates')?.scrollIntoView({ behavior: 'smooth' })}
         onOtherRates={() => document.getElementById('other-rates')?.scrollIntoView({ behavior: 'smooth' })}
         onRecentChanges={() => document.getElementById('recent-changes')?.scrollIntoView({ behavior: 'smooth' })}
+        onLenders={() => setPage('lenders')}
         buttonText="Get My Rate →"
       >
         <Dashboard />
@@ -219,6 +244,7 @@ export default function App() {
         onMortgageRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('mortgage-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
         onOtherRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('other-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
         onRecentChanges={() => { setPage('dashboard'); setTimeout(() => document.getElementById('recent-changes')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+        onLenders={() => setPage('lenders')}
         buttonText="← Back to Rates"
       >
         <div className="flex-1 flex items-center justify-center px-4 py-12">
@@ -266,6 +292,7 @@ export default function App() {
       onMortgageRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('mortgage-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
       onOtherRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('other-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
       onRecentChanges={() => { setPage('dashboard'); setTimeout(() => document.getElementById('recent-changes')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+      onLenders={() => setPage('lenders')}
       buttonText="← Back to Rates"
     >
       <main className="flex-1 flex flex-col">

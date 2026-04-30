@@ -10,7 +10,7 @@ function LogoMark() {
   )
 }
 
-export default function DashboardHeader({ isDark, onToggleTheme, onApply, onPrivacy, onContact, onHome, onMortgageRates, onOtherRates, onRecentChanges, buttonText = '' }) {
+export default function DashboardHeader({ isDark, onToggleTheme, onApply, onPrivacy, onContact, onHome, onMortgageRates, onOtherRates, onRecentChanges, onLenders, buttonText = '' }) {
   const [ratesDropdownOpen, setRatesDropdownOpen] = useState(false)
   return (
     <header className="fixed top-0 inset-x-0 z-50 h-14 flex items-center px-4 sm:px-6
@@ -45,6 +45,7 @@ export default function DashboardHeader({ isDark, onToggleTheme, onApply, onPriv
             </div>
           )}
         </div>
+        <button onClick={onLenders} className="text-sm text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Lenders</button>
         <button onClick={onContact} className="text-sm text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Contact Us</button>
         <button onClick={onPrivacy} className="text-sm text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Privacy Statement</button>
       </nav>

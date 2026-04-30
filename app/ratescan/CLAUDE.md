@@ -62,6 +62,12 @@ app/ratescan/
 | TXT   | ratescan.com.au                               | `google-site-verification=CZarWT6U9rrMlG...`              | Google Search Console          |
 | CNAME | a21d649a94f3445988e827b1e8624f41.ratescan.com.au | verify.bing.com                                        | Bing Webmaster Tools           |
 
+## Python environment
+Always activate before running any Python or SAM commands:
+```bash
+source /Users/Dilku/app/source-code/tutorai/env/bin/activate
+```
+
 ## Deploy commands
 ```bash
 # API Lambdas
@@ -182,3 +188,130 @@ First run writes `trend: null` (no previous to diff against) — cards show no a
 | personal_loan | PERS_LOANS | FIXED or VARIABLE | — | — | 5–20% |
 | business_loan | BUSINESS_LOANS | FIXED or VARIABLE | — | — | 5–15% |
 | credit_card | CRED_AND_CHRG_CARDS | PURCHASE | — | — | 8–25% |
+
+## Known Endpoint Issues & Fixes
+
+### Failing Banks (Stage 1 - Fixed)
+The following banks were failing with 403/404 errors due to missing User-Agent header or incorrect API version:
+
+| Bank | URL | Original Issue | Fix Applied |
+|------|-----|---------------|-------------|
+| AFG_Home_Loans_Alpha | api.afg.app.bendigobank.com.au | 403 Forbidden | Added User-Agent + x-v:4 |
+| Aussie_Elevate | api.aussie.app.bendigobank.com.au | 403 Forbidden | Added User-Agent + x-v:4 |
+| Aussie_Home_Loans | aussie.openportal.com.au | 404 Not Found | Added User-Agent (unrecoverable - endpoint migrated) |
+| Connective_Select | api.connective.app.bendigobank.com.au | 403 Forbidden | Added User-Agent + x-v:4 |
+| NRMA_Home_Loans | api.nrma.app.bendigobank.com.au | 403 Forbidden | Added User-Agent + x-v:4 |
+| Qantas_Money_Home_Loans | api.qantas.app.bendigobank.com.au | 403 Forbidden | Added User-Agent + x-v:4 |
+| Rabobank | openbanking.api.rabobank.com.au | 403 Forbidden | Added User-Agent + x-v:4 (x-v:5 not supported) |
+| Tiimely_Home | api.tiimely.app.bendigobank.com.au | 403 Forbidden | Added User-Agent + x-v:4 |
+| People's_Choice | ob-public.peopleschoice.com.au | 403 (CloudFlare bot detection) | Unrecoverable - requires browser automation |
+| AMP_-_My_AMP | api.cdr-api.amp.com.au | Works ✅ | No change needed |
+| in1bank_ltd. | cdr.in1bank.com.au | Works ✅ | No change needed |
+| St.George_Bank | digital-api.stgeorge.com.au | Works ✅ | No change needed |
+
+### Root Cause
+- **Bendigo Bank family APIs**: Block requests without `User-Agent` header (security/WAF rule). Also require `x-v: 4` not `x-v: 5`.
+- **Rabobank**: Does not support CDR v5 (`x-v: 5`), returns 406. Requires `x-v: 4`.
+- **Aussie Home Loans**: Endpoint deprecated (404), likely migrated to new domain/version.
+- **People's Choice**: CloudFlare bot protection blocks automated requests.
+
+### Config Changes (data-pipeline/config.json)
+- Added `User-Agent: Mozilla/5.0 (compatible; RateScan/1.0)` to affected banks
+- Changed `x-v: 5` → `x-v: 4` for Bendigo family banks and Rabobank
+- Also updated `headers_prd_details` for product detail fetches consistency
+
+## Monitoring & Troubleshooting
+
+### CloudWatch Log Groups
+| Log Group | Purpose |
+|---|---|
+| `/aws/lambda/ratescan-stage1-fetch-products` | Stage 1: Fetch product lists (per bank) |
+| `/aws/lambda/ratescan-stage2-fetch-details` | Stage 2: Fetch product details (per product) |
+| `/aws/lambda/ratescan-stage3-flatten-csv` | Stage 3: Flatten JSON → CSV |
+| `/aws/lambda/ratescan-stage4-upsert` | Stage 4: CSV → Iceberg |
+| `/aws/lambda/ratescan-stage5-compute-summary` | Stage 5: Daily summary + trends |
+| `/aws/states/RatescanPipeline` | Step Functions execution history |
+
+### Quick Diagnostics Commands
+
+#### Check recent pipeline executions
+```bash
+aws stepfunctions list-executions \
+  --state-machine-arn arn:aws:states:ap-southeast-2:724772096157:stateMachine:RatescanPipeline \
+  --max-results 5 \
+  --region ap-southeast-2 \
+  --query 'executions[].{status:status, start:startDate, name:name}' \
+  --output table
+```
+
+#### Find banks that failed URL access (last 30 days)
+```bash
+# Stage 1 failures (product list fetch)
+aws logs filter-log-events \
+  --log-group-name '/aws/lambda/ratescan-stage1-fetch-products' \
+  --start-time $(date -v-30d +%s)000 \
+  --filter-pattern 'Error for bank' \
+  --region ap-southeast-2 \
+  --max-items 1000 \
+  --output json | jq -r '.events[].message' | \
+  grep -oE 'Error for bank [^:]+' | sed 's/Error for bank //' | sort | uniq -c | sort -rn
+```
+
+#### Get Stage 2 completely skipped banks (exhausted retries)
+```bash
+aws logs filter-log-events \
+  --log-group-name '/aws/lambda/ratescan-stage2-fetch-details' \
+  --start-time $(date -v-30d +%s)000 \
+  --filter-pattern 'Skipping' \
+  --region ap-southeast-2 \
+  --max-items 1000 \
+  --output json | jq -r '.events[].message' | \
+  grep -oE 'Skipping [^ ]* after' | sed 's/Skipping //' | sed 's/ after//' | sort | uniq
+```
+
+#### Check a specific bank's errors across both stages
+```bash
+BANK="Central_Murray_Bank"
+aws logs filter-log-events \
+  --log-group-name '/aws/lambda/ratescan-stage1-fetch-products' \
+  --start-time $(date -v-30d +%s)000 \
+  --filter-pattern "$BANK" \
+  --region ap-southeast-2 \
+  --max-items 20 \
+  --output json | jq -r '.events[].message' | head -20
+```
+
+#### List all bank codes from config
+```bash
+cat data-pipeline/config.json | jq -r '.banks | keys[]'
+```
+
+### Common Error Patterns
+
+| Error Type | Typical Cause | Fix Priority |
+|---|---|---|
+| `403 Forbidden` (Stage 1) | Missing User-Agent header or bank revoked API credentials; invalid headers; IP restrictions | HIGH — update headers or contact bank |
+| `404 Not Found` (Stage 1) | Endpoint URL deprecated; bank migrated to new CDR API version | HIGH — update `config.json` base_url |
+| `406 Unsupported Version` | CDR v5 (`x-v: 5`) not supported by bank | HIGH — downgrade to `x-v: 4` |
+| `500 Internal Server Error` (Stage 2) | Bank's product detail API is down or misbehaving | MEDIUM — monitor; auto-retry helps |
+| `timeout` | Network latency; bank API too slow | LOW — consider increasing `REQUEST_TIMEOUT` env var |
+| `States.Timeout` (Step Functions) | Too many bank failures cascading; pipeline exceeds 30min timeout | CRITICAL — fix underlying bank failures |
+
+### Pipeline Health Dashboard
+
+**Running**: `States.Timeout` in last 3 daily runs → Stage 1/2 failures exceed 20% tolerance threshold. Manual test runs succeed because they process fewer banks or use different concurrency settings.
+
+**Alert destination**: `ratescan-pipeline-alerts` SNS topic → `info@ratescan.com.au`
+
+### Key Lambda Environment Variables
+- `S3_BUCKET` = `ratescan.com.au`
+- `S3_PREFIX` = `products`
+- `CONFIG_S3_KEY` = `config.json` (S3 path)
+- `REQUEST_TIMEOUT` = `30` (seconds)
+- `MAX_CONSECUTIVE_FAILURES` = `5` (Stage 2 only)
+
+### Log Query Reference Dates
+- Logs stored: **indefinitely** (no retention set; default infinite)
+- Timezone: All timestamps in **UTC** (`2026-04-12T03:56:37.582Z`)
+- Pipeline runs daily at **07:00 Sydney time** (EventBridge cron: `0 7 * * ? *`)
+- Lambda timeout: **300 seconds** (5 min) per bank in Stage 1 Map state

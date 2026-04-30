@@ -29,18 +29,22 @@ import boto3
 from botocore.exceptions import ClientError
 
 from athena_helper import run_query
+from institution_meta import DISPLAY_NAMES, CATEGORIES
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-S3_BUCKET        = os.environ.get("S3_BUCKET", "ratescan.com.au")
-SUMMARIES_PREFIX = os.environ.get("SUMMARIES_PREFIX", "summaries")
-DATABASE         = os.environ.get("ATHENA_DATABASE", "obdb")
+S3_BUCKET             = os.environ.get("S3_BUCKET", "ratescan.com.au")
+SUMMARIES_PREFIX      = os.environ.get("SUMMARIES_PREFIX", "summaries")
+DATABASE              = os.environ.get("ATHENA_DATABASE", "obdb")
+CF_DISTRIBUTION_ID    = os.environ.get("CF_DISTRIBUTION_ID", "")
+STATUS_PREFIX         = os.environ.get("STATUS_PREFIX", "pipeline-run")
+INSTITUTIONS_PREFIX   = os.environ.get("INSTITUTIONS_PREFIX", "institutions")
 
 STABLE_THRESHOLD = 0.05   # percentage points — changes smaller than this are "stable"
 
-CATEGORIES = ("variable", "variableIO", "investmentPI", "investmentIO",
-              "personalLoan", "businessLoan", "creditCard")
+RATE_CATEGORIES = ("variable", "variableIO", "investmentPI", "investmentIO",
+                   "personalLoan", "businessLoan", "creditCard")
 
 # ── Athena SQL (7 stat-card categories; fixed-rate terms are excluded) ────────
 
@@ -197,20 +201,23 @@ def lambda_handler(event, context):
 
     logger.info(f"Stage 5: computing summary for {today}")
 
-    # ── 1. Query Athena ───────────────────────────────────────────────────────
+    # ── 1. Aggregate per-bank run status → institutions/latest.json ───────────
+    _aggregate_institutions(s3, today, run_at)
+
+    # ── 2. Query Athena ───────────────────────────────────────────────────────
     rows = run_query(_SQL)
     today_stats = _build_stats(rows)
 
-    # ── 2. Load previous summary for trend comparison ─────────────────────────
+    # ── 3. Load previous summary for trend comparison ─────────────────────────
     previous = _load_latest(s3)
 
-    # ── 3. Build summary with trends ─────────────────────────────────────────
+    # ── 4. Build summary with trends ─────────────────────────────────────────
     summary = {
         "pipelineRunAt": run_at,
         "asOf":          today,
         "lenderCount":   today_stats.get("lenderCount", 0),
     }
-    for key in CATEGORIES:
+    for key in RATE_CATEGORIES:
         entry = today_stats.get(key, {})
         if previous and key in previous:
             prev_median  = _f(previous[key].get("median"))
@@ -223,7 +230,7 @@ def lambda_handler(event, context):
             entry["change"] = None
         summary[key] = entry
 
-    # ── 4. Write to S3 ────────────────────────────────────────────────────────
+    # ── 5. Write to S3 ────────────────────────────────────────────────────────
     body = json.dumps(summary, indent=2)
     dated_key  = f"{SUMMARIES_PREFIX}/{today}.json"
     latest_key = f"{SUMMARIES_PREFIX}/latest.json"
@@ -237,10 +244,102 @@ def lambda_handler(event, context):
         )
         logger.info(f"Wrote s3://{S3_BUCKET}/{key}")
 
+    # ── 5. Invalidate CloudFront so browsers get fresh data immediately ───────
+    _invalidate_cloudfront(run_at)
+
     return {"statusCode": 200, "summaryKey": dated_key}
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
+def _aggregate_institutions(s3, today: str, run_at: str) -> None:
+    """
+    Read all pipeline-run/{today}/*.json status files written by Stage 2,
+    join with institution_meta, fill in any banks with no status file as 'down',
+    and write institutions/latest.json.  Non-fatal — failure only logs a warning.
+    """
+    try:
+        paginator = s3.get_paginator("list_objects_v2")
+        keys = [
+            obj["Key"]
+            for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=f"{STATUS_PREFIX}/{today}/")
+            for obj in page.get("Contents", [])
+        ]
+
+        institutions = []
+        for key in keys:
+            try:
+                resp = s3.get_object(Bucket=S3_BUCKET, Key=key)
+                data = json.loads(resp["Body"].read())
+                bank = data["bank"]
+                institutions.append({
+                    "key":           bank,
+                    "name":          DISPLAY_NAMES.get(bank, bank.replace("_", " ")),
+                    "category":      CATEGORIES.get(bank, "Other"),
+                    "totalProducts": data.get("totalProducts", 0),
+                    "succeeded":     data.get("succeeded", 0),
+                    "failed":        data.get("failed", 0),
+                    "status":        data.get("status", "unknown"),
+                    "runDate":       data.get("date", today),
+                })
+            except Exception as e:
+                logger.warning(f"Could not read status file {key}: {e}")
+
+        # Fill in banks that never wrote a status file (Stage 1 or Stage 2 silently skipped them)
+        reported = {i["key"] for i in institutions}
+        try:
+            cfg_resp = s3.get_object(Bucket=S3_BUCKET, Key="config.json")
+            all_banks = set(json.loads(cfg_resp["Body"].read())["banks"].keys())
+            for bank in sorted(all_banks - reported):
+                institutions.append({
+                    "key":           bank,
+                    "name":          DISPLAY_NAMES.get(bank, bank.replace("_", " ")),
+                    "category":      CATEGORIES.get(bank, "Other"),
+                    "totalProducts": 0,
+                    "succeeded":     0,
+                    "failed":        0,
+                    "status":        "down",
+                    "runDate":       today,
+                })
+        except Exception as e:
+            logger.warning(f"Could not read config.json to fill missing banks: {e}")
+
+        _STATUS_ORDER = {"healthy": 0, "partial": 1, "down": 2, "unknown": 3}
+        institutions.sort(key=lambda x: (_STATUS_ORDER.get(x["status"], 3), x["name"].lower()))
+
+        payload = {
+            "runDate":      today,
+            "generatedAt":  run_at,
+            "count":        len(institutions),
+            "institutions": institutions,
+        }
+        s3.put_object(
+            Bucket=S3_BUCKET,
+            Key=f"{INSTITUTIONS_PREFIX}/latest.json",
+            Body=json.dumps(payload, indent=2).encode("utf-8"),
+            ContentType="application/json",
+        )
+        logger.info(f"Wrote institutions/latest.json ({len(institutions)} banks)")
+    except Exception as e:
+        logger.warning(f"_aggregate_institutions failed (non-critical): {e}")
+
+
+def _invalidate_cloudfront(caller_ref: str) -> None:
+    if not CF_DISTRIBUTION_ID:
+        logger.info("CF_DISTRIBUTION_ID not set — skipping CloudFront invalidation")
+        return
+    try:
+        cf = boto3.client("cloudfront")
+        cf.create_invalidation(
+            DistributionId=CF_DISTRIBUTION_ID,
+            InvalidationBatch={
+                "Paths": {"Quantity": 1, "Items": ["/*"]},
+                "CallerReference": caller_ref,
+            },
+        )
+        logger.info(f"CloudFront invalidation created for distribution {CF_DISTRIBUTION_ID}")
+    except Exception as e:
+        logger.warning(f"CloudFront invalidation failed (non-critical): {e}")
 
 def _build_stats(rows: list) -> dict:
     result      = {"lenderCount": 0}

@@ -178,3 +178,23 @@ export const RATE_TREND = [
   { month: 'Mar 26',  variable: 6.25, fixed1: 5.90, fixed3: 5.68 },
   { month: 'Apr 26',  variable: 6.24, fixed1: 5.89, fixed3: 5.68 },
 ]
+
+export const MOCK_INSTITUTIONS = {
+  runDate:     '2026-04-30',
+  generatedAt: '2026-04-30T07:14:33Z',
+  count: 12,
+  institutions: [
+    { key: 'CBA',                      name: 'Commonwealth Bank',           category: 'Big 4',               totalProducts: 75, succeeded: 75, failed: 0,  status: 'healthy' },
+    { key: 'ANZ',                      name: 'ANZ',                         category: 'Big 4',               totalProducts: 37, succeeded: 37, failed: 0,  status: 'healthy' },
+    { key: 'NAB',                      name: 'National Australia Bank',     category: 'Big 4',               totalProducts: 40, succeeded: 40, failed: 0,  status: 'healthy' },
+    { key: 'Westpac',                  name: 'Westpac',                     category: 'Big 4',               totalProducts: 45, succeeded: 43, failed: 2,  status: 'partial' },
+    { key: 'ING',                      name: 'ING Australia',               category: 'Regional/Challenger', totalProducts: 12, succeeded: 12, failed: 0,  status: 'healthy' },
+    { key: 'Bendigo_Bank',             name: 'Bendigo Bank',                category: 'Regional/Challenger', totalProducts: 50, succeeded: 50, failed: 0,  status: 'healthy' },
+    { key: 'Tiimely_Home',             name: 'Tiimely Home',                category: 'Mortgage Specialist', totalProducts: 8,  succeeded: 5,  failed: 3,  status: 'partial' },
+    { key: 'Teachers_Mutual_Bank',     name: 'Teachers Mutual Bank',        category: 'Credit Union/Mutual', totalProducts: 30, succeeded: 30, failed: 0,  status: 'healthy' },
+    { key: "People's_Choice_and_Heritage", name: "People's Choice & Heritage Bank", category: 'Credit Union/Mutual', totalProducts: 74, succeeded: 0, failed: 74, status: 'down' },
+    { key: 'Up',                       name: 'Up Bank',                     category: 'Neobank/Fintech',     totalProducts: 6,  succeeded: 6,  failed: 0,  status: 'healthy' },
+    { key: 'HSBC',                     name: 'HSBC Australia',              category: 'Foreign Bank',        totalProducts: 9,  succeeded: 9,  failed: 0,  status: 'healthy' },
+    { key: 'Coles_Credit_Cards',       name: 'Coles Credit Cards',          category: 'Credit Card',         totalProducts: 4,  succeeded: 4,  failed: 0,  status: 'healthy' },
+  ],
+}
