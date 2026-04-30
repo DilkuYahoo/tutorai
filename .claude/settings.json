@@ -14,7 +14,11 @@
       "Bash(aws sns *)",
       "Bash(grep -E \"\\\\.jsx$\")",
       "Bash(curl -s https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod/institutions)",
-      "Bash(curl -s https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod/rates/recent-changes)"
+      "Bash(curl -s https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod/rates/recent-changes)",
+      "Bash(curl -s -X POST https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod/contact -H 'Content-Type: application/json' -d '{\"name\":\"Test User\",\"email\":\"dilkushan@gmail.com\",\"message\":\"This is a test from the RateScan contact form integration.\"}')",
+      "Bash(curl -s -X POST https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod/contact -H 'Content-Type: application/json' -d '{\"name\":\"Test\",\"email\":\"test@example.com\",\"message\":\"Hello\"}')",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
