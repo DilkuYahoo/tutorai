@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
 import StatCard from "../components/StatCard";
 import BillingSummary from "../components/BillingSummary";
 import PriceChart from "../components/PriceChart";
@@ -27,9 +27,16 @@ async function fetchHistory() {
 function formatAEST(isoStr) {
   if (!isoStr) return "—";
   try {
-    const d = parseISO(isoStr);
-    const aest = new Date(d.getTime() + 10 * 60 * 60 * 1000);
-    return format(aest, "d MMM yyyy HH:mm") + " AEST";
+    const d = new Date(isoStr);
+    // Convert UTC time to AEST (UTC+10) using UTC getters
+    const aestTime = d.getTime() + 10 * 60 * 60 * 1000;
+    const aestDate = new Date(aestTime);
+    const year = aestDate.getUTCFullYear();
+    const month = String(aestDate.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(aestDate.getUTCDate()).padStart(2, "0");
+    const hours = String(aestDate.getUTCHours()).padStart(2, "0");
+    const mins = String(aestDate.getUTCMinutes()).padStart(2, "0");
+    return `${day} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][aestDate.getUTCMonth()]} ${year} ${hours}:${mins} AEST`;
   } catch {
     return isoStr;
   }

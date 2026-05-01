@@ -1,11 +1,15 @@
 import ReactECharts from "echarts-for-react";
-import { format, parseISO } from "date-fns";
 
 function toAEST(isoStr) {
   try {
     const d = parseISO(isoStr);
-    const aest = new Date(d.getTime() + 10 * 60 * 60 * 1000);
-    return format(aest, "HH:mm");
+    // Convert UTC ISO time to AEST (UTC+10) using UTC getters to avoid local timezone issues
+    const aestTime = d.getTime() + 10 * 60 * 60 * 1000;
+    const aestDate = new Date(aestTime);
+    // Format manually using UTC methods since we've already shifted to AEST epoch
+    const hours = aestDate.getUTCHours();
+    const mins = aestDate.getUTCMinutes();
+    return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
   } catch {
     return isoStr;
   }
@@ -96,7 +100,7 @@ export default function PriceChart({ history = [], forecast = [], dark = false }
         const lines = params
           .filter((p) => p.value != null)
           .map((p) => `${p.marker} ${p.seriesName}: <b>${p.value} c/kWh</b>`);
-        return `<div style="font-size:12px">${label}<br/>${lines.join("<br/>")}</div>`;
+        return `<div style="font-size:12px">${label} AEST<br/>${lines.join("<br/>")}</div>`;
       },
     },
     legend: {
