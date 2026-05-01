@@ -123,14 +123,13 @@ export const sessions = [
     end: subDays(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 15, 45), 14),
     status: 'completed',
     type: 'recurring',
+    venue: 'Central Park Cricket Ground — Net 3',
     summary: 'Focused on back-foot defensive shots. Sam showed great improvement in keeping his elbow up.',
     invoice: { id: 'inv-1', status: 'paid', amount: 80 },
-    homework: [
-      { id: 'hw-1', type: 'drill', description: '50 shadow swings in front of mirror — focus on elbow position', completed: true },
-      { id: 'hw-2', type: 'youtube', url: 'https://youtube.com/watch?v=example1', description: 'Back-foot defence technique video', completed: false },
-    ],
     comments: [{ id: 'c1', body: 'Great session today Sam — keep working on that elbow.', coachId: 'coach-1', date: subDays(today, 14) }],
-    videos: [],
+    videos: [
+      { id: 'v1', url: '#', uploadedBy: 'coach', title: 'Back-foot defence drill walkthrough' },
+    ],
   },
   {
     id: 's2',
@@ -140,15 +139,11 @@ export const sessions = [
     end: subDays(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 15, 45), 7),
     status: 'completed',
     type: 'recurring',
+    venue: 'College Oval #2',
     summary: 'Cover drive work. Footwork was excellent. Need to keep the head still on contact.',
     invoice: { id: 'inv-2', status: 'paid', amount: 80 },
-    homework: [
-      { id: 'hw-3', type: 'drill', description: '30 cover drives against a tee', completed: false },
-    ],
     comments: [],
-    videos: [
-      { id: 'v1', url: '#', uploadedBy: 'player', reviewText: 'Nice work on the front foot — head still drifting slightly. Focus on staying tall.' },
-    ],
+    videos: [],
   },
   // Upcoming sessions
   {
@@ -159,9 +154,9 @@ export const sessions = [
     end: addDays(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 15, 45), 0),
     status: 'booked',
     type: 'recurring',
+    venue: 'Central Park Cricket Ground — Net 3',
     summary: null,
     invoice: null,
-    homework: [],
     comments: [],
     videos: [],
   },
@@ -173,9 +168,9 @@ export const sessions = [
     end: addDays(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 15, 45), 7),
     status: 'booked',
     type: 'recurring',
+    venue: 'Central Park Cricket Ground — Net 3',
     summary: null,
     invoice: null,
-    homework: [],
     comments: [],
     videos: [],
   },
@@ -188,9 +183,9 @@ export const sessions = [
     end: subDays(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 10, 45), 8),
     status: 'completed',
     type: 'adhoc',
+    venue: 'School Indoor Facility',
     summary: 'Intro session. Assessed Lily\'s batting stance and grip. Good natural talent.',
     invoice: { id: 'inv-3', status: 'pending', amount: 80 },
-    homework: [],
     comments: [],
     videos: [],
   },
@@ -202,9 +197,9 @@ export const sessions = [
     end: addDays(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 10, 45), 2),
     status: 'booked',
     type: 'adhoc',
+    venue: 'School Indoor Facility',
     summary: null,
     invoice: null,
-    homework: [],
     comments: [],
     videos: [],
   },
@@ -217,9 +212,9 @@ export const sessions = [
     end: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 45),
     status: 'booked',
     type: 'adhoc',
+    venue: 'Riverside Sports Complex',
     summary: null,
     invoice: null,
-    homework: [],
     comments: [],
     videos: [],
   },
@@ -231,9 +226,9 @@ export const sessions = [
     end: addDays(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 9, 45), 1),
     status: 'booked',
     type: 'recurring',
+    venue: 'Central Park Cricket Ground — Net 1',
     summary: null,
     invoice: null,
-    homework: [],
     comments: [],
     videos: [],
   },
@@ -270,6 +265,28 @@ export const invoices = [
 ]
 
 // ─── Reconciliation report entries ────────────────────────────────────────────
+// ─── Late cancellations ────────────────────────────────────────────────────────
+export const lateCancellations = [
+  {
+    id: 'lc-1',
+    playerId: 'player-1',
+    coachId: 'coach-1',
+    sessionStart: subDays(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 15, 0), 3),
+    cancelledAt: subDays(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 9, 0), 3),
+    hoursNotice: 6,
+    creditForfeited: 1,
+  },
+  {
+    id: 'lc-2',
+    playerId: 'player-3',
+    coachId: 'coach-2',
+    sessionStart: subDays(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 0), 1),
+    cancelledAt: subDays(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 10, 30), 1),
+    hoursNotice: 3.5,
+    creditForfeited: 1,
+  },
+]
+
 export const reconciliationEntries = [
   { id: 'r1', date: subDays(today, 30), player: 'Sam Wilson', parent: null, coach: 'Rahul Sharma', type: 'purchase', credits: +10, balance: 10, reference: 'Standard Package' },
   { id: 'r2', date: subDays(today, 20), player: 'Sam Wilson', parent: null, coach: 'Rahul Sharma', type: 'booking_reserve', credits: -1, balance: 9, reference: format(subDays(today, 14), 'dd MMM yyyy') + ' 3:00 pm' },

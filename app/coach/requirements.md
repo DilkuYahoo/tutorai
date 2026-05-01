@@ -1,4 +1,4 @@
-# Cricket Coach Scheduling Application — Product Requirements
+# Playgenie — Cricket Coach Scheduling Application
 
 ## Overview
 
@@ -12,28 +12,9 @@ A web-based platform for cricket coaching businesses to manage coaches, players,
 The Super Coach is **also a practising coach** — they carry a full coach role in addition to their admin privileges.
 
 **As a coach:**
-- Has their own player list, availability calendar, and sessions
-- Posts session summaries, attaches videos, assigns homework
-- Reviews player-uploaded videos
-- Maintains their own public profile page
-- Marks their own sessions as complete
-
-**As admin (in addition to the above):**
-- Full administrative access across all coaches and schedules
-- Views a unified calendar showing all coaches' schedules including their own
-- Overrides, edits, or cancels any session on any coach's calendar
-- Accesses the business-wide analytics dashboard and credit reconciliation report
-- Registers, edits, and deregisters coach accounts
-- Reassigns sessions between coaches
-- Reads all inbox threads across the platform
-- Manages platform-level package templates
-- Adds manual credit ledger adjustments for any player
-
-### 2. Coach
 - Manages their own schedule and session availability
 - Activates package templates assigned to them by the Super Coach
-- Posts session summaries, attaches videos, assigns homework
-- Reviews player-uploaded videos
+- Posts session summaries, attaches training videos
 - Maintains a public-facing profile page
 - Marks sessions as complete via a "Complete" button
 - Can see their own data only — cannot see other coaches' sessions, players, or revenue
@@ -41,9 +22,7 @@ The Super Coach is **also a practising coach** — they carry a full coach role 
 ### 3. Player (Individual)
 - Self-registers on the platform as a player
 - Books sessions for themselves only based on coach availability
-- Receives session summaries, invoices, and homework assignments
-- Uploads videos to sessions for coach review
-- Logs completed drills against assigned homework
+- Receives session summaries, invoices
 - Has their own login — manages their own account directly
 
 ### 4. Parent
@@ -61,7 +40,7 @@ The Super Coach is **also a practising coach** — they carry a full coach role 
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18 + Vite 5, Tailwind CSS 3 (dark mode `class` strategy), React Router v6 |
+| Frontend | React 18 + Vite 5, Tailwind CSS 3 (dark mode `class` strategy, **fully responsive**), React Router v6 |
 | Charts | ECharts 5 via `echarts-for-react` |
 | Calendar | FullCalendar v6 (`@fullcalendar/react`, `timegrid`, `daygrid`, `interaction`) |
 | Auth | AWS Cognito (JWT, `custom:role` claim) |
@@ -73,8 +52,82 @@ The Super Coach is **also a practising coach** — they carry a full coach role 
 | Payments | Stripe (invoicing, package purchases) |
 | IaC | AWS SAM (`template.yaml`) — mirrors ATS deployment pattern |
 | Region | ap-southeast-2 (Lambda/API/DynamoDB/Athena/Glue); us-east-1 (CloudFront + ACM) |
+| **Responsive Design** | **Mobile-first approach** — the entire platform is fully responsive, optimised for field use by coaches on mobile phones. All workflows (session completion, video uploads, availability management) are designed for touch-first interactions with large tap targets, simplified data entry, and offline-tolerant patterns where applicable. |
 
 ---
+
+## Mobile-First Design Principles
+
+The entire platform is optimised for field use by coaches working primarily on mobile phones.
+
+### Touch-First Interface
+- **Large tap targets**: Minimum 44px touch targets, ideally 60px+ for primary actions
+- **Generous spacing**: Adequate spacing between interactive elements to prevent mis-taps on small screens
+- **Gesture support**: Swipe actions on list items (e.g., swipe to reschedule/cancel)
+- **Thumb-friendly zones**: Primary actions placed in lower/middle screen areas for one-handed use
+
+### Responsive Breakpoints
+- **Mobile-first**: Base styles target 375px width (iPhone SE/minimum)
+- **Tablet**: 768px breakpoint for larger screens
+- **Desktop**: 1024px+ for expanded views
+- **FullCalendar**: Month/week/day views adapt to screen width; day view preferred on mobile
+
+### Coach Field Workflows (Mobile-Optimised)
+
+#### Session Completion Flow
+Coach's post-session workflow after a training session:
+- **One-thumb completion**: Large primary "Complete" button at bottom of screen for easy thumb access
+- **Training video upload**: Files begin uploading immediately on selection via presigned S3 URL
+  - Progress shown inline with percentage and estimated time
+  - Background upload: continues if app backgrounded; auto-retry on network restore
+  - Client-side video compression to reduce bandwidth usage
+- **Session notes with voice-to-text**: Hands-free input option for recording session summaries
+- **Quick actions bar**: "Complete", "Add Video", "Add Notes" accessible without scrolling — all designed for single-thumb use
+
+#### Video Uploads (Training Sessions)
+- **Large, prominent upload buttons**: Full-width on mobile, minimum 60px height
+- **Immediate upload**: No "submit" step — upload starts automatically on file selection
+- **Progress visibility**: Upload progress shown as overlay with real-time percentage
+- **Background upload**: Uploads continue if app is backgrounded; resume on foreground
+- **Compression**: Client-side video compression before upload to minimise bandwidth
+
+#### Availability Management
+- **Week view default**: Calendar defaults to current week, optimised for mobile width
+- **Quick slot toggles**: Add/remove individual slots with single taps — no modal dialogs required
+- **Block-out wizard**: Simple date-range picker for setting unavailability periods
+- **Visual feedback**: Immediate visual confirmation of slot changes with undo option
+
+### Network Resilience (Field Use)
+- **Offline queue**: Actions taken offline are queued locally and synced when connection returns
+- **Local drafts**: Session notes and video selections saved locally if connection drops
+- **Retry logic**: Exponential backoff for failed API calls; manual retry option available
+- **Connection indicators**: Network status visible in header (online/offline/syncing)
+
+### Performance Optimisation
+- **Lazy loading**: Images and videos loaded on-demand; session lists use virtual scrolling
+- **Skeleton screens**: Content placeholders shown during data fetch
+- **Minimal bundle**: Code-splitting by route; under 150KB initial JS payload
+- **Caching strategy**: Service Worker caches static assets; API responses cached where safe
+
+### Responsive Components
+
+#### Coach Dashboard
+- **Mobile**: Single-column stats cards; swipeable session list; bottom-sheet filters
+- **Tablet**: Two-column layout; expanded session details
+- **Desktop**: Full dashboard with multi-panel layout
+
+#### Booking Calendar
+- **Mobile**: Day/Week view only; month view accessible via toggle
+- **Tablet**: Week view with side panel for session details
+- **Desktop**: Full month view with drag-and-drop across coaches (Super Coach)
+
+#### Session Cards
+- **Mobile**: Full-width cards with stacked info (time, player, actions)
+- **Tablet**: Horizontal layout with actions aligned right
+- **Desktop**: Compact rows with hover states
+
+---
+
 
 ## Core Features
 
@@ -211,6 +264,8 @@ Bookings are **auto-confirmed** — no coach approval required. The coach's publ
 |------|-------------|
 | One-on-one | Coach + single player; 45 min slot; recurring or ad-hoc |
 
+Each session has a **venue** field — a text field where the coach (or Super Coach) specifies the ground/location where the training will take place (e.g., "Central Park Cricket Ground", "College Oval #2", "School Indoor Facility"). Venue can be edited up until the session start time.
+
 Group sessions are **descoped from MVP**. All MVP sessions are one-on-one only.
 
 ---
@@ -232,15 +287,16 @@ Group sessions are **descoped from MVP**. All MVP sessions are one-on-one only.
 
 **Coach view**
 - Their own calendar: booked sessions, available slots, block-outs, ad-hoc overrides
-- Booked sessions show: player name, session type, recurring/ad-hoc indicator
+- Booked sessions show: player name, session type, **venue**, recurring/ad-hoc indicator
 - Can manage availability (add/remove slots, set block-outs) directly from this view
+- **Venue can be edited** on any upcoming session up until its start time
 - Super Coach sees this same view for their own sessions, plus the unified view below
 - **Drag and drop**: coach can drag a booked session to a different available slot to reschedule it — auto-confirmed; player notified by email; original slot freed
 
 **Super Coach unified view**
 - All coaches displayed simultaneously, each coach in a distinct colour
 - Colour legend shown as a filter panel — coaches can be toggled on/off
-- Clicking any session opens the session detail with full edit/cancel/reassign options
+- Clicking any session opens the session detail with full edit/cancel/reassign **and venue editing** options
 - Default view: all coaches visible; can filter down to one or more coaches
 - **Drag and drop**: Super Coach can drag any session across any coach's calendar to reschedule or reassign — if dragged to a different coach's slot it triggers a reassignment; player notified
 
@@ -266,7 +322,7 @@ Rescheduled (original slot freed; player selects new slot; auto-confirmed)
 Sessions are **Booked** the moment a player confirms a slot. There is no intermediate "Confirmed" state — booking is auto-confirmed against the coach's availability.
 
 **Completion flow:**
-1. Coach adds commentary to the session before marking it done
+1. Coach adds session commentary and uploads training videos before marking it done
 2. Coach presses **"Complete"** — triggers automatically:
    - Session summary emailed to the player/parent
    - If player is on a package: one credit deducted from their ledger; no invoice sent
@@ -286,26 +342,14 @@ Sessions are **Booked** the moment a player confirms a slot. There is no interme
 
 ### 5. Session Content
 
-After a session the coach can attach:
-- **Written summary** — free-text notes on what was covered
-- **Videos** — uploaded to the dedicated S3 bucket (no size or duration limit)
-  - Upload UI must have **large, prominent buttons** optimised for mobile/field use
-  - Files should begin uploading immediately on selection (presigned S3 URL pattern)
-
-#### Player Video Upload
-- Players/parents can upload their own videos to a session for coach review
-- Same mobile-friendly large-button UI
-- Coach provides a **free-text written response** to the uploaded video (no annotation tooling at this stage)
-
----
-
-### 6. Homework
-
-Coaches can assign homework per session or per player:
-- Link to a YouTube video
-- Custom drill description (free text)
-
-Players can log which drills they have completed against the assigned homework.
+After a session the coach can attach session notes and training videos — designed for mobile field use:
+- **Written summary** — free-text notes with **voice-to-text** option for hands-free entry on mobile
+- **Training videos** — coach uploads recorded training videos to the dedicated S3 bucket (no size or duration limit)
+  - Upload UI has **large, prominent buttons** (minimum 60px height) optimised for mobile/field use
+  - Files begin uploading immediately on selection (presigned S3 URL pattern) — no additional submit step
+  - Upload progress shown inline with percentage and estimated time
+  - **Background upload**: continues if app is backgrounded; auto-retry on network restore
+  - **Client-side compression** to reduce bandwidth usage before upload
 
 ---
 
@@ -382,10 +426,8 @@ Packages are defined at the **platform level** by the Super Coach, not by indivi
 | Session cancelled or rescheduled | Coach + Player/Parent |
 | Late cancellation (< 24 hrs) occurred | Super Coach |
 | Session completed | Player/Parent (summary + invoice) |
-| Homework assigned | Player/Parent |
 | Upcoming session reminder | Coach + Player/Parent |
-| Player video uploaded (awaiting review) | Coach |
-| New inbox message received | Recipient (Coach / Player / Parent) |
+| Player video uploaded | Coach |
 | Session comment posted by coach | Player/Parent |
 | Credit balance low (≤ 2 credits) | Player/Parent |
 
@@ -395,17 +437,30 @@ All email notifications fire asynchronously (fire-and-forget, `InvocationType="E
 
 ### 10. Coach & Super Coach Dashboard
 
-The Coach and Super Coach share the **same dashboard UI**. The difference is scope and access:
+The Coach and Super Coach share the **same dashboard UI** — fully responsive and optimised for mobile use. The difference is scope and access:
 
 | Feature | Coach | Super Coach |
 |---------|-------|-------------|
-| Upcoming sessions | Their own only | All coaches including themselves; filterable by coach |
-| Sessions completed | Their own only | All coaches including themselves; filterable by coach |
-| Revenue | Their own sessions | Business-wide including their own; filterable by coach |
-| Player list | Their own players | All players across all coaches |
-| Late cancellations | Their own | All coaches |
-| Credit reconciliation report | Not visible | Full access |
+| Upcoming sessions | Their own only | All coaches including themselves; filterable by coach — when a coach is selected, only that coach's sessions are shown |
+| Sessions completed | Their own only | All coaches including themselves; filterable by coach — when a coach is selected, only that coach's completed sessions are shown |
+| Revenue | Their own sessions | Business-wide including their own; filterable by coach — when a coach is selected, only that coach's revenue is shown |
+| Player list | Their own players | All players across all coaches; when coach filter is applied, only players of the selected coach are shown |
+| Late cancellations | Their own | All coaches; when coach filter is applied, only late cancellations for the selected coach are shown |
+| Credit reconciliation report | Not visible | Full access; when coach filter is applied, report is scoped to the selected coach |
 | Coach management | Not visible | Full access (register, edit, deregister other coaches — not themselves) |
+
+#### Coach Dashboard Detail
+
+#### Booking Utilisation Pie Chart (per-coach view)
+- When viewing a specific coach (via Coach filter), a pie chart (ECharts) is displayed showing the coach's slot utilisation for the selected time period
+- **Calculation**: (Booked slots ÷ Total available slots) × 100
+  - Total available slots = all 45-minute slots defined by weekly template + ad-hoc additions within the time period
+  - Booked slots = sessions with status "Booked" or "Completed" within the time period
+  - Excludes block-outs and removed ad-hoc slots from the available count
+- **Time period selector**: Next 7 days, 30 days, 60 days, 90 days (default: 30 days)
+- Chart displays: percentage utilisation, absolute count (e.g., "5 / 10 slots"), and visual pie with two segments (booked vs available)
+- When viewing "All coaches", the pie chart is hidden (not meaningful across multiple coaches)
+- Integrated into the top stats area when a specific coach is selected, between Stats Cards and Outstanding Invoices
 
 #### Stats Cards (top of dashboard)
 - Today's sessions (count + list)
@@ -415,10 +470,28 @@ The Coach and Super Coach share the **same dashboard UI**. The difference is sco
 - Outstanding invoices (unpaid, count + total value)
 - Videos awaiting review (amber badge — count of player videos with no coach response after 3 days)
 
+#### Outstanding Invoices (Super Coach view)
+- When viewing "All coaches", outstanding invoices from all coaches are aggregated
+- When a specific coach is selected via the Coach filter, only that coach's outstanding invoices are listed (other coaches' invoices do not appear)
+- Each invoice row: player name, coach name, invoice amount, due date, days outstanding, and a link to the Stripe-hosted invoice
+- Invoices are from Stripe `invoice.paid` webhooks where status = `open` or `past_due`
+- Listed separately from the main upcoming sessions panel to enable finance tracking
+
+#### Coach Filter (Search-Typeahead Selector)
+- Replaces the basic dropdown with a **search-typeahead selector** (typo: was "Priya device") to handle large numbers of coaches (100+) efficiently
+- As the Super Coach types, the selector searches coach names in real-time and displays matching results in a compact list
+- No scrollable dropdown list — the selector shows only matching results (max 10 visible) to avoid massive lists
+- Each result shows: coach photo, name, active session count today, and location/region if applicable
+- **All coaches** option remains as the default/reset state
+- When a coach is selected, all dashboard elements filter to that coach as described above
+- Supports keyboard navigation (arrow keys, Enter) and clear button to reset to "All coaches"
+- Performance: client-side debounced search (300ms) against the cached coach list; server-side fallback for >500 coaches
+
 #### Upcoming Sessions Panel
 - Sessions listed chronologically
 - Each row: player name, date/time, session type, status
-- Super Coach sees a **Coach filter** (dropdown) to scope to one coach or view all
+- When a specific coach is selected, the dashboard shows only that coach's data — all other coaches disappear from view. The upcoming sessions list shows only sessions for the selected coach, and the outstanding invoices section lists only that coach's unpaid invoices.
+- When "All coaches" is selected, data for all coaches is shown
 - Click through to the session detail
 
 #### Coach Management (Super Coach only)
@@ -473,10 +546,6 @@ The coach's own dashboard view contains:
 - Full list beyond today, sorted chronologically
 - Filter by: this week / this month / all upcoming
 - Each row: player name, date/time, recurring/ad-hoc, status
-
-**Homework Outstanding**
-- List of homework assigned across all sessions that has not yet been completed by the player
-- Each row: player name, session date, drill description or YouTube link, days since assigned
 
 #### Change Password
 Available to all roles from their dashboard (Coach, Super Coach, Player, Parent) via a "Change Password" option in the account/avatar menu. Uses Cognito client-side SDK — no Lambda required (same pattern as ATS `ChangePasswordModal`).
@@ -546,12 +615,11 @@ Each completed session is expandable and shows the full record:
 
 | Section | Content |
 |---------|---------|
-| Session details | Date, time, duration, coach name |
+| Session details | Date, time, duration, coach name, **venue** |
 | Coach summary | Written notes added by the coach after the session |
 | Coach videos | Videos uploaded by the coach for this session (S3-hosted, inline playback) |
 | Coach video response | Coach's written response to any player-uploaded video |
 | Player videos | Videos uploaded by the player for this session, with upload status |
-| Homework | Assigned drills and YouTube links; player can mark each drill as completed |
 | Invoice | Invoice status (paid / pending) with link to Stripe-hosted invoice PDF |
 
 #### Player Video Upload (from session history)
@@ -560,12 +628,6 @@ Each completed session is expandable and shows the full record:
 - Upload begins immediately on file selection via presigned S3 URL
 - Progress indicator shown during upload
 - Once uploaded, player can see the file and any coach written response
-
-#### Homework Tracker
-- Consolidated view of all outstanding homework across all sessions
-- Each item shows: session date, coach name, drill description or YouTube link
-- Checkbox to mark each drill as done (logged as a completed drill entry)
-- Completed homework items collapse out of the outstanding list but remain visible under the relevant session in history
 
 #### Parent View
 - Parent sees a tab or switcher to toggle between each of their children
@@ -627,7 +689,7 @@ The transformer Lambda consumes DynamoDB Stream events and writes Parquet to S3.
 ### S3 Parquet Partitioning
 
 ```
-s3://coach-platform/reporting/
+s3://playgenie/reporting/
   sessions/year=2026/month=04/
   credit_ledger/year=2026/month=04/
   invoices/year=2026/month=04/
@@ -639,7 +701,7 @@ Date-based partitioning on `sessions`, `credit_ledger`, and `invoices` allows At
 
 ### Glue Catalog
 
-One Glue database: `coach_platform`. One table per Parquet entity above. Glue crawler runs nightly to detect schema changes. Athena queries reference `coach_platform.sessions`, `coach_platform.credit_ledger`, etc.
+One Glue database: `playgenie`. One table per Parquet entity above. Glue crawler runs nightly to detect schema changes. Athena queries reference `playgenie.sessions`, `playgenie.credit_ledger`, etc.
 
 ### Credit Ledger — coachId Denormalisation
 
@@ -648,7 +710,7 @@ The credit ledger Parquet table includes `coachId` directly on every entry (deno
 ### CSV Export Flow
 
 1. Frontend requests a CSV export with active filters
-2. Reporting Lambda submits an Athena query with `OutputLocation` set to `s3://coach-platform/exports/{queryExecutionId}/`
+2. Reporting Lambda submits an Athena query with `OutputLocation` set to `s3://playgenie/exports/{queryExecutionId}/`
 3. Lambda polls Athena until the query completes (or uses async + webhook pattern)
 4. Lambda generates a presigned S3 URL for the result file (valid 15 minutes)
 5. Frontend receives the URL and triggers a browser download
@@ -668,15 +730,13 @@ DynamoDB Streams → S3 pipeline introduces a 10–60 second lag. This is accept
 | Parent profile | `PARENT#{id}` | `#META` |
 | Parent → child link | `PARENT#{parentId}` | `CHILD#{playerId}` |
 | Recurring series | `SERIES#{id}` | `#META` | coach, player, day-of-week, time, duration |
-| Session instance | `SESSION#{id}` | `#META` | `seriesId` (nullable for one-offs), status, scheduledAt |
+| Session instance | `SESSION#{id}` | `#META` | `seriesId` (nullable for one-offs), status, scheduledAt, **venue** |
 | Booking | `SESSION#{sessionId}` | `BOOKING#{playerId}` |
-| Homework | `SESSION#{sessionId}` | `HOMEWORK#{id}` |
-| Completed drill | `HOMEWORK#{hwId}` | `DRILL#{playerId}#{timestamp}` |
+| Video | `SESSION#{id}` | `VIDEO#{id}` |
 | Package template | `PACKAGE#{id}` | `#META` | platform-level template: name, sessionCount, price, tier (e.g. Standard/Premium/Trial) — created by Super Coach; no expiry; all sessions 45 min |
 | Coach package assignment | `COACH#{coachId}` | `PACKAGE#{packageId}` | which templates this coach actively offers; `active` flag |
 | Player package | `PLAYER#{playerId}` | `PACKAGE#{packageId}` | `creditsRemaining`, `stripePaymentId`, `coachId` (coach this purchase is for) — no expiry |
 | Credit ledger entry | `CREDITS#{playerId}` | `{timestamp}#{id}` | `type` (purchase/booking_reserve/session_complete/cancellation_return/late_cancel_forfeit/manual_adjustment), `delta`, `fromState`, `toState`, `balanceAvailable`, `balanceCommitted`, `sessionId` or `packageId` (reference), `coachId` (denormalised — enables direct coach filter in Athena without join), `adjustedBy` (Super Coach userId + name, manual_adjustment only), `note` (required for manual_adjustment) |
-| Video | `SESSION#{sessionId}` | `VIDEO#{id}` |
 | Invoice | `INVOICE#{id}` | `#META` | includes `stripeInvoiceId`, `status` (pending/paid/void) |
 | Session comment | `SESSION#{sessionId}` | `COMMENT#{timestamp}#{id}` | coachId, body (one-way coach → player only) |
 

@@ -25,8 +25,8 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <span className="text-4xl">🏏</span>
-          <h1 className="text-2xl font-bold text-slate-100 mt-2">CricketCoach</h1>
-          <p className="text-slate-500 text-sm mt-1">Sign in to your coaching platform</p>
+          <h1 className="text-2xl font-bold text-slate-100 mt-2">Playgenie</h1>
+          <p className="text-slate-500 text-sm mt-1">Cricket coaching, beautifully managed</p>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">

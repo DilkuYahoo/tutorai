@@ -226,7 +226,10 @@ export default function App() {
         onLenders={() => setPage('lenders')}
         buttonText="Get My Rate →"
       >
-        <Dashboard />
+        <Dashboard
+          isDark={isDark}
+          onApply={() => { dispatch({ type: 'RESET' }); setPage('apply') }}
+        />
       </Layout>
     )
   }

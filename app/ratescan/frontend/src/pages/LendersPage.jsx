@@ -122,7 +122,7 @@ export default function LendersPage({ onBack }) {
   const tdCls = 'px-4 py-3.5 text-sm'
 
   return (
-    <div className="pt-20 pb-14 px-4 max-w-6xl mx-auto">
+    <div className="pt-20 pb-14 px-4 sm:px-6 max-w-6xl mx-auto">
 
       {/* Back nav + header */}
       <div className="mb-6">

@@ -120,7 +120,24 @@ export default function CoachCalendarPage() {
                   {selectedEvent.status}
                 </span>
               </div>
+              {selectedEvent.venue && (
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-500 flex-shrink-0">Venue</span>
+                  <span className="text-slate-200 text-right">{selectedEvent.venue}</span>
+                </div>
+              )}
             </div>
+            {selectedEvent.status === 'booked' && (
+              <div className="mt-3">
+                <label className="text-xs text-slate-500 block mb-1">Edit venue</label>
+                <input
+                  defaultValue={selectedEvent.venue || ''}
+                  type="text"
+                  placeholder="e.g. Central Park Cricket Ground"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            )}
 
             <div className="flex gap-2 mt-5">
               <button onClick={() => setSelectedEvent(null)} className="flex-1 text-sm border border-slate-700 text-slate-400 py-2 rounded-lg">Close</button>

@@ -110,6 +110,12 @@ export default function SuperCalendarPage() {
                   {selectedEvent.status}
                 </span>
               </div>
+              {selectedEvent.venue && (
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-500 flex-shrink-0">Venue</span>
+                  <span className="text-slate-200 text-right text-xs">{selectedEvent.venue}</span>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2 mb-4">

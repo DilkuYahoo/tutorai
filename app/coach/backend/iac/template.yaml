@@ -1,0 +1,1099 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Playgenie — Cricket Coach Scheduling Platform
+
+Parameters:
+  StripeSecretArn:
+    Type: String
+    Description: Secrets Manager ARN containing the Stripe secret key
+  StripeWebhookSecret:
+    Type: String
+    NoEcho: true
+    Description: Stripe webhook signing secret
+  SesFromAddress:
+    Type: String
+    Description: SES verified sender address (e.g. noreply@playgenie.com.au)
+  SendEmailFunctionName:
+    Type: String
+    Default: pg-send-email
+    Description: Name of the async SES dispatcher Lambda
+  CorsOrigin:
+    Type: String
+    Default: "*"
+    Description: Allowed CORS origin (e.g. https://playgenie.com.au)
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [prod, staging, dev]
+
+Globals:
+  Function:
+    Runtime: python3.13
+    MemorySize: 256
+    Timeout: 15
+    Architectures:
+      - arm64
+    Layers:
+      - !Ref SharedLayer
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref PlaygenieTable
+        S3_BUCKET: cognifylabs.ai
+        S3_PREFIX: coachgenie
+        USER_POOL_ID: !Ref UserPool
+        SES_FROM_ADDRESS: !Ref SesFromAddress
+        CORS_ORIGIN: !Ref CorsOrigin
+        STRIPE_SECRET_ARN: !Ref StripeSecretArn
+        STRIPE_WEBHOOK_SECRET: !Ref StripeWebhookSecret
+        NOTIFICATION_FUNCTION_NAME: !Ref SendEmailFunctionName
+        REPORTING_BUCKET: cognifylabs.ai
+
+# ─── RESOURCES ───────────────────────────────────────────────────────────────
+
+Resources:
+
+  # ── Shared Lambda Layer ───────────────────────────────────────────────────
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: pg-shared
+      Description: Playgenie shared Python utilities
+      ContentUri: ../lambda/
+      CompatibleRuntimes:
+        - python3.13
+      CompatibleArchitectures:
+        - arm64
+    Metadata:
+      BuildMethod: python3.13
+
+  # ── DynamoDB ─────────────────────────────────────────────────────────────
+  PlaygenieTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: pg_playgenie_prod
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+        - AttributeName: GSI3PK
+          AttributeType: S
+        - AttributeName: GSI3SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI2
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI3
+          KeySchema:
+            - AttributeName: GSI3PK
+              KeyType: HASH
+            - AttributeName: GSI3SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  # ── Cognito ───────────────────────────────────────────────────────────────
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: pg-users
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      Schema:
+        - Name: role
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+      UserPoolAddOns:
+        AdvancedSecurityMode: AUDIT
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: pg-web
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+
+  # ── API Gateway ───────────────────────────────────────────────────────────
+  Api:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: prod
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 50
+        ThrottlingRateLimit: 20
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref CorsOrigin
+        AllowHeaders:
+          - Authorization
+          - Content-Type
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        MaxAge: 600
+      Auth:
+        DefaultAuthorizer: CognitoJwt
+        Authorizers:
+          CognitoJwt:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}"
+              audience:
+                - !Ref UserPoolClient
+
+  # ── IAM Execution Role ────────────────────────────────────────────────────
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: pg-lambda
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: PlaygenieAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:TransactWriteItems
+                  - dynamodb:BatchGetItem
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource:
+                  - !GetAtt PlaygenieTable.Arn
+                  - !Sub "${PlaygenieTable.Arn}/index/*"
+                  - !Sub "${PlaygenieTable.Arn}/stream/*"
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                  - s3:GeneratePresignedUrl
+                Resource:
+                  - arn:aws:s3:::cognifylabs.ai/coachgenie/*
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SendEmailFunctionName}"
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminUpdateUserAttributes
+                  - cognito-idp:AdminEnableUser
+                  - cognito-idp:AdminDisableUser
+                  - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:ListUsers
+                Resource: !GetAtt UserPool.Arn
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref StripeSecretArn
+              - Effect: Allow
+                Action:
+                  - athena:StartQueryExecution
+                  - athena:GetQueryExecution
+                  - athena:GetQueryResults
+                  - athena:StopQueryExecution
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - glue:GetTable
+                  - glue:GetDatabase
+                  - glue:GetPartitions
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                Resource:
+                  - arn:aws:s3:::cognifylabs.ai
+
+  # ── Glue Catalog ─────────────────────────────────────────────────────────
+  GlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: playgenie
+        Description: Playgenie reporting database
+
+  # ── Athena WorkGroup ──────────────────────────────────────────────────────
+  AthenaWorkGroup:
+    Type: AWS::Athena::WorkGroup
+    Properties:
+      Name: playgenie
+      WorkGroupConfiguration:
+        ResultConfiguration:
+          OutputLocation: s3://cognifylabs.ai/coachgenie/athena-results/
+        EnforceWorkGroupConfiguration: true
+
+  # ── EventBridge Scheduler Role ────────────────────────────────────────────
+  SchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: pg-scheduler
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeLambda
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt VideoReviewFlagFunction.Arn
+                  - !GetAtt SessionReminderFunction.Arn
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # LAMBDA FUNCTIONS
+  # ─────────────────────────────────────────────────────────────────────────
+
+  # ── Users ─────────────────────────────────────────────────────────────────
+  RegisterCoachFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-register-coach
+      CodeUri: ../lambda/users/
+      Handler: register_coach.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /users/coaches
+
+  UpdateCoachFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-update-coach
+      CodeUri: ../lambda/users/
+      Handler: update_coach.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: PUT
+            Path: /users/coaches/{coachId}
+
+  DeregisterCoachFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-deregister-coach
+      CodeUri: ../lambda/users/
+      Handler: deregister_coach.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: DELETE
+            Path: /users/coaches/{coachId}
+
+  GetMeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-get-me
+      CodeUri: ../lambda/users/
+      Handler: get_me.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /users/me
+
+  RegisterPlayerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-register-player
+      CodeUri: ../lambda/users/
+      Handler: register_player.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /users/players
+            Auth:
+              Authorizer: NONE
+
+  RegisterParentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-register-parent
+      CodeUri: ../lambda/users/
+      Handler: register_parent.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /users/parents
+            Auth:
+              Authorizer: NONE
+
+  AddChildFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-add-child
+      CodeUri: ../lambda/users/
+      Handler: add_child.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /users/parents/{parentId}/children
+
+  # ── Coaches ───────────────────────────────────────────────────────────────
+  ListCoachesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-list-coaches
+      CodeUri: ../lambda/coaches/
+      Handler: list_coaches.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /coaches
+
+  GetCoachFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-get-coach
+      CodeUri: ../lambda/coaches/
+      Handler: get_coach.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /coaches/{coachId}
+
+  GetCoachAvailabilityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-get-coach-availability
+      CodeUri: ../lambda/coaches/
+      Handler: get_coach_availability.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /coaches/{coachId}/availability
+
+  UpdateMyProfileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-update-my-profile
+      CodeUri: ../lambda/coaches/
+      Handler: update_my_profile.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: PUT
+            Path: /coaches/me
+
+  UploadProfilePhotoUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-upload-profile-photo-url
+      CodeUri: ../lambda/coaches/
+      Handler: upload_profile_photo_url.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /coaches/me/photo-url
+
+  # ── Availability ──────────────────────────────────────────────────────────
+  GetMyAvailabilityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-get-my-availability
+      CodeUri: ../lambda/availability/
+      Handler: get_my_availability.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /availability
+
+  UpdateWeeklyTemplateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-update-weekly-template
+      CodeUri: ../lambda/availability/
+      Handler: update_weekly_template.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: PUT
+            Path: /availability/template
+
+  AddAdhocOverrideFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-add-adhoc-override
+      CodeUri: ../lambda/availability/
+      Handler: add_adhoc_override.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /availability/overrides
+
+  RemoveAdhocOverrideFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-remove-adhoc-override
+      CodeUri: ../lambda/availability/
+      Handler: remove_adhoc_override.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: DELETE
+            Path: /availability/overrides/{date}/{slot}
+
+  CreateBlockoutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-create-blockout
+      CodeUri: ../lambda/availability/
+      Handler: create_blockout.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /availability/blockouts
+
+  DeleteBlockoutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-delete-blockout
+      CodeUri: ../lambda/availability/
+      Handler: delete_blockout.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: DELETE
+            Path: /availability/blockouts/{blockoutId}
+
+  # ── Sessions ──────────────────────────────────────────────────────────────
+  BookSessionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-book-session
+      CodeUri: ../lambda/sessions/
+      Handler: book_session.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /sessions
+
+  ListMySessionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-list-my-sessions
+      CodeUri: ../lambda/sessions/
+      Handler: list_my_sessions.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /sessions
+
+  GetSessionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-get-session
+      CodeUri: ../lambda/sessions/
+      Handler: get_session.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /sessions/{sessionId}
+
+  CancelSessionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-cancel-session
+      CodeUri: ../lambda/sessions/
+      Handler: cancel_session.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /sessions/{sessionId}/cancel
+
+  RescheduleSessionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-reschedule-session
+      CodeUri: ../lambda/sessions/
+      Handler: reschedule_session.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /sessions/{sessionId}/reschedule
+
+  CompleteSessionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-complete-session
+      CodeUri: ../lambda/sessions/
+      Handler: complete_session.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /sessions/{sessionId}/complete
+
+  AddSessionCommentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-add-session-comment
+      CodeUri: ../lambda/sessions/
+      Handler: add_session_comment.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /sessions/{sessionId}/comments
+
+  UpdateSessionVenueFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-update-session-venue
+      CodeUri: ../lambda/sessions/
+      Handler: update_session_venue.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: PATCH
+            Path: /sessions/{sessionId}/venue
+
+  UploadSessionVideoUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-upload-session-video-url
+      CodeUri: ../lambda/sessions/
+      Handler: upload_session_video_url.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /sessions/{sessionId}/videos
+
+  ConfirmVideoUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-confirm-video-upload
+      CodeUri: ../lambda/sessions/
+      Handler: confirm_video_upload.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /sessions/{sessionId}/videos/{videoId}/confirm
+
+  ReassignSessionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-reassign-session
+      CodeUri: ../lambda/sessions/
+      Handler: reassign_session.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /sessions/{sessionId}/reassign
+
+  CancelSeriesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-cancel-series
+      CodeUri: ../lambda/sessions/
+      Handler: cancel_series.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /series/{seriesId}/cancel
+
+  ReassignSeriesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-reassign-series
+      CodeUri: ../lambda/sessions/
+      Handler: reassign_series.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /series/{seriesId}/reassign
+
+  # ── Packages ──────────────────────────────────────────────────────────────
+  ListPackageTemplatesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-list-package-templates
+      CodeUri: ../lambda/packages/
+      Handler: list_package_templates.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /packages
+
+  CreatePackageTemplateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-create-package-template
+      CodeUri: ../lambda/packages/
+      Handler: create_package_template.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /packages
+
+  UpdatePackageTemplateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-update-package-template
+      CodeUri: ../lambda/packages/
+      Handler: update_package_template.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: PUT
+            Path: /packages/{packageId}
+
+  AssignCoachPackagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-assign-coach-packages
+      CodeUri: ../lambda/packages/
+      Handler: assign_coach_packages.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: PUT
+            Path: /coaches/{coachId}/packages
+
+  ListCoachPackagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-list-coach-packages
+      CodeUri: ../lambda/packages/
+      Handler: list_coach_packages.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /coaches/{coachId}/packages
+
+  PurchasePackageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-purchase-package
+      CodeUri: ../lambda/packages/
+      Handler: purchase_package.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /packages/{packageId}/purchase
+
+  GetMyCreditsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-get-my-credits
+      CodeUri: ../lambda/packages/
+      Handler: get_my_credits.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /credits
+
+  AdjustCreditsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-adjust-credits
+      CodeUri: ../lambda/packages/
+      Handler: adjust_credits.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /credits/adjust
+
+  # ── Payments ──────────────────────────────────────────────────────────────
+  StripeWebhookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-stripe-webhook
+      CodeUri: ../lambda/payments/
+      Handler: stripe_webhook.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /webhooks/stripe
+            Auth:
+              Authorizer: NONE
+
+  # ── Reports ───────────────────────────────────────────────────────────────
+  GetDashboardStatsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-get-dashboard-stats
+      CodeUri: ../lambda/reports/
+      Handler: get_dashboard_stats.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /reports/dashboard
+
+  GetReconciliationReportFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-get-reconciliation-report
+      CodeUri: ../lambda/reports/
+      Handler: get_reconciliation_report.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: GET
+            Path: /reports/reconciliation
+
+  ExportReconciliationCsvFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-export-reconciliation-csv
+      CodeUri: ../lambda/reports/
+      Handler: export_reconciliation_csv.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Method: POST
+            Path: /reports/reconciliation/export
+
+  # ── Notifications ─────────────────────────────────────────────────────────
+  SendEmailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Ref SendEmailFunctionName
+      CodeUri: ../lambda/notifications/
+      Handler: send_email.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+
+  # ── DynamoDB Streams Transformer ──────────────────────────────────────────
+  StreamsTransformerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-streams-transformer
+      CodeUri: ../lambda/streams/
+      Handler: transform.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+      MemorySize: 512
+      Events:
+        DDBStream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt PlaygenieTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 100
+            BisectBatchOnFunctionError: true
+            MaximumRetryAttempts: 3
+
+  # ── Scheduled Functions ───────────────────────────────────────────────────
+  VideoReviewFlagFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-video-review-flag
+      CodeUri: ../lambda/scheduled/
+      Handler: video_review_flag.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+
+  VideoReviewFlagSchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: pg-video-review-flag-daily
+      ScheduleExpression: "cron(0 16 * * ? *)"  # 2 AM AEST (UTC+10) = 16:00 UTC
+      FlexibleTimeWindow:
+        Mode: "OFF"
+      Target:
+        Arn: !GetAtt VideoReviewFlagFunction.Arn
+        RoleArn: !GetAtt SchedulerRole.Arn
+
+  SessionReminderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pg-session-reminder
+      CodeUri: ../lambda/scheduled/
+      Handler: session_reminder.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 60
+
+  SessionReminderSchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: pg-session-reminder-hourly
+      ScheduleExpression: "rate(1 hour)"
+      FlexibleTimeWindow:
+        Mode: "OFF"
+      Target:
+        Arn: !GetAtt SessionReminderFunction.Arn
+        RoleArn: !GetAtt SchedulerRole.Arn
+
+# ─── OUTPUTS ─────────────────────────────────────────────────────────────────
+
+Outputs:
+  ApiUrl:
+    Description: Playgenie API Gateway URL
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/prod"
+    Export:
+      Name: PlaygenieApiUrl
+
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool
+    Export:
+      Name: PlaygenieUserPoolId
+
+  UserPoolClientId:
+    Description: Cognito App Client ID
+    Value: !Ref UserPoolClient
+    Export:
+      Name: PlaygenieUserPoolClientId
+
+  S3BucketName:
+    Description: S3 bucket used for all Playgenie assets (shared cognifylabs.ai bucket)
+    Value: cognifylabs.ai
+    Export:
+      Name: PlaygenieS3Bucket
+
+  DynamoTableName:
+    Description: DynamoDB table name
+    Value: !Ref PlaygenieTable
+    Export:
+      Name: PlaygenieTableName

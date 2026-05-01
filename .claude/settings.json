@@ -18,7 +18,20 @@
       "Bash(curl -s -X POST https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod/contact -H 'Content-Type: application/json' -d '{\"name\":\"Test User\",\"email\":\"dilkushan@gmail.com\",\"message\":\"This is a test from the RateScan contact form integration.\"}')",
       "Bash(curl -s -X POST https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod/contact -H 'Content-Type: application/json' -d '{\"name\":\"Test\",\"email\":\"test@example.com\",\"message\":\"Hello\"}')",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(chmod +x /Users/Dilku/app/source-code/tutorai/app/coach/backend/deploy.sh)",
+      "Bash(grep -E \"\\\\.\\(yaml|yml|toml\\)$\")",
+      "Bash(python3 -c \"import sys,base64; d=sys.stdin.read\\(\\); print\\(d\\)\")",
+      "Bash(bash -n /Users/Dilku/app/source-code/tutorai/app/coach/backend/deploy.sh)",
+      "Bash(dig +short coachgenie.cognifylabs.ai)",
+      "Bash(curl -sI https://coachgenie.cognifylabs.ai --max-time 10)",
+      "Bash(curl -sv https://coachgenie.cognifylabs.ai --max-time 15)",
+      "Bash(curl -v https://coachgenie.cognifylabs.ai --max-time 15)",
+      "Bash(sudo dscacheutil *)",
+      "Bash(sudo killall *)",
+      "Read(//private/var/run/**)",
+      "Bash(scutil --dns)",
+      "Bash(curl -sI --resolve \"coachgenie.cognifylabs.ai:443:18.65.244.14\" https://coachgenie.cognifylabs.ai --max-time 10)"
     ]
   }
 }

@@ -46,8 +46,8 @@ function ContactPage({ onBack }) {
 
   if (submitted) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center">
+      <div className="flex items-center justify-center pt-20 pb-16 min-h-screen">
+        <div className="text-center px-4">
           <h1 className="text-3xl font-bold mb-4">Thank You!</h1>
           <p className="mb-6">Your message has been sent. We'll get back to you soon.</p>
           <button onClick={onBack} className="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600">Back to Home</button>
@@ -60,7 +60,7 @@ function ContactPage({ onBack }) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-20 pb-14">
-      <header className="flex items-center justify-between mb-10">
+      <header className="flex flex-wrap items-center justify-between gap-y-2 mb-10">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-1">Contact Us</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">RateScan · operated by CognifyLabs.ai</p>

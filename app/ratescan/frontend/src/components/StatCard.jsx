@@ -90,7 +90,7 @@ export default function StatCard({ label, median, p25, p75, count, highlight = f
               <InfoIcon />
             </button>
             {tipVisible && (
-              <div className={`absolute bottom-full mb-2 z-20 w-60 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl px-3.5 py-3 ${
+              <div className={`absolute bottom-full mb-2 z-20 w-56 max-w-[min(15rem,calc(100vw-2rem))] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl px-3.5 py-3 ${
                 tipSide === 'left' ? 'left-0' : 'right-0'
               }`}>
                 <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
