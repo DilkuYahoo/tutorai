@@ -26,3 +26,11 @@ app/cognifylabs/lambda/shared/__pycache__
 app/cognifylabs/lambda/logs/__pycache__
 app/cognifylabs/lambda/distributions/__pycache__
 app/cognifylabs/lambda/geo/__pycache__
+
+app/energy-mate/frontend/dist
+app/energy-mate/frontend/node_modules
+app/energy-mate/backend/.aws-sam
+app/energy-mate/backend/lambda/__pycache__
+app/energy-mate/backend/lambda/shared/__pycache__
+app/energy-mate/.kilocode/node_modules
+app/energy-mate/backend/iac/.aws-sam

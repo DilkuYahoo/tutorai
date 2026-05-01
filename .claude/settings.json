@@ -37,7 +37,13 @@
       "Bash(curl -s \"https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod/institutions\")",
       "Bash(aws scheduler *)",
       "Bash(curl -si \"https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod/rates/summary\")",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('variable median:', d['variable']['median'], '| asOf:', d['asOf']\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('variable median:', d['variable']['median'], '| asOf:', d['asOf']\\)\")",
+      "Bash(xargs dirname *)",
+      "Bash(chmod +x /Users/Dilku/app/source-code/tutorai/app/energy-mate/backend/deploy.sh)",
+      "Bash(curl -s http://localhost:5199/)",
+      "Bash(aws ssm *)",
+      "Bash(curl -s \"https://iuu5v3eh3j.execute-api.ap-southeast-2.amazonaws.com/dashboard/live\")",
+      "Bash(curl -s \"https://iuu5v3eh3j.execute-api.ap-southeast-2.amazonaws.com/dashboard/history\")"
     ]
   }
 }

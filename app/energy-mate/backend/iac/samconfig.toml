@@ -1,0 +1,16 @@
+version = 0.1
+
+[default.global.parameters]
+stack_name = "energy-mate-prod"
+region     = "ap-southeast-2"
+
+[default.build.parameters]
+cached   = true
+parallel = true
+
+[default.deploy.parameters]
+region            = "ap-southeast-2"
+confirm_changeset = true
+resolve_s3        = true
+capabilities      = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+s3_prefix         = "energy-mate"

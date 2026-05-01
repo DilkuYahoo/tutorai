@@ -1,0 +1,147 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Energy-Mate — Localvolts energy monitoring dashboard
+
+Parameters:
+  NmiSsmParam:
+    Type: String
+    Default: /energy-mate/nmi
+    Description: SSM Parameter path for the NMI (set manually post-deploy)
+
+Globals:
+  Function:
+    Runtime: python3.13
+    MemorySize: 256
+    Timeout: 15
+    Architectures:
+      - arm64
+    Layers:
+      - !Ref SharedLayer
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref EnergyMateTable
+
+# ─── RESOURCES ───────────────────────────────────────────────────────────────
+
+Resources:
+
+  # ── Shared Lambda Layer ───────────────────────────────────────────────────
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: em-shared
+      Description: Energy-Mate shared Python utilities
+      ContentUri: ../lambda/
+      CompatibleRuntimes:
+        - python3.13
+      CompatibleArchitectures:
+        - arm64
+    Metadata:
+      BuildMethod: python3.13
+
+  # ── DynamoDB ─────────────────────────────────────────────────────────────
+  EnergyMateTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: em_energy_mate_prod
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
+  # ── API Gateway ───────────────────────────────────────────────────────────
+  EnergyMateApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: "$default"
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowHeaders:
+          - Content-Type
+        AllowMethods:
+          - GET
+          - OPTIONS
+
+  # ── Lambda: scheduled pipeline (every 5 min) ─────────────────────────────
+  FetchIntervalsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: em-fetch-intervals
+      CodeUri: ../lambda/pipeline/
+      Handler: fetch_intervals.lambda_handler
+      Timeout: 60
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EnergyMateTable
+        - SSMParameterReadPolicy:
+            ParameterName: energy-mate/*
+      Events:
+        Schedule:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(5 minutes)
+            State: ENABLED
+
+  # ── Lambda: GET /dashboard/live ───────────────────────────────────────────
+  GetLiveFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: em-get-live
+      CodeUri: ../lambda/api/
+      Handler: get_live.lambda_handler
+      Timeout: 10
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EnergyMateTable
+        - SSMParameterReadPolicy:
+            ParameterName: energy-mate/*
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EnergyMateApi
+            Path: /dashboard/live
+            Method: GET
+
+  # ── Lambda: GET /dashboard/history ───────────────────────────────────────
+  GetHistoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: em-get-history
+      CodeUri: ../lambda/api/
+      Handler: get_history.lambda_handler
+      Timeout: 10
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref EnergyMateTable
+        - SSMParameterReadPolicy:
+            ParameterName: energy-mate/*
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EnergyMateApi
+            Path: /dashboard/history
+            Method: GET
+
+# ─── OUTPUTS ─────────────────────────────────────────────────────────────────
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway base URL
+    Value: !Sub "https://${EnergyMateApi}.execute-api.${AWS::Region}.amazonaws.com"
+  TableName:
+    Description: DynamoDB table name
+    Value: !Ref EnergyMateTable
