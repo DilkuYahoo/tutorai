@@ -1,4 +1,5 @@
 import ReactECharts from "echarts-for-react";
+import { parseISO } from "date-fns";
 
 function toAEST(isoStr) {
   try {
@@ -15,81 +16,39 @@ function toAEST(isoStr) {
   }
 }
 
-function getLineStyle(quality) {
-  const styles = {
-    Act: { type: "solid", width: 2 },
-    Exp: { type: "solid", width: 2, dash: [4, 4] },
-    Fcst: { type: "dashed", width: 2, dash: [6, 4] },
-  };
-  return styles[quality] || styles.Fcst;
-}
-
 export default function PriceChart({ history = [], forecast = [], dark = false }) {
   const histLabels = history.map((r) => toAEST(r.intervalEnd));
   const fcstLabels = forecast.map((r) => toAEST(r.intervalEnd));
   const labels = [...histLabels, ...fcstLabels];
 
-  // Build segmented series by quality to show different line styles
-  const importSeries = [];
-  const fitSeries = [];
-
-  // Helper: group consecutive items with same quality
-  const buildSegments = (items, valueKey) => {
-    const segments = [];
-    let currentSeg = null;
-    items.forEach((r) => {
-      const q = r.quality || "Fcst";
-      const val = r[valueKey] ?? null;
-      if (!currentSeg || currentSeg.quality !== q) {
-        currentSeg = { quality: q, data: [], label: q === "Act" ? "Actual" : q === "Exp" ? "Expected" : "Forecast" };
-        segments.push(currentSeg);
-      }
-      currentSeg.data.push(val);
-    });
-    return segments;
-  };
-
-  const importHistSegs = buildSegments(history, "importRate");
-  const fitHistSegs = buildSegments(history, "fitRate");
-  const importFcstSegs = buildSegments(forecast, "importRate");
-  const fitFcstSegs = buildSegments(forecast, "fitRate");
-
   const step = Math.max(1, Math.floor(labels.length / 12));
 
-  // Quality-based styling
-  const qualityStyles = {
-    Act: { color: "#3b82f6", type: "solid", width: 2 },
-    Exp: { color: "#60a5fa", type: "dashed", width: 2, dash: [4, 4] },
-    Fcst: { color: "#93c5fd", type: "dashed", width: 2, dash: [6, 4] },
-  };
+  const histImport = history.map((r) => r.importRate ?? null);
+  const histFiT = history.map((r) => r.fitRate ?? null);
+  const fcstImport = forecast.map((r) => r.importRate ?? null);
+  const fcstFiT = forecast.map((r) => r.fitRate ?? null);
 
-  // Build import rate series segments
-  [...importHistSegs, ...importFcstSegs].forEach((seg) => {
-    const style = qualityStyles[seg.quality] || qualityStyles.Fcst;
-    importSeries.push({
-      name: seg.quality === "Act" ? "Import — Actual" : seg.quality === "Exp" ? "Import — Expected" : "Import — Forecast",
-      type: "line",
-      smooth: true,
-      showSymbol: false,
-      data: seg.data,
-      lineStyle: { color: style.color, type: style.type, width: style.width, dash: style.dash },
-      emphasis: { focus: "series" },
+  // Build data with itemStyle for each point based on quality
+  const buildPointData = (items) =>
+    items.map((r) => {
+      let color;
+      if (r.quality === "Act") color = "#3b82f6";
+      else if (r.quality === "Exp") color = "#60a5fa";
+      else color = "#93c5fd";
+      return { value: r.importRate ?? null, itemStyle: { color } };
     });
-  });
 
-  // Build FiT rate series segments
-  [...fitHistSegs, ...fitFcstSegs].forEach((seg) => {
-    const style = qualityStyles[seg.quality] || qualityStyles.Fcst;
-    fitSeries.push({
-      name: seg.quality === "Act" ? "FiT — Actual" : seg.quality === "Exp" ? "FiT — Expected" : "FiT — Forecast",
-      type: "line",
-      smooth: true,
-      showSymbol: false,
-      data: seg.data,
-      lineStyle: { color: "#10b981", type: style.type, width: style.width, dash: style.dash },
-      emphasis: { focus: "series" },
+  const buildPointDataFit = (items) =>
+    items.map((r) => {
+      let color;
+      if (r.quality === "Act") color = "#10b981";
+      else if (r.quality === "Exp") color = "#34d399";
+      else color = "#6ee7b7";
+      return { value: r.fitRate ?? null, itemStyle: { color } };
     });
-  });
+
+  const importData = [...buildPointData(history), ...buildPointData(forecast)];
+  const fitData = [...buildPointDataFit(history), ...buildPointDataFit(forecast)];
 
   const option = {
     tooltip: {
@@ -103,14 +62,8 @@ export default function PriceChart({ history = [], forecast = [], dark = false }
         return `<div style="font-size:12px">${label} AEST<br/>${lines.join("<br/>")}</div>`;
       },
     },
-    legend: {
-      data: ["Import — Actual", "Import — Expected", "Import — Forecast", "FiT — Actual", "FiT — Expected", "FiT — Forecast"].filter(key =>
-        [...importSeries, ...fitSeries].some(s => s.name === key)
-      ),
-      top: 4,
-      fontSize: 9,
-    },
-    grid: { left: 48, right: 12, top: 60, bottom: 48 },
+    legend: { data: ["Import rate", "FiT rate"], top: 4 },
+    grid: { left: 48, right: 12, top: 40, bottom: 48 },
     xAxis: {
       type: "category",
       data: labels,
@@ -126,7 +79,26 @@ export default function PriceChart({ history = [], forecast = [], dark = false }
       nameTextStyle: { fontSize: 10 },
       axisLabel: { fontSize: 10 },
     },
-    series: [...importSeries, ...fitSeries],
+    series: [
+      {
+        name: "Import rate",
+        type: "line",
+        smooth: true,
+        showSymbol: false,
+        data: importData,
+        lineStyle: { color: "#3b82f6", width: 2 },
+        emphasis: { focus: "series" },
+      },
+      {
+        name: "FiT rate",
+        type: "line",
+        smooth: true,
+        showSymbol: false,
+        data: fitData,
+        lineStyle: { color: "#10b981", width: 2 },
+        emphasis: { focus: "series" },
+      },
+    ],
   };
 
   return (
