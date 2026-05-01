@@ -42,15 +42,16 @@ function formatAEST(isoStr) {
   }
 }
 
-function timeAgo(isoStr) {
+function formatTimeAgo(isoStr) {
   if (!isoStr) return null;
   try {
-    const diffMin = Math.floor((Date.now() - parseISO(isoStr).getTime()) / 60000);
-    if (diffMin < 1) return "just now";
-    if (diffMin === 1) return "1 min ago";
-    if (diffMin < 60) return `${diffMin} min ago`;
-    const hrs = Math.floor(diffMin / 60);
-    return `${hrs} hr${hrs > 1 ? "s" : ""} ago`;
+    const diffMs = Date.now() - parseISO(isoStr).getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    if (diffSec < 0) return "just now";
+    const mins = Math.floor(diffSec / 60);
+    const secs = diffSec % 60;
+    if (mins === 0) return `${secs} sec ago`;
+    return `${mins} min ${secs} sec ago`;
   } catch {
     return null;
   }
@@ -94,6 +95,7 @@ export default function Dashboard({ dark, onToggleDark }) {
   const [histLoading, setHistLoading] = useState(true);
   const [liveError, setLiveError] = useState(null);
   const [histError, setHistError] = useState(null);
+  const [timeAgoStr, setTimeAgoStr] = useState("");
 
   const loadLive = useCallback(async () => {
     setLiveLoading(true);
@@ -124,6 +126,18 @@ export default function Dashboard({ dark, onToggleDark }) {
     loadHistory();
   }, [loadLive, loadHistory]);
 
+  // Update relative time counter every second
+  useEffect(() => {
+    if (!live?.lastFetched) return;
+    const updateTimeAgo = () => {
+      const str = formatTimeAgo(live.lastFetched);
+      setTimeAgoStr(str);
+    };
+    updateTimeAgo();
+    const interval = setInterval(updateTimeAgo, 1000);
+    return () => clearInterval(interval);
+  }, [live?.lastFetched]);
+
   useEffect(() => {
     refresh();
   }, []);
@@ -144,9 +158,9 @@ export default function Dashboard({ dark, onToggleDark }) {
           )}
         </div>
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {live?.lastFetched && timeAgo(live.lastFetched) && (
+          {live?.lastFetched && timeAgoStr && (
             <span className="text-xs text-slate-400 hidden sm:block">
-              Updated {timeAgo(live.lastFetched)}
+              Updated {timeAgoStr}
             </span>
           )}
           <button
@@ -182,21 +196,21 @@ export default function Dashboard({ dark, onToggleDark }) {
           </div>
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
              <StatCard
-              label="Import Rate"
-              value={live?.importRate != null ? parseFloat(live.importRate).toFixed(2) : null}
-              unit={live?.importRateUnits ?? "c/kWh"}
-              colour="blue"
-              loading={liveLoading}
-              quality={live?.quality}
-            />
-            <StatCard
-              label="FiT Rate"
-              value={live?.fitRate != null ? parseFloat(live.fitRate).toFixed(2) : null}
-              unit={live?.fitRateUnits ?? "c/kWh"}
-              colour="green"
-              loading={liveLoading}
-              quality={live?.quality}
-            />
+               label="Import Rate"
+               value={live?.importRate != null ? parseFloat(live.importRate).toFixed(2) : null}
+               unit={live?.importRateUnits ?? "c/kWh"}
+               colour="blue"
+               loading={liveLoading}
+               quality={live?.quality}
+             />
+             <StatCard
+               label="FiT Rate"
+               value={live?.fitRate != null ? parseFloat(live.fitRate).toFixed(2) : null}
+               unit={live?.fitRateUnits ?? "c/kWh"}
+               colour="green"
+               loading={liveLoading}
+               quality={live?.quality}
+             />
           </div>
         </div>
 
@@ -232,3 +246,4 @@ export default function Dashboard({ dark, onToggleDark }) {
     </div>
   );
 }
+
