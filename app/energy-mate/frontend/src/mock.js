@@ -4,6 +4,7 @@ import { subHours, addHours, format } from "date-fns";
 function makeInterval(date, isForecast) {
   const importRate = 15 + Math.random() * 30;
   const fitRate = 5 + Math.random() * 15;
+  // importsWh and exportsWh are in Wh (not kWh) - realistic 5-min interval values
   const importsWh = isForecast ? 300 + Math.random() * 400 : 200 + Math.random() * 600;
   const exportsWh = isForecast ? 100 + Math.random() * 300 : 50 + Math.random() * 400;
   return {
@@ -30,6 +31,10 @@ function generateMockHistory() {
   }
   const todaySpend = history.slice(-288).reduce((s, r) => s + r.costCents, 0);
   const todayEarn = history.slice(-288).reduce((s, r) => s + r.earnCents, 0);
+  const yesterdaySpend = history.slice(-576, -288).reduce((s, r) => s + r.costCents, 0);
+  const yesterdayEarn = history.slice(-576, -288).reduce((s, r) => s + r.earnCents, 0);
+  const day2Spend = history.slice(-864, -576).reduce((s, r) => s + r.costCents, 0);
+  const day2Earn = history.slice(-864, -576).reduce((s, r) => s + r.earnCents, 0);
   return {
     history,
     forecast,
@@ -37,6 +42,16 @@ function generateMockHistory() {
       spendCents: parseFloat(todaySpend.toFixed(2)),
       earnCents: parseFloat(todayEarn.toFixed(2)),
       netCents: parseFloat((todaySpend - todayEarn).toFixed(2)),
+    },
+    yesterdayBilling: {
+      spendCents: parseFloat(yesterdaySpend.toFixed(2)),
+      earnCents: parseFloat(yesterdayEarn.toFixed(2)),
+      netCents: parseFloat((yesterdaySpend - yesterdayEarn).toFixed(2)),
+    },
+    day2Billing: {
+      spendCents: parseFloat(day2Spend.toFixed(2)),
+      earnCents: parseFloat(day2Earn.toFixed(2)),
+      netCents: parseFloat((day2Spend - day2Earn).toFixed(2)),
     },
   };
 }

@@ -43,7 +43,11 @@
       "Bash(curl -s http://localhost:5199/)",
       "Bash(aws ssm *)",
       "Bash(curl -s \"https://iuu5v3eh3j.execute-api.ap-southeast-2.amazonaws.com/dashboard/live\")",
-      "Bash(curl -s \"https://iuu5v3eh3j.execute-api.ap-southeast-2.amazonaws.com/dashboard/history\")"
+      "Bash(curl -s \"https://iuu5v3eh3j.execute-api.ap-southeast-2.amazonaws.com/dashboard/history\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5199/)",
+      "Bash(open http://localhost:5199/)",
+      "Bash(kill 51094)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('history[-3:]:', json.dumps\\(d['history'][-3:], indent=2\\)[:600]\\)\")"
     ]
   }
 }
