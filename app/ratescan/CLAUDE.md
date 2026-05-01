@@ -204,7 +204,7 @@ The following banks were failing with 403/404 errors due to missing User-Agent h
 | Qantas_Money_Home_Loans | api.qantas.app.bendigobank.com.au | 403 Forbidden | Added User-Agent + x-v:4 |
 | Rabobank | openbanking.api.rabobank.com.au | 403 Forbidden | Added User-Agent + x-v:4 (x-v:5 not supported) |
 | Tiimely_Home | api.tiimely.app.bendigobank.com.au | 403 Forbidden | Added User-Agent + x-v:4 |
-| People's_Choice | ob-public.peopleschoice.com.au | 403 (CloudFlare bot detection) | Unrecoverable - requires browser automation |
+| People's_Choice_and_Heritage | ob-public.peopleschoice.com.au | 403 Forbidden | Fixed — Added User-Agent header |
 | AMP_-_My_AMP | api.cdr-api.amp.com.au | Works ✅ | No change needed |
 | in1bank_ltd. | cdr.in1bank.com.au | Works ✅ | No change needed |
 | St.George_Bank | digital-api.stgeorge.com.au | Works ✅ | No change needed |
@@ -213,7 +213,7 @@ The following banks were failing with 403/404 errors due to missing User-Agent h
 - **Bendigo Bank family APIs**: Block requests without `User-Agent` header (security/WAF rule). Also require `x-v: 4` not `x-v: 5`.
 - **Rabobank**: Does not support CDR v5 (`x-v: 5`), returns 406. Requires `x-v: 4`.
 - **Aussie Home Loans**: Endpoint deprecated (404), likely migrated to new domain/version.
-- **People's Choice**: CloudFlare bot protection blocks automated requests.
+- **People's Choice & Heritage**: Cloudflare WAF — fixed by adding User-Agent header (previously thought unrecoverable, confirmed working 2026-05-01).
 
 ### Config Changes (data-pipeline/config.json)
 - Added `User-Agent: Mozilla/5.0 (compatible; RateScan/1.0)` to affected banks

@@ -799,12 +799,14 @@
       "headers_products": {
         "Accept": "application/json",
         "x-v": "5",
-        "x-min-v": "3"
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       },
       "headers_prd_details": {
         "Accept": "application/json",
         "x-v": "5",
-        "x-min-v": "3"
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       }
     },
     "Great_Southern_Bank": {
@@ -1124,12 +1126,14 @@
       "headers_products": {
         "Accept": "application/json",
         "x-v": "5",
-        "x-min-v": "3"
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       },
       "headers_prd_details": {
         "Accept": "application/json",
         "x-v": "5",
-        "x-min-v": "3"
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       }
     },
     "P&N_Bank": {
@@ -1163,12 +1167,14 @@
       "headers_products": {
         "Accept": "application/json",
         "x-v": "5",
-        "x-min-v": "3"
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       },
       "headers_prd_details": {
         "Accept": "application/json",
         "x-v": "5",
-        "x-min-v": "3"
+        "x-min-v": "3",
+        "User-Agent": "Mozilla/5.0 (compatible; RateScan/1.0)"
       }
     },
     "Police_Bank": {

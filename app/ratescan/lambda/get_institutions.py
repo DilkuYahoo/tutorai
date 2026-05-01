@@ -27,15 +27,16 @@ def lambda_handler(event, context):
     if latest is None:
         return _cors(503, json.dumps({"error": "institutions data not yet available — pipeline has not completed its first run"}))
 
-    run_date  = latest.get("runDate", "unknown")
-    cache_key = f"{CACHE_PREFIX}/institutions-{run_date}.json"
+    generated_at = latest.get("generatedAt", latest.get("runDate", "unknown")).replace(":", "-")
+    cache_key = f"{CACHE_PREFIX}/institutions-{generated_at}.json"
 
     cached = _read_s3_json(s3, cache_key)
     if cached is not None:
-        print(f"INFO: cache hit for institutions-{run_date}")
+        print(f"INFO: cache hit for institutions-{generated_at}")
         return _cors(200, json.dumps(cached))
 
     _write_s3_json(s3, cache_key, latest)
+    print(f"INFO: cached institutions-{generated_at}")
     return _cors(200, json.dumps(latest))
 
 

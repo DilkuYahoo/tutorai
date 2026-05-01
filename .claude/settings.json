@@ -31,7 +31,13 @@
       "Bash(sudo killall *)",
       "Read(//private/var/run/**)",
       "Bash(scutil --dns)",
-      "Bash(curl -sI --resolve \"coachgenie.cognifylabs.ai:443:18.65.244.14\" https://coachgenie.cognifylabs.ai --max-time 10)"
+      "Bash(curl -sI --resolve \"coachgenie.cognifylabs.ai:443:18.65.244.14\" https://coachgenie.cognifylabs.ai --max-time 10)",
+      "Bash(grep -v \"^--$\\\\|^URL:\\\\|^=\\\\|^$\")",
+      "Bash(grep -v \"^$\")",
+      "Bash(curl -s \"https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod/institutions\")",
+      "Bash(aws scheduler *)",
+      "Bash(curl -si \"https://eqwjfw8zzh.execute-api.ap-southeast-2.amazonaws.com/prod/rates/summary\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('variable median:', d['variable']['median'], '| asOf:', d['asOf']\\)\")"
     ]
   }
 }

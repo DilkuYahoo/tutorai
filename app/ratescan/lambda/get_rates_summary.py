@@ -236,16 +236,16 @@ def lambda_handler(event, context):
     s3 = boto3.client("s3")
 
     # Read latest.json once — used for both cache key and trend attachment.
-    # Cache key is keyed by the pipeline's asOf date so it auto-invalidates
-    # whenever Stage 5 writes a new latest.json (daily after the pipeline run).
-    latest   = _read_latest(s3)
+    # Cache key is keyed by pipelineRunAt so each pipeline run gets its own
+    # cache entry — re-runs on the same day never serve stale data.
+    latest    = _read_latest(s3)
     today_syd = datetime.now(ZoneInfo("Australia/Sydney")).date().isoformat()
-    as_of    = (latest or {}).get("asOf") or today_syd
-    cache_key = f"{CACHE_PREFIX}/rates-summary-{as_of}.json"
+    run_at    = (latest or {}).get("pipelineRunAt") or (latest or {}).get("asOf") or today_syd
+    cache_key = f"{CACHE_PREFIX}/rates-summary-{run_at.replace(':', '-')}.json"
 
     cached = _read_cache(s3, cache_key)
     if cached is not None:
-        print(f"INFO: cache hit for {as_of}")
+        print(f"INFO: cache hit for {run_at}")
         return _cors(200, json.dumps(cached))
 
     try:
