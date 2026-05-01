@@ -11,20 +11,45 @@ function toAEST(isoStr) {
   }
 }
 
-export default function UsageChart({ history = [], forecast = [] }) {
+export default function UsageChart({ history = [], forecast = [], dark = false }) {
   const histLabels = history.map((r) => toAEST(r.intervalEnd));
   const fcstLabels = forecast.map((r) => toAEST(r.intervalEnd));
   const labels = [...histLabels, ...fcstLabels];
 
   const step = Math.max(1, Math.floor(labels.length / 12));
 
+  // Quality-based styling for usage bars
+  // Actual (Act): solid colors (history, settled data)
+  // Expected (Exp): slightly lighter/higher opacity (history, mixed)
+  // Forecast (Fcst): lightest/most transparent (forecast)
+  const getBarStyle = (quality, baseImport, baseExport) => {
+    const opacity = { Act: 1.0, Exp: 0.85, Fcst: 0.55 };
+    const op = opacity[quality] || opacity.Fcst;
+    return {
+      import: { color: `rgba(239, 68, 68, ${op})`, borderColor: op < 1 ? `rgba(239, 68, 68, ${op + 0.1})` : undefined },
+      export: { color: `rgba(34, 197, 94, ${op})`, borderColor: op < 1 ? `rgba(34, 197, 94, ${op + 0.1})` : undefined },
+    };
+  };
+
   const importsData = [
-    ...history.map((r) => ({ value: r.importsWh ?? 0, itemStyle: { color: "#ef4444" } })),
-    ...forecast.map((r) => ({ value: r.importsWh ?? 0, itemStyle: { color: "#fca5a5" } })),
+    ...history.map((r) => {
+      const style = getBarStyle(r.quality || "Act");
+      return { value: r.importsWh ?? 0, itemStyle: style.import };
+    }),
+    ...forecast.map((r) => {
+      const style = getBarStyle(r.quality || "Fcst");
+      return { value: r.importsWh ?? 0, itemStyle: style.import };
+    }),
   ];
   const exportsData = [
-    ...history.map((r) => ({ value: r.exportsWh ?? 0, itemStyle: { color: "#22c55e" } })),
-    ...forecast.map((r) => ({ value: r.exportsWh ?? 0, itemStyle: { color: "#86efac" } })),
+    ...history.map((r) => {
+      const style = getBarStyle(r.quality || "Act");
+      return { value: r.exportsWh ?? 0, itemStyle: style.export };
+    }),
+    ...forecast.map((r) => {
+      const style = getBarStyle(r.quality || "Fcst");
+      return { value: r.exportsWh ?? 0, itemStyle: style.export };
+    }),
   ];
 
   const option = {
@@ -33,18 +58,27 @@ export default function UsageChart({ history = [], forecast = [] }) {
       axisPointer: { type: "shadow" },
       formatter: (params) => {
         const label = params[0]?.axisValue ?? "";
+        const quality = params[0]?.data?.quality || "";
+        const qualityBadge = quality ? `<br/><span style="font-size:11px">${quality}</span>` : "";
         const lines = params
           .filter((p) => p.value != null)
           .map((p) => `${p.marker}${p.seriesName}: <b>${p.value} Wh</b>`);
-        return `<div class="text-xs">${label}<br/>${lines.join("<br/>")}</div>`;
+        return `<div style="font-size:12px">${label}${qualityBadge}<br/>${lines.join("<br/>")}</div>`;
       },
     },
     legend: { data: ["Imported (Wh)", "Exported (Wh)"], top: 4 },
-    grid: { left: 56, right: 16, top: 40, bottom: 48 },
+    grid: { left: 52, right: 12, top: 40, bottom: 48 },
     xAxis: {
       type: "category",
       data: labels,
-      axisLabel: { interval: step - 1, fontSize: 10, rotate: 45 },
+      axisLabel: {
+        fontSize: 10,
+        rotate: 45,
+        formatter: (val, idx) => {
+          if (idx % step === 0) return val;
+          return "";
+        },
+      },
     },
     yAxis: {
       type: "value",
@@ -57,29 +91,33 @@ export default function UsageChart({ history = [], forecast = [] }) {
         name: "Imported (Wh)",
         type: "bar",
         barMaxWidth: 6,
-        stack: "usage",
         data: importsData,
       },
       {
         name: "Exported (Wh)",
         type: "bar",
         barMaxWidth: 6,
-        stack: "usage",
         data: exportsData,
       },
     ],
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4">
-      <h2 className="text-sm font-semibold text-slate-700 mb-2">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-3 sm:p-4">
+      <h2 className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
         Energy Usage — Imports &amp; Exports
-        <span className="ml-3 text-xs font-normal text-slate-400">
+        <span className="ml-2 sm:ml-3 text-xs font-normal text-slate-400 dark:text-slate-500">
           <span className="inline-block w-3 h-3 rounded-sm bg-red-500 mr-1" />imported
-          <span className="inline-block w-3 h-3 rounded-sm bg-green-500 mx-1 ml-3" />exported
+          <span className="inline-block w-3 h-3 rounded-sm bg-green-500 mx-1 ml-2 sm:ml-3" />exported
         </span>
       </h2>
-      <ReactECharts option={option} style={{ height: 220 }} notMerge />
+      <ReactECharts
+        option={option}
+        theme={dark ? "dark" : undefined}
+        style={{ height: 220 }}
+        notMerge
+        opts={{ renderer: "svg" }}
+      />
     </div>
   );
 }
