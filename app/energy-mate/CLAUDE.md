@@ -18,6 +18,13 @@ npm run build        # production build
 
 When `VITE_API_URL` is not set, the frontend falls back to `src/mock.js` with generated data so the UI is fully testable without a deployed backend.
 
+To use the live API during development, set `VITE_API_URL` in `vite.config.js`:
+```javascript
+define: {
+  "import.meta.env.VITE_API_URL": JSON.stringify("https://iuu5v3eh3j.execute-api.ap-southeast-2.amazonaws.com"),
+}
+```
+
 ### Backend — deploy
 
 ```bash
@@ -108,3 +115,4 @@ All times are stored in UTC in DynamoDB and converted to AEST (UTC+10, hardcoded
 - API: `https://iuu5v3eh3j.execute-api.ap-southeast-2.amazonaws.com`
 - Frontend: `s3://cognifylabs.ai/energy-mate/web/`
 - Table: `em_energy_mate_prod`
+

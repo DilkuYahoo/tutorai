@@ -15,7 +15,7 @@ STACK_NAME="energy-mate-prod"
 REGION="ap-southeast-2"
 S3_BUCKET="cognifylabs.ai"
 S3_PREFIX="energy-mate/web"
-CF_DIST_ID="${CF_DIST_ID:-}"  # Set this once CloudFront is configured
+CF_DIST_ID="${CF_DIST_ID:-E35X996G6HOJE8}"  # energy-mate.cognifylabs.com.au
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -58,7 +58,7 @@ sync_frontend() {
     echo "▶ Invalidating CloudFront cache ..."
     aws cloudfront create-invalidation \
       --distribution-id "$CF_DIST_ID" \
-      --paths "/${S3_PREFIX}/*" \
+      --paths "/*" \
       --query "Invalidation.{Id:Id,Status:Status}" \
       --output table
   fi

@@ -27,6 +27,9 @@ def _store_intervals(nmi: str, intervals: list[dict]):
         interval_end = interval.get("intervalEnd")
         if not interval_end:
             continue
+        if interval_end in ("error",) or "error" in interval:
+            print(f"Skipping interval error: {interval}")
+            continue
         item = {
             "PK": f"INTERVAL#{nmi}",
             "SK": interval_end,
@@ -52,15 +55,15 @@ def lambda_handler(event, context):
     nmi = _get_nmi()
     now = datetime.now(timezone.utc)
 
-    # Past 24hrs
-    past_from = (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    # Past 24hrs - use 23h55m to avoid API boundary error (to cannot be exactly 24h from from)
+    past_from = (now - timedelta(hours=23, minutes=55)).strftime("%Y-%m-%dT%H:%M:%SZ")
     past_to = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     past_intervals = localvolts.fetch_intervals(nmi, past_from, past_to)
     _store_intervals(nmi, past_intervals)
 
-    # Next 24hrs (forecast)
+    # Next 24hrs (forecast) - also use 23h55m to stay under 24h limit
     future_from = now.strftime("%Y-%m-%dT%H:%M:%SZ")
-    future_to = (now + timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    future_to = (now + timedelta(hours=23, minutes=55)).strftime("%Y-%m-%dT%H:%M:%SZ")
     future_intervals = localvolts.fetch_intervals(nmi, future_from, future_to)
     _store_intervals(nmi, future_intervals)
 

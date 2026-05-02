@@ -244,3 +244,114 @@ Validation script with scenarios:
 | `INTERVAL#<NMI>` | `<UTC ISO>` | All cost/earning/quality fields |
 
 **Query pattern:** `query_pk_between(PK, SK_start, SK_end)`
+
+---
+
+## 8. Troubleshooting
+
+### Issue: Yesterday Expenses Showing Zero
+
+**Symptom:** The yesterday billing section shows `$0.00` spent and `$0.00` earned even when there should be data.
+
+**Root Cause:** The mock data generator (`frontend/src/mock.js`) originally only generated 24 hours (288 intervals) of history, but the billing breakdown requires 3 days to properly calculate today/yesterday/day-before splits.
+
+When using `slice(-576, -288)` on a 288-item array, the result is an empty array (not enough items), causing all yesterday values to be zero.
+
+**Solution:** Update `generateMockHistory()` to generate 72 hours (864 = 288 × 3 intervals):
+- Change loop from `for (let i = 288; i >= 1; i--)` to `for (let i = 864; i >= 1; i--)`
+- This provides proper 3-day split: last 288 = today, previous 288 = yesterday, previous 288 = day2
+
+**Code Change:**
+```javascript
+// BEFORE (24 hours only):
+for (let i = 288; i >= 1; i--) {
+  history.push(makeInterval(subHours(now, i * (5 / 60)), false));
+}
+
+// AFTER (72 hours = 3 days):
+for (let i = 864; i >= 1; i--) {
+  history.push(makeInterval(subHours(now, i * (5 / 60)), false));
+}
+```
+
+### Issue: PriceChart Shows 4+ Lines Instead of 2
+
+**Symptom:** The Import & FiT Rate chart displays 4-6 separate lines instead of 2 clean lines.
+
+**Root Cause:** The quality-based segmentation approach created separate series for each quality type (Act/Exp/Fcst), resulting in multiple Import and FiT series (e.g., "Import-Act", "Import-Exp", "Import-Fcst" + same for FiT).
+
+**Solution:** Use per-point `itemStyle` coloring instead of series segmentation:
+- Single Import rate series with per-point colors (Actual=dark blue, Expected=medium blue, Forecast=light blue)
+- Single FiT rate series with per-point colors (Actual=dark green, etc.)
+- Maintains visual quality distinction while keeping clean 2-line structure
+
+### Issue: Time Display Shows Wrong Timezone
+
+**Symptom:** Chart x-axis labels show incorrect times (not Sydney/AEST time).
+
+**Root Cause:** Using `date-fns` `format()` function applies the browser/system's local timezone instead of AEST. For example, if user is in UTC-5 (New York), formatting a Date object displays it as New York time.
+
+**Solution:** Manual AEST formatting using UTC getters:
+```javascript
+function toAEST(isoStr) {
+  const d = parseISO(isoStr);
+  const aestTime = d.getTime() + 10 * 60 * 60 * 1000;  // +10 hours
+  const aestDate = new Date(aestTime);
+  const hours = aestDate.getUTCHours();  // Use UTC getters after shift
+  const mins = aestDate.getUTCMinutes();
+  return `${String(hours).padStart(2,"0")}:${String(mins).padStart(2,"0")}`;
+}
+```
+
+**Note:** NEM (National Electricity Market) uses fixed UTC+10 year-round (no DST).
+
+### Issue: "Updated" Counter Not Counting
+
+**Symptom:** The "Updated X min ago" text is static and doesn't increment automatically.
+
+**Solution:** Add per-second timer in Dashboard.jsx with `useEffect`:
+```javascript
+useEffect(() => {
+  if (!live?.lastFetched) return;
+  const updateTimeAgo = () => {
+    const str = formatTimeAgo(live.lastFetched);
+    setTimeAgoStr(str);
+  };
+  updateTimeAgo();
+  const interval = setInterval(updateTimeAgo, 1000);  // Update every second
+  return () => clearInterval(interval);  // Cleanup on unmount
+}, [live?.lastFetched]);
+```
+
+### Issue: CostsAll vs EarningsAll Confusion
+
+**Symptom:** Unclear which field represents import costs vs export earnings.
+
+**Clarification:**
+- `costsAll` = Total import costs (your expenses, in cents) - **money OUT**
+- `earningsAll` = Total export earnings (FiT payments, in cents) - **money IN**
+- `costsAllVarRate` = Variable import tariff rate (c/kWh)
+- `earningsAllVarRate` = Feed-in tariff rate (c/kWh)
+- `netCents = spendCents - earnCents` = Your actual bill amount (positive = you owe, negative = credit)
+
+**Validation:** Run `test_localvolts_costs.py` to verify separation works correctly. The test simulates Localvolts API responses and confirms costs and earnings are tracked independently.
+
+### Issue: Quality Flags Not Displaying
+
+**Symptom:** Act/Exp/Fcst badges are not showing on StatCards or charts.
+
+**Check:**
+1. Backend `get_live.py` returns `quality` field (line 84)
+2. Frontend `StatCard.jsx` accepts `quality` prop
+3. Dashboard passes `quality={live?.quality}` to StatCards
+4. Quality values match: "Act", "Exp", or "Fcst" (case-sensitive)
+
+**Debug:** Check browser console for prop warnings or undefined values.
+
+### Issue: Import/Export Wh Values Too Small
+
+**Symptom:** Usage chart shows tiny values (e.g., 0.3 Wh) when expecting kWh-scale.
+
+**Explanation:** The backend converts kWh to Wh: `round((_to_float(item.get("importsAll")) or 0) * 1000, 4)`. The API stores values in kWh but frontend displays in Wh for 5-minute intervals.
+
+**Example:** 0.3 kWh = 300 Wh (typical 5-min import)

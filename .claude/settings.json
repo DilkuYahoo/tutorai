@@ -47,7 +47,21 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5199/)",
       "Bash(open http://localhost:5199/)",
       "Bash(kill 51094)",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('history[-3:]:', json.dumps\\(d['history'][-3:], indent=2\\)[:600]\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('history[-3:]:', json.dumps\\(d['history'][-3:], indent=2\\)[:600]\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({'Id':d['Distribution']['Id'],'DomainName':d['Distribution']['DomainName'],'Status':d['Distribution']['Status']},indent=2\\)\\)\")",
+      "Bash(./deploy.sh frontend *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} %{url_effective}\\\\n\" \"https://energy-mate.cognifylabs.com.au/\")",
+      "Bash(dig energy-mate.cognifylabs.com.au A +short)",
+      "Bash(dig energy-mate.cognifylabs.com.au +short @8.8.8.8)",
+      "Bash(dig energy-mate.cognifylabs.com.au CNAME +short)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"https://d2vazhx73khhfu.cloudfront.net/\" -H \"Host: energy-mate.cognifylabs.com.au\")",
+      "Bash(curl -s \"https://d2vazhx73khhfu.cloudfront.net/\" -H \"Host: energy-mate.cognifylabs.com.au\")",
+      "Bash(dig energy-mate.cognifylabs.com.au A +short @1.1.1.1)",
+      "Bash(nslookup energy-mate.cognifylabs.com.au)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" --dns-servers 1.1.1.1 \"https://energy-mate.cognifylabs.com.au/\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" --resolve \"energy-mate.cognifylabs.com.au:443:108.158.20.24\" \"https://energy-mate.cognifylabs.com.au/\")",
+      "Bash(curl -s --resolve energy-mate.cognifylabs.com.au:443:108.158.20.24 https://energy-mate.cognifylabs.com.au/)",
+      "Bash(curl -s -o /dev/null -w '%{http_code}\\\\n' https://iuu5v3eh3j.execute-api.ap-southeast-2.amazonaws.com/dashboard/live)"
     ]
   }
 }
