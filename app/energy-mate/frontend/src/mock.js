@@ -23,12 +23,14 @@ function generateMockHistory() {
   const now = new Date();
   const history = [];
   const forecast = [];
-  for (let i = 288; i >= 1; i--) {
+  // Generate 3 days of history (864 = 288 * 3) to properly demonstrate today/yesterday/day2
+  for (let i = 864; i >= 1; i--) {
     history.push(makeInterval(subHours(now, i * (5 / 60)), false));
   }
   for (let i = 1; i <= 288; i++) {
     forecast.push(makeInterval(addHours(now, i * (5 / 60)), true));
   }
+  // Last 288 = today, previous 288 = yesterday, previous 288 = day2
   const todaySpend = history.slice(-288).reduce((s, r) => s + r.costCents, 0);
   const todayEarn = history.slice(-288).reduce((s, r) => s + r.earnCents, 0);
   const yesterdaySpend = history.slice(-576, -288).reduce((s, r) => s + r.costCents, 0);
