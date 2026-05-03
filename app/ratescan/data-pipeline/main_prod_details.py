@@ -5,6 +5,7 @@ import json
 import datetime
 import requests
 import boto3
+from zoneinfo import ZoneInfo
 from botocore.exceptions import BotoCoreError, ClientError
 
 logger = logging.getLogger(__name__)
@@ -92,7 +93,7 @@ def fetch_product_details(config, s3_client, target_bank=None):
     invocation (important for large configs that would exceed the 15-min limit).
     """
     logger.info("Starting to fetch product details")
-    date_str = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
+    date_str = datetime.datetime.now(ZoneInfo("Australia/Sydney")).strftime("%Y-%m-%d")
     all_errors = []
 
     banks = (

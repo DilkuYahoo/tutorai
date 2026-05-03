@@ -7,6 +7,7 @@ import traceback
 import pandas as pd
 import pyarrow as pa
 import boto3
+from zoneinfo import ZoneInfo
 from botocore.exceptions import BotoCoreError, ClientError
 from pyiceberg.catalog import load_catalog
 from pyiceberg.exceptions import NoSuchTableError, NoSuchNamespaceError
@@ -25,7 +26,7 @@ TABLE            = os.environ.get("ICEBERG_TABLE",    "daily_rates")
 
 
 def _default_csv_key():
-    date_str = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
+    date_str = datetime.datetime.now(ZoneInfo("Australia/Sydney")).strftime("%Y-%m-%d")
     return f"product-master-{date_str}.csv"
 
 
@@ -160,7 +161,7 @@ if __name__ == "__main__":
     # Usage:
     #   python upsert_dataset.py                              # uses today's date CSV from local dir
     #   python upsert_dataset.py product-master-2026-04-12.csv
-    csv_path = sys.argv[1] if len(sys.argv) > 1 else f"product-master-{datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d')}.csv"
+    csv_path = sys.argv[1] if len(sys.argv) > 1 else f"product-master-{datetime.datetime.now(ZoneInfo('Australia/Sydney')).strftime('%Y-%m-%d')}.csv"
 
     df = load_dataframe_from_local(csv_path)
     logger.info(f"Loaded {len(df)} rows")

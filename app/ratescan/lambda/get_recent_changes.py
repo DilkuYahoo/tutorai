@@ -32,10 +32,11 @@ S3_BUCKET        = os.environ.get("S3_BUCKET", "ratescan.com.au")
 SUMMARIES_PREFIX = os.environ.get("SUMMARIES_PREFIX", "summaries")
 CACHE_PREFIX     = os.environ.get("CACHE_PREFIX", "cache")
 
-# Fetch the 500 most-recently-updated rate rows (post-processing groups by lender)
+# Find the top 10 brands by most recent lastupdated, then fetch all their products.
+# Using a two-step approach (ranked brands CTE + join) avoids a row-count LIMIT
+# that would truncate lenders when a few brands have many rows at the same timestamp.
 _SQL = f"""
-SELECT brand, product_name, lendingratetype, additionalvalue, rate_pct, lastupdated
-FROM (
+WITH base AS (
   SELECT
     brand,
     name                   AS product_name,
@@ -63,10 +64,22 @@ FROM (
         )
       )
     )
+),
+filtered AS (
+  SELECT * FROM base
+  WHERE rate_pct BETWEEN 0.5 AND 20
+),
+top_brands AS (
+  SELECT brand, MAX(lastupdated) AS latest
+  FROM filtered
+  GROUP BY brand
+  ORDER BY MAX(lastupdated) DESC
+  LIMIT 10
 )
-WHERE rate_pct BETWEEN 0.5 AND 20
-ORDER BY lastupdated DESC
-LIMIT 500
+SELECT f.brand, f.product_name, f.lendingratetype, f.additionalvalue, f.rate_pct, f.lastupdated
+FROM filtered f
+JOIN top_brands t ON f.brand = t.brand
+ORDER BY f.lastupdated DESC
 """
 
 # ISO 8601 duration → human-readable label
@@ -85,14 +98,13 @@ def lambda_handler(event, context):
 
     s3 = boto3.client("s3")
 
-    # Cache key is keyed by the pipeline's asOf date so it auto-invalidates
-    # whenever Stage 5 writes a new latest.json (daily after the pipeline run).
-    as_of     = _pipeline_as_of(s3)
-    cache_key = f"{CACHE_PREFIX}/recent-changes-{as_of}.json"
+    # Cache key uses pipelineRunAt so re-runs on the same day serve fresh data.
+    run_at    = _pipeline_run_at(s3)
+    cache_key = f"{CACHE_PREFIX}/recent-changes-{run_at.replace(':', '-')}.json"
 
     cached = _read_cache(s3, cache_key)
     if cached is not None:
-        print(f"INFO: cache hit for {as_of}")
+        print(f"INFO: cache hit for {run_at}")
         return _cors(200, json.dumps(cached))
 
     try:
@@ -105,12 +117,12 @@ def lambda_handler(event, context):
         return _cors(500, json.dumps({"error": str(exc)}))
 
 
-def _pipeline_as_of(s3) -> str:
-    """Return the asOf date from summaries/latest.json, falling back to today (Sydney)."""
+def _pipeline_run_at(s3) -> str:
+    """Return pipelineRunAt from summaries/latest.json, falling back to today (Sydney)."""
     try:
         resp = s3.get_object(Bucket=S3_BUCKET, Key=f"{SUMMARIES_PREFIX}/latest.json")
         data = json.loads(resp["Body"].read())
-        return data.get("asOf") or datetime.now(ZoneInfo("Australia/Sydney")).date().isoformat()
+        return data.get("pipelineRunAt") or data.get("asOf") or datetime.now(ZoneInfo("Australia/Sydney")).date().isoformat()
     except Exception:
         return datetime.now(ZoneInfo("Australia/Sydney")).date().isoformat()
 

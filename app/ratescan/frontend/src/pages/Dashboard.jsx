@@ -166,7 +166,7 @@ export default function Dashboard({ isDark, onToggleTheme, onApply, onTerms, onP
   const fetchSummary = () => {
     setLoadingSummary(true)
     setErrorSummary(null)
-    fetch(`${API}/rates/summary`)
+    fetch(`${API}/rates/summary`, { cache: 'no-store' })
       .then((r) => { if (!r.ok) throw new Error(`${r.status} ${r.statusText}`); return r.json() })
       .then((data) => { setSummary(data); setLoadingSummary(false) })
       .catch((err) => {
@@ -180,7 +180,7 @@ export default function Dashboard({ isDark, onToggleTheme, onApply, onTerms, onP
   const fetchChanges = () => {
     setLoadingChanges(true)
     setErrorChanges(null)
-    fetch(`${API}/rates/recent-changes`)
+    fetch(`${API}/rates/recent-changes`, { cache: 'no-store' })
       .then((r) => { if (!r.ok) throw new Error(`${r.status} ${r.statusText}`); return r.json() })
       .then((data) => { setRecentChanges(data); setLoadingChanges(false) })
       .catch((err) => {

@@ -257,14 +257,34 @@ def _aggregate_institutions(s3, today: str, run_at: str) -> None:
     Read all pipeline-run/{today}/*.json status files written by Stage 2,
     join with institution_meta, fill in any banks with no status file as 'down',
     and write institutions/latest.json.  Non-fatal — failure only logs a warning.
+
+    Stage 2 runs in a container without tzdata so it uses the UTC date for
+    folder names. Stage 5 uses Sydney time. When the pipeline runs between
+    14:00-23:59 UTC (midnight-10am Sydney), the two dates differ by one day.
+    We check both the Sydney date and the UTC date and use whichever has files.
     """
     try:
+        now_utc    = datetime.datetime.now(datetime.timezone.utc)
+        today_utc  = now_utc.date().isoformat()
+        yesterday_utc = (now_utc - datetime.timedelta(days=1)).date().isoformat()
         paginator = s3.get_paginator("list_objects_v2")
-        keys = [
-            obj["Key"]
-            for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=f"{STATUS_PREFIX}/{today}/")
-            for obj in page.get("Contents", [])
-        ]
+
+        # Stage 2 (container, no tzdata) uses UTC date for folder names.
+        # Stage 5 (zip Lambda, has tzdata) uses Sydney date.
+        # At 3 AM Sydney (= 5 PM UTC prior day), the two dates differ by one day.
+        # Check today (Sydney), today (UTC), and yesterday (UTC) in order.
+        keys = []
+        for date_candidate in dict.fromkeys([today, today_utc, yesterday_utc]):
+            keys = [
+                obj["Key"]
+                for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=f"{STATUS_PREFIX}/{date_candidate}/")
+                for obj in page.get("Contents", [])
+            ]
+            if keys:
+                logger.info(f"Found {len(keys)} status files under pipeline-run/{date_candidate}/")
+                break
+        else:
+            logger.warning(f"No status files found under pipeline-run/ for {today}, {today_utc}, or {yesterday_utc}")
 
         institutions = []
         for key in keys:

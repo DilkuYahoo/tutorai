@@ -3,3 +3,4 @@ pandas>=2.2
 pyarrow>=17.0
 pyiceberg[glue]>=0.7
 boto3>=1.35
+tzdata>=2024.1

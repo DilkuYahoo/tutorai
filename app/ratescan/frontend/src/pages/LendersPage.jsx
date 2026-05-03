@@ -93,7 +93,7 @@ export default function LendersPage({ onBack }) {
   const [statusFilter, setStatusFilter]   = useState('All')
 
   useEffect(() => {
-    fetch(`${API}/institutions`)
+    fetch(`${API}/institutions`, { cache: 'no-store' })
       .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
       .then(d => { setData(d); setLoading(false) })
       .catch(() => { setData(MOCK_INSTITUTIONS); setUsingMock(!!API); setLoading(false) })

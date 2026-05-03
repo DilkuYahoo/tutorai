@@ -61,7 +61,8 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" --dns-servers 1.1.1.1 \"https://energy-mate.cognifylabs.com.au/\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" --resolve \"energy-mate.cognifylabs.com.au:443:108.158.20.24\" \"https://energy-mate.cognifylabs.com.au/\")",
       "Bash(curl -s --resolve energy-mate.cognifylabs.com.au:443:108.158.20.24 https://energy-mate.cognifylabs.com.au/)",
-      "Bash(curl -s -o /dev/null -w '%{http_code}\\\\n' https://iuu5v3eh3j.execute-api.ap-southeast-2.amazonaws.com/dashboard/live)"
+      "Bash(curl -s -o /dev/null -w '%{http_code}\\\\n' https://iuu5v3eh3j.execute-api.ap-southeast-2.amazonaws.com/dashboard/live)",
+      "Bash(zip -j /tmp/stage5.zip compute_summary.py athena_helper.py institution_meta.py requirements.txt)"
     ]
   }
 }

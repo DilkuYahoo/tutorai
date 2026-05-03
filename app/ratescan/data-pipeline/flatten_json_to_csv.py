@@ -7,6 +7,7 @@ import json
 import datetime
 import glob
 import boto3
+from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from botocore.exceptions import BotoCoreError, ClientError
 
@@ -100,7 +101,7 @@ def lambda_handler(event, context):
       }
     """
     date_str = (event or {}).get("date") or datetime.datetime.now(
-        datetime.UTC
+        ZoneInfo("Australia/Sydney")
     ).strftime("%Y-%m-%d")
 
     s3_client = boto3.client("s3")
@@ -158,7 +159,7 @@ if __name__ == "__main__":
     #   python flatten_json_to_csv.py                  # uses today's date
     #   python flatten_json_to_csv.py 2026-04-12
     date_str = sys.argv[1] if len(sys.argv) > 1 else datetime.datetime.now(
-        datetime.UTC
+        ZoneInfo("Australia/Sydney")
     ).strftime("%Y-%m-%d")
 
     products_dir = "/tmp/products"
