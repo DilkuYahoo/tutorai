@@ -52,6 +52,20 @@ const LOAN_OPTIONS = [
   { value: 'other',        label: 'Other',             sub: 'Something else' },
 ]
 
+const RATE_TYPE_OPTIONS = [
+  { value: 'variable', label: 'Variable',  sub: 'Rate moves with market' },
+  { value: 'fixed-1y', label: 'Fixed 1Y',  sub: '1-year fixed term' },
+  { value: 'fixed-2y', label: 'Fixed 2Y',  sub: '2-year fixed term' },
+  { value: 'fixed-3y', label: 'Fixed 3Y',  sub: '3-year fixed term' },
+  { value: 'fixed-4y', label: 'Fixed 4Y',  sub: '4-year fixed term' },
+  { value: 'fixed-5y', label: 'Fixed 5Y',  sub: '5-year fixed term' },
+]
+
+const REPAYMENT_TYPE_OPTIONS = [
+  { value: 'principal-and-interest', label: 'Principal & Interest', sub: 'Pay down loan + interest' },
+  { value: 'interest-only',          label: 'Interest Only',        sub: 'Interest payments only' },
+]
+
 export default function Step2_Property({ formData, updateField, onNext, onBack, isFirst }) {
   const [touched, setTouched] = useState({})
   const touch = (f) => setTouched((t) => ({ ...t, [f]: true }))
@@ -61,6 +75,8 @@ export default function Step2_Property({ formData, updateField, onNext, onBack, 
     loanAmount:      validate.loanAmount(formData.loanAmount, formData.propertyValue),
     propertyPurpose: formData.propertyPurpose ? null : 'Please select a property purpose',
     loanPurpose:     formData.loanPurpose     ? null : 'Please select a loan purpose',
+    rateType:        formData.rateType        ? null : 'Please select a rate type',
+    repaymentType:   formData.repaymentType   ? null : 'Please select a repayment type',
   }
 
   const pv  = Number(strip(formData.propertyValue))
@@ -134,6 +150,30 @@ export default function Step2_Property({ formData, updateField, onNext, onBack, 
               <button key={value} type="button" onClick={() => updateField('loanPurpose', value)}
                 className={btnCls(formData.loanPurpose === value)}>
                 <BtnLabel selected={formData.loanPurpose === value} label={label} sub={sub} />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className={label}>Rate Type</label>
+          <div className="grid grid-cols-2 gap-3">
+            {RATE_TYPE_OPTIONS.map(({ value, label, sub }) => (
+              <button key={value} type="button" onClick={() => updateField('rateType', value)}
+                className={btnCls(formData.rateType === value)}>
+                <BtnLabel selected={formData.rateType === value} label={label} sub={sub} />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className={label}>Repayment Type</label>
+          <div className="grid grid-cols-2 gap-3">
+            {REPAYMENT_TYPE_OPTIONS.map(({ value, label, sub }) => (
+              <button key={value} type="button" onClick={() => updateField('repaymentType', value)}
+                className={btnCls(formData.repaymentType === value)}>
+                <BtnLabel selected={formData.repaymentType === value} label={label} sub={sub} />
               </button>
             ))}
           </div>

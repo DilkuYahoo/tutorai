@@ -3,6 +3,8 @@ import Navigation from '../components/Navigation'
 const strip = (v) => String(v).replace(/[^0-9.]/g, '')
 const fmt   = (v) => { const n = Number(strip(v)); return n ? `$${n.toLocaleString('en-AU')}` : '—' }
 const cap   = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ') : '—'
+const RATE_TYPE_LABELS = { 'variable': 'Variable', 'fixed-1y': 'Fixed 1Y', 'fixed-2y': 'Fixed 2Y', 'fixed-3y': 'Fixed 3Y', 'fixed-4y': 'Fixed 4Y', 'fixed-5y': 'Fixed 5Y' }
+const REPAYMENT_LABELS = { 'principal-and-interest': 'Principal & Interest', 'interest-only': 'Interest Only' }
 
 function ReviewSection({ title, step, onGoTo, children }) {
   return (
@@ -47,8 +49,10 @@ export default function Step6_Review({ formData, onBack, onGoTo, onSubmit, submi
         </ReviewSection>
 
         <ReviewSection title="Property" step={2} onGoTo={onGoTo}>
-          <Row label="Purpose"        value={formData.propertyPurpose === 'live-in' ? 'Live In' : formData.propertyPurpose === 'investment' ? 'Investment' : null} />
+          <Row label="Purpose"          value={formData.propertyPurpose === 'live-in' ? 'Live In' : formData.propertyPurpose === 'investment' ? 'Investment' : null} />
           <Row label="Loan Purpose"   value={cap(formData.loanPurpose)} />
+          <Row label="Rate Type"      value={RATE_TYPE_LABELS[formData.rateType] || null} />
+          <Row label="Repayment Type" value={REPAYMENT_LABELS[formData.repaymentType] || null} />
           <Row label="Property Value" value={fmt(formData.propertyValue)} />
           <Row label="Loan Amount"    value={fmt(formData.loanAmount)} />
           {lvr && <Row label="LVR"   value={`${lvr}%`} />}

@@ -14,9 +14,10 @@ const RATE_LINKS = [
   { label: 'Personal Loans',    href: '#other-rates' },
   { label: 'Credit Cards',      href: '#other-rates' },
   { label: 'Recent Changes',    href: '#recent-changes' },
+  { label: 'Find a Broker',     href: '#brokers' },
 ]
 
-export default function SiteFooter({ onTerms, onPrivacy, onContact }) {
+export default function SiteFooter({ onTerms, onPrivacy, onContact, onBrokers }) {
   return (
     <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-200">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-8">

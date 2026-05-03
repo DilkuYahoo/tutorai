@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard'
 import TermsPage from './pages/TermsPage'
 import PrivacyPage from './pages/PrivacyPage'
 import ContactPage from './pages/ContactPage'
+import BrokerPage from './pages/BrokerPage'
 import LendersPage from './pages/LendersPage'
 import DashboardHeader from './components/DashboardHeader'
 import SiteFooter from './components/SiteFooter'
@@ -33,6 +34,8 @@ const initialState = {
     loanAmount: '',
     propertyPurpose: '',
     loanPurpose: '',
+    rateType: '',
+    repaymentType: '',
     employmentType: '',
     income: '',
     expenses: '',
@@ -83,8 +86,8 @@ export default function App() {
   const { currentStep, direction, submitting, submitted, applicationId, formData } = state
 
   const [isDark, setIsDark] = useState(true)
-  const [page, setPage]     = useState('dashboard') // 'dashboard' | 'apply' | 'terms' | 'privacy' | 'contact' | 'lenders'
-  const [emailVerification, setEmailVerification] = useState({ isOpen: false, code: '' })
+  const [page, setPage] = useState('dashboard')
+const [matchedRates, setMatchedRates] = useState([])
 
   const navigateHome = () => setPage('dashboard')
   const navigateMortgageRates = () => { setPage('dashboard'); setTimeout(() => document.getElementById('mortgage-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }
@@ -102,13 +105,7 @@ export default function App() {
 
   const toggleTheme = useCallback(() => setIsDark((d) => !d), [])
   const updateField = useCallback((field, value) => dispatch({ type: 'UPDATE_FIELD', field, value }), [])
-  const handleNext  = useCallback(() => {
-    if (currentStep === 1 && formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(formData.email.trim())) {
-      setEmailVerification({ isOpen: true, code: '' })
-    } else {
-      dispatch({ type: 'NEXT' })
-    }
-  }, [currentStep, formData.email])
+  const handleNext  = useCallback(() => dispatch({ type: 'NEXT' }), [])
   const handleBack  = useCallback(() => dispatch({ type: 'BACK' }), [])
   const handleGoTo  = useCallback((step) => dispatch({ type: 'GO_TO_STEP', step }), [])
 
@@ -116,13 +113,30 @@ export default function App() {
     dispatch({ type: 'SET_SUBMITTING', value: true })
     try {
       const apiUrl = import.meta.env.VITE_API_URL || ''
-      const res = await fetch(`${apiUrl}/application`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-      const data = await res.json()
-      dispatch({ type: 'SUBMIT_SUCCESS', id: data.id })
+      const [appRes, ratesRes] = await Promise.allSettled([
+        fetch(`${apiUrl}/application`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        }),
+        fetch(`${apiUrl}/rates/matched`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            propertyPurpose: formData.propertyPurpose,
+            loanPurpose:     formData.loanPurpose,
+            rateType:        formData.rateType,
+            repaymentType:   formData.repaymentType,
+            propertyValue:   formData.propertyValue,
+            loanAmount:      formData.loanAmount,
+          }),
+        }),
+      ])
+      const appData = appRes.status === 'fulfilled' ? await appRes.value.json() : {}
+      if (ratesRes.status === 'fulfilled') {
+        try { setMatchedRates(await ratesRes.value.json()) } catch { /* ignore */ }
+      }
+      dispatch({ type: 'SUBMIT_SUCCESS', id: appData.id })
     } catch {
       dispatch({ type: 'SET_SUBMITTING', value: false })
     }
@@ -190,6 +204,39 @@ export default function App() {
     )
   }
 
+  if (page === 'brokers') {
+    return (
+      <Layout
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onApply={() => {}}
+        onTerms={() => setPage('terms')}
+        onPrivacy={() => setPage('privacy')}
+        onContact={() => setPage('contact')}
+        onHome={() => setPage('dashboard')}
+        onMortgageRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('mortgage-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+        onOtherRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('other-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+        onRecentChanges={() => { setPage('dashboard'); setTimeout(() => document.getElementById('recent-changes')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+        onLenders={() => setPage('lenders')}
+        onBrokers={() => setPage('brokers')}
+      >
+        <BrokerPage
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
+          onHome={() => setPage('dashboard')}
+          onMortgageRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('mortgage-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+          onOtherRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('other-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+          onRecentChanges={() => { setPage('dashboard'); setTimeout(() => document.getElementById('recent-changes')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
+          onLenders={() => setPage('lenders')}
+          onTerms={() => setPage('terms')}
+          onPrivacy={() => setPage('privacy')}
+          onContact={() => setPage('contact')}
+          onBrokers={() => setPage('brokers')}
+        />
+      </Layout>
+    )
+  }
+
   if (page === 'lenders') {
     return (
       <Layout
@@ -250,28 +297,80 @@ export default function App() {
         onLenders={() => setPage('lenders')}
         buttonText="← Back to Rates"
       >
-        <div className="flex-1 flex items-center justify-center px-4 py-12">
-          <div className="text-center animate-fade-in">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+        <div className="flex-1 flex items-start justify-center px-4 pt-12 pb-16">
+          <div className="w-full max-w-xl animate-fade-in">
+            <div className="text-center mb-10">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-6">
+                <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h1 className="text-3xl font-semibold mb-3 text-slate-900 dark:text-white">You're all set!</h1>
+              <p className="text-slate-500 dark:text-slate-400 mb-2">Your application has been submitted.</p>
+              {applicationId && (
+                <p className="text-xs text-slate-400 dark:text-slate-600 font-mono">ID: {applicationId}</p>
+              )}
             </div>
-            <h1 className="text-3xl font-semibold mb-3 text-slate-900 dark:text-white">You're all set!</h1>
-            <p className="text-slate-500 dark:text-slate-400 mb-2">Your application has been submitted.</p>
-            {applicationId && (
-              <p className="text-xs text-slate-400 dark:text-slate-600 font-mono mb-8">ID: {applicationId}</p>
-            )}
+
+            <div className="mb-10">
+              <p className="text-xs text-slate-400 dark:text-slate-500 mb-5 leading-relaxed text-center">
+                We are not authorised to provide financial, credit, or lending advice. The information below is
+                for general research purposes only and does not constitute a recommendation or offer of credit.
+                A qualified mortgage broker will contact you as soon as possible to discuss your options.
+              </p>
+
+              {matchedRates.length > 0 ? (
+                <>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 font-medium text-center">
+                    Based on our research, the following products may be suited to your needs
+                  </p>
+                  <div className="space-y-3">
+                    {matchedRates.map((r, i) => (
+                      <div key={i} className="p-5 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{r.brand}</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">{r.productName}</p>
+                          {r.comparisonRate && (
+                            <p className="text-xs text-slate-400 dark:text-slate-600 mt-1">Comparison {r.comparisonRate.toFixed(2)}% p.a.</p>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-2xl font-bold text-indigo-500 dark:text-indigo-400">{r.rate.toFixed(2)}<span className="text-sm font-normal text-slate-400">%</span></p>
+                          {r.applicationUri && (
+                            <a href={r.applicationUri} target="_blank" rel="noopener noreferrer"
+                              className="text-xs text-indigo-500 dark:text-indigo-400 hover:underline mt-1 inline-block">
+                              View product →
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-400 dark:text-slate-600 text-center mt-4">
+                    Advertised rates only. Actual rate and eligibility determined by the lender.
+                  </p>
+                </>
+              ) : (
+                <div className="p-5 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-center">
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">We're on it</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
+                    We weren't able to identify a matching product in our current dataset for your selected criteria.
+                    A broker will review your application and reach out shortly with the most suitable options available to you.
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
-                onClick={() => dispatch({ type: 'RESET' })}
+                onClick={() => { dispatch({ type: 'RESET' }); setMatchedRates([]) }}
                 className="text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 underline underline-offset-2 text-sm transition-colors"
               >
                 Start a new application
               </button>
               <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
               <button
-                onClick={() => { dispatch({ type: 'RESET' }); setPage('dashboard') }}
+                onClick={() => { dispatch({ type: 'RESET' }); setMatchedRates([]); setPage('dashboard') }}
                 className="text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white underline underline-offset-2 text-sm transition-colors"
               >
                 ← View rates
@@ -296,6 +395,7 @@ export default function App() {
       onOtherRates={() => { setPage('dashboard'); setTimeout(() => document.getElementById('other-rates')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
       onRecentChanges={() => { setPage('dashboard'); setTimeout(() => document.getElementById('recent-changes')?.scrollIntoView({ behavior: 'smooth' }), 100) }}
       onLenders={() => setPage('lenders')}
+      onBrokers={() => setPage('brokers')}
       buttonText="← Back to Rates"
     >
       <main className="flex-1 flex flex-col">

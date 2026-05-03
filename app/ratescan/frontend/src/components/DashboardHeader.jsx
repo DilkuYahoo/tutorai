@@ -42,7 +42,7 @@ function MobileNavItem({ onClick, children }) {
   )
 }
 
-export default function DashboardHeader({ isDark, onToggleTheme, onApply, onPrivacy, onContact, onHome, onMortgageRates, onOtherRates, onRecentChanges, onLenders, buttonText = '' }) {
+export default function DashboardHeader({ isDark, onToggleTheme, onApply, onPrivacy, onContact, onHome, onMortgageRates, onOtherRates, onRecentChanges, onLenders, onBrokers, buttonText = '' }) {
   const [ratesDropdownOpen, setRatesDropdownOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -83,8 +83,9 @@ export default function DashboardHeader({ isDark, onToggleTheme, onApply, onPriv
             )}
           </div>
           <button onClick={onLenders} className="text-sm text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Lenders</button>
+          <button onClick={onBrokers} className="text-sm text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Brokers</button>
           <button onClick={onContact} className="text-sm text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Contact Us</button>
-          <button onClick={onPrivacy} className="text-sm text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Privacy Statement</button>
+          <button onClick={onPrivacy} className="text-sm text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors">Privacy</button>
         </nav>
 
         {/* Actions */}
@@ -124,8 +125,8 @@ export default function DashboardHeader({ isDark, onToggleTheme, onApply, onPriv
             <MobileNavItem onClick={() => { closeMobile(); onOtherRates(); }}>Other Rates</MobileNavItem>
             <MobileNavItem onClick={() => { closeMobile(); onRecentChanges(); }}>Recent Changes</MobileNavItem>
             <MobileNavItem onClick={() => { closeMobile(); onLenders(); }}>Lenders</MobileNavItem>
-            <MobileNavItem onClick={() => { closeMobile(); onContact(); }}>Contact Us</MobileNavItem>
-            <MobileNavItem onClick={() => { closeMobile(); onPrivacy(); }}>Privacy Statement</MobileNavItem>
+            <MobileNavItem onClick={() => { closeMobile(); onBrokers(); }}>Brokers</MobileNavItem>            <MobileNavItem onClick={() => { closeMobile(); onContact(); }}>Contact Us</MobileNavItem>
+            <MobileNavItem onClick={() => { closeMobile(); onPrivacy(); }}>Privacy</MobileNavItem>
             {buttonText && (
               <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button

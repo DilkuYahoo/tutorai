@@ -67,6 +67,9 @@ Resources:
       Handler: submit_application.lambda_handler
       CodeUri: ../lambda/
       Role: !GetAtt SubmitApplicationRole.Arn
+      Environment:
+        Variables:
+          SEND_EMAIL_API_URL: https://oxch4uog7g.execute-api.ap-southeast-2.amazonaws.com/prod/send-email
       Events:
         PostApplication:
           Type: Api
@@ -163,6 +166,30 @@ Resources:
           Properties:
             RestApiId: !Ref RatescanApi
             Path: /institutions
+            Method: OPTIONS
+
+  # ── Lambda: POST /rates/matched ─────────────────────────────────────────────
+  GetMatchedRatesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ratescan-get-matched-rates
+      Handler: get_matched_rates.lambda_handler
+      CodeUri: ../lambda/
+      Timeout: 60
+      MemorySize: 256
+      Role: !GetAtt AthenaQueryRole.Arn
+      Events:
+        PostMatchedRates:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RatescanApi
+            Path: /rates/matched
+            Method: POST
+        OptionsMatchedRates:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RatescanApi
+            Path: /rates/matched
             Method: OPTIONS
 
   # ── Lambda: POST /contact ────────────────────────────────────────────────────
